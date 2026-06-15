@@ -38,7 +38,7 @@ const FAUCET_AMOUNTS: Record<string, string> = {
   XAUt: '500',
 };
 
-const COOLDOWN_SECONDS = 60;
+const COOLDOWN_SECONDS = 5;
 
 export default function FaucetPage() {
   const [selectedToken, setSelectedToken] = useState('');

@@ -96,7 +96,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
-  const [designTheme, setDesignThemeState] = useState<DesignTheme>('cyber');
+  const [designTheme, setDesignThemeState] = useState<DesignTheme>('nordic');
 
   // Load theme and design direction from localStorage on mount
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
-      document.documentElement.setAttribute('data-design-theme', 'cyber');
+      document.documentElement.setAttribute('data-design-theme', 'nordic');
     }
   }, []);
 

@@ -5,9 +5,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider as WagmiProviderBase, createConfig, http } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { injected, walletConnect } from 'wagmi/connectors';
+import { ZamaProvider, RelayerWeb, indexedDBStorage, SepoliaConfig, MainnetConfig } from '@zama-fhe/react-sdk';
+import { WagmiSigner } from '@zama-fhe/react-sdk/wagmi';
 
 // WalletConnect project ID — register at https://cloud.walletconnect.com
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo';
+
+// Stable high-performance public RPC endpoints
+const SEPOLIA_RPC = 'https://rpc.ankr.com/eth_sepolia';
+const MAINNET_RPC = 'https://cloudflare-eth.com';
 
 export const wagmiConfig = createConfig({
   chains: [sepolia, mainnet],
@@ -18,10 +24,26 @@ export const wagmiConfig = createConfig({
       : []),
   ],
   transports: {
-    [sepolia.id]: http(),
-    [mainnet.id]: http(),
+    [sepolia.id]: http(SEPOLIA_RPC),
+    [mainnet.id]: http(MAINNET_RPC),
   },
   ssr: true,
+});
+
+export const signer = new WagmiSigner({ config: wagmiConfig });
+
+export const relayer = new RelayerWeb({
+  getChainId: () => signer.getChainId(),
+  transports: {
+    [sepolia.id]: {
+      ...SepoliaConfig,
+      network: SEPOLIA_RPC,
+    },
+    [mainnet.id]: {
+      ...MainnetConfig,
+      network: MAINNET_RPC,
+    },
+  },
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -37,8 +59,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProviderBase config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <ZamaProvider relayer={relayer} signer={signer} storage={indexedDBStorage}>
+          {children}
+        </ZamaProvider>
       </QueryClientProvider>
     </WagmiProviderBase>
   );
 }
+

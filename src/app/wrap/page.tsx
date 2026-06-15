@@ -14,11 +14,10 @@ import { useToast } from '@/components/ui/Toast';
 import {
   useAccount,
   useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
   useConnect,
 } from 'wagmi';
-import { ERC20_ABI, WRAPPER_ABI } from '@/lib/wrapper-abi';
+import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
+import { ERC20_ABI } from '@/lib/wrapper-abi';
 import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
@@ -53,8 +52,8 @@ function WrapPageContent() {
   const wrappers = KNOWN_WRAPPERS[activeChainId] ?? [];
   const selectedWrapper = wrappers.find(w => w.symbol === selectedToken);
 
-  // Real contract balance reads
-  const { data: rawPublicBalance, refetch: refetchPublicBalance } = useReadContract({
+  // Real contract balance reads (Public underlying)
+  const { data: rawPublicBalance, refetch: refetchPublicBalance, error: publicBalanceError } = useReadContract({
     abi: ERC20_ABI,
     address: selectedWrapper?.erc20Address,
     functionName: 'balanceOf',
@@ -64,16 +63,20 @@ function WrapPageContent() {
     },
   });
 
-  const { data: rawWrapperBalance, refetch: refetchWrapperBalance } = useReadContract({
-    abi: WRAPPER_ABI,
-    address: selectedWrapper?.erc7984Address,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address && !!selectedWrapper?.erc7984Address,
-    },
-  });
+  // Log public balance read error
+  useEffect(() => {
+    if (publicBalanceError) {
+      console.error('Error reading public balance:', publicBalanceError);
+    }
+  }, [publicBalanceError]);
 
+  // Real contract balance reads (Confidential FHE)
+  const { data: decryptedWrapperBalance, refetch: refetchWrapperBalance } = useConfidentialBalance(
+    { tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000' },
+    { enabled: !!address && !!selectedWrapper?.erc7984Address }
+  );
+
+  // Read allowance
   const { data: rawAllowance, refetch: refetchAllowance } = useReadContract({
     abi: ERC20_ABI,
     address: selectedWrapper?.erc20Address,
@@ -93,49 +96,14 @@ function WrapPageContent() {
     }
   }, [address, selectedWrapper, refetchPublicBalance, refetchWrapperBalance, refetchAllowance]);
 
-  // Wagmi contract writing hooks
-  const { writeContractAsync } = useWriteContract();
-
-  // Transaction mining status
-  const { isLoading: isTxMining, isSuccess: isTxSuccess, isError: isTxError } = useWaitForTransactionReceipt({
-    hash: activeTxHash,
+  // Zama official Shield/Unshield hooks
+  const { mutateAsync: shield } = useShield({
+    tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
   });
 
-  // Monitor mining status to progress step states
-  useEffect(() => {
-    if (activeTxHash && isTxSuccess) {
-      if (txStep === 2) {
-        addToast({
-          variant: 'success',
-          title: 'Approval Confirmed',
-          message: 'The token allowance has been successfully approved.',
-        });
-        refetchAllowance();
-        setTxStep(0);
-        setActiveTxHash(undefined);
-      } else if (txStep === 4) {
-        addToast({
-          variant: 'success',
-          title: action === 'wrap' ? 'Shielding Confirmed' : 'Unshielding Confirmed',
-          message: action === 'wrap'
-            ? `Successfully wrapped ${amount} ${selectedToken} into confidential c${selectedToken}.`
-            : `Successfully unshielded ${amount} c${selectedToken} into public ${selectedToken}.`,
-        });
-        refetchPublicBalance();
-        refetchWrapperBalance();
-        setTxStep(5);
-        setActiveTxHash(undefined);
-      }
-    } else if (activeTxHash && isTxError) {
-      addToast({
-        variant: 'error',
-        title: 'Transaction Failed',
-        message: 'The transaction reverted on-chain. Please verify gas and try again.',
-      });
-      setTxStep(0);
-      setActiveTxHash(undefined);
-    }
-  }, [activeTxHash, isTxSuccess, isTxError, txStep, action, amount, selectedToken, refetchAllowance, refetchPublicBalance, refetchWrapperBalance, addToast]);
+  const { mutateAsync: unshield } = useUnshield({
+    tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
+  });
 
   const decimals = selectedWrapper?.decimals ?? 18;
   const parsedInputAmount = useMemo(() => {
@@ -148,73 +116,79 @@ function WrapPageContent() {
   }, [amount, decimals]);
 
   const hasPublicBalance = rawPublicBalance !== undefined ? (rawPublicBalance as bigint) : 0n;
-  const hasWrapperBalance = rawWrapperBalance !== undefined ? (rawWrapperBalance as bigint) : 0n;
+  const hasWrapperBalance = decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? decryptedWrapperBalance : 0n;
   const hasAllowance = rawAllowance !== undefined ? (rawAllowance as bigint) : 0n;
 
   const needsApproval = action === 'wrap' && hasAllowance < parsedInputAmount;
 
-  const handleApprove = async () => {
-    if (!selectedWrapper || !address) return;
-    setTxStep(1); // Pending wallet
-    try {
-      const txHash = await writeContractAsync({
-        abi: ERC20_ABI,
-        address: selectedWrapper.erc20Address,
-        functionName: 'approve',
-        args: [selectedWrapper.erc7984Address, parsedInputAmount],
-      });
-      setActiveTxHash(txHash);
-      setTxStep(2); // Mining
-      addToast({
-        variant: 'info',
-        title: 'Approval Submitted',
-        message: 'Transaction sent. Waiting for confirmation...',
-      });
-    } catch (err: any) {
-      console.error(err);
-      setTxStep(0);
-      addToast({
-        variant: 'error',
-        title: 'Approval Rejected',
-        message: err.message || 'The approval transaction was rejected in wallet.',
-      });
-    }
-  };
-
   const handleAction = async () => {
     if (!selectedWrapper || !address) return;
-    setTxStep(3); // Pending action wallet
     try {
-      let txHash: `0x${string}`;
       if (action === 'wrap') {
-        txHash = await writeContractAsync({
-          abi: WRAPPER_ABI,
-          address: selectedWrapper.erc7984Address,
-          functionName: 'wrap',
-          args: [address, parsedInputAmount],
+        setTxStep(1); // Approval confirmation pending
+        await shield({
+          amount: parsedInputAmount,
+          onApprovalSubmitted: (txHash) => {
+            setTxStep(2); // Approve mining
+            setActiveTxHash(txHash);
+            addToast({
+              variant: 'info',
+              title: 'Approval Submitted',
+              message: 'Approve transaction sent. Waiting for confirmation...',
+            });
+          },
+          onShieldSubmitted: (txHash) => {
+            setTxStep(4); // Shield mining
+            setActiveTxHash(txHash);
+            addToast({
+              variant: 'info',
+              title: 'Shielding Submitted',
+              message: 'Shield transaction sent. Waiting for confirmation...',
+            });
+          },
         });
+        
+        addToast({
+          variant: 'success',
+          title: 'Shielding Confirmed',
+          message: `Successfully wrapped ${amount} ${selectedToken} into confidential c${selectedToken}.`,
+        });
+        setTxStep(5); // Completed
+        refetchPublicBalance();
+        refetchWrapperBalance();
+        refetchAllowance();
       } else {
-        txHash = await writeContractAsync({
-          abi: WRAPPER_ABI,
-          address: selectedWrapper.erc7984Address,
-          functionName: 'withdrawTo',
-          args: [address, parsedInputAmount],
+        setTxStep(3); // Unshield pending
+        await unshield({
+          amount: parsedInputAmount,
+          onUnwrapSubmitted: (txHash) => {
+            setTxStep(4); // Unshield mining
+            setActiveTxHash(txHash);
+            addToast({
+              variant: 'info',
+              title: 'Unshielding Submitted',
+              message: 'Unshield transaction sent. Waiting for confirmation...',
+            });
+          },
         });
+        
+        addToast({
+          variant: 'success',
+          title: 'Unshielding Confirmed',
+          message: `Successfully unshielded ${amount} c${selectedToken} into public ${selectedToken}.`,
+        });
+        setTxStep(5); // Completed
+        refetchPublicBalance();
+        refetchWrapperBalance();
       }
-      setActiveTxHash(txHash);
-      setTxStep(4); // Mining action
-      addToast({
-        variant: 'info',
-        title: action === 'wrap' ? 'Shielding Submitted' : 'Unshielding Submitted',
-        message: 'Transaction sent. Waiting for confirmation...',
-      });
     } catch (err: any) {
       console.error(err);
       setTxStep(0);
+      setActiveTxHash(undefined);
       addToast({
         variant: 'error',
-        title: 'Transaction Rejected',
-        message: err.message || 'The transaction was rejected in wallet.',
+        title: 'Transaction Failed',
+        message: err.message || 'The transaction was rejected or failed.',
       });
     }
   };
@@ -429,9 +403,9 @@ function WrapPageContent() {
                 size="lg"
                 isLoading={txStep === 1 || txStep === 2}
                 disabled={!selectedToken || !amount || amount === '0' || parsedInputAmount > hasPublicBalance}
-                onClick={handleApprove}
+                onClick={handleAction}
               >
-                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve ${selectedToken}`}
+                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedToken}`}
               </Button>
             ) : (
               <Button

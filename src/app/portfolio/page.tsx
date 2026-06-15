@@ -10,19 +10,17 @@ import TokenIcon from '@/components/ui/TokenIcon';
 import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
-import { useAccount, useReadContract, useSignTypedData, useConnect } from 'wagmi';
-import { WRAPPER_ABI } from '@/lib/wrapper-abi';
+import { useAccount, useConnect } from 'wagmi';
+import { useConfidentialBalance } from '@zama-fhe/react-sdk';
 import { useToast } from '@/components/ui/Toast';
 import { type SupportedChainId } from '@/config/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import {
   Lock,
   Unlock,
-  Check,
   Info,
   Shield,
   Wallet,
-  Coins,
 } from 'lucide-react';
 
 interface TokenPositionProps {
@@ -42,71 +40,32 @@ function TokenPositionCard({
   triggerDecryptAll,
   onDecryptSuccess,
 }: TokenPositionProps) {
-  const [decryptedBalance, setDecryptedBalance] = useState<bigint | null>(null);
-  const [isDecrypting, setIsDecrypting] = useState(false);
-
+  const [isEnabled, setIsEnabled] = useState(false);
   const { addToast } = useToast();
 
-  // Read wrapper contract balance (ERC-20 interface)
-  const { data: rawBalance, refetch, isLoading: isBalanceLoading } = useReadContract({
-    abi: WRAPPER_ABI,
-    address: wrapper.erc7984Address,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: isConnected && !!address,
-    },
-  });
-
-  // EIP-712 Permit signing for re-encryption key authorization
-  const { signTypedDataAsync } = useSignTypedData();
+  // Zama Official useConfidentialBalance hook (handles EIP-712 permit signing & decryption)
+  const {
+    data: decryptedBalance,
+    isLoading: isDecrypting,
+    error: decryptError,
+    refetch,
+  } = useConfidentialBalance(
+    { tokenAddress: wrapper.erc7984Address },
+    { enabled: isEnabled }
+  );
 
   const handleDecrypt = async () => {
     if (!address) return;
-    setIsDecrypting(true);
-
+    setIsEnabled(true);
     try {
-      // Ephemeral public key representing the client session FHE decryption key
-      const mockEphemeralPublicKey = '0x04' + Array.from({ length: 128 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-
-      // Build real EIP-712 typing data for Zama's FHEVM permits
-      const domain = {
-        name: 'FHEVM Permission',
-        version: '1',
-        chainId: activeChainId,
-        verifyingContract: wrapper.erc7984Address,
-      } as const;
-
-      const types = {
-        Reencrypt: [
-          { name: 'publicKey', type: 'bytes' },
-          { name: 'contractAddress', type: 'address' },
-        ],
-      } as const;
-
-      const message = {
-        publicKey: mockEphemeralPublicKey as `0x${string}`,
-        contractAddress: wrapper.erc7984Address,
-      } as const;
-
-      // Request actual typed signature from the connected wallet
-      await signTypedDataAsync({
-        domain,
-        types,
-        primaryType: 'Reencrypt',
-        message,
-      });
-
-      // Signature confirmed! Read on-chain balance and decrypt
-      const balance = rawBalance !== undefined ? (rawBalance as bigint) : 0n;
-      setDecryptedBalance(balance);
-      onDecryptSuccess(wrapper.symbol, balance);
-
-      addToast({
-        variant: 'success',
-        title: `${wrapper.symbol} Decrypted`,
-        message: `Your private ${wrapper.symbol} balance has been successfully decrypted using FHE permit signature.`,
-      });
+      const res = await refetch();
+      if (res.data !== undefined) {
+        addToast({
+          variant: 'success',
+          title: `${wrapper.symbol} Decrypted`,
+          message: `Your private ${wrapper.symbol} balance has been successfully decrypted using FHE permit signature.`,
+        });
+      }
     } catch (err: any) {
       console.error(err);
       addToast({
@@ -114,32 +73,24 @@ function TokenPositionCard({
         title: 'Decryption Cancelled',
         message: err.message || 'The decryption signature was rejected.',
       });
-    } finally {
-      setIsDecrypting(false);
     }
   };
 
-  // Trigger Decrypt All
+  // Report balance updates to parent component
   useEffect(() => {
-    if (triggerDecryptAll && decryptedBalance === null && !isDecrypting && isConnected) {
+    if (decryptedBalance !== undefined && decryptedBalance !== null) {
+      onDecryptSuccess(wrapper.symbol, decryptedBalance);
+    }
+  }, [decryptedBalance, wrapper.symbol, onDecryptSuccess]);
+
+  // Trigger Decrypt All from parent component
+  useEffect(() => {
+    if (triggerDecryptAll && !isEnabled && isConnected) {
       handleDecrypt();
     }
-  }, [triggerDecryptAll]);
+  }, [triggerDecryptAll, isEnabled, isConnected]);
 
-  // Sync balance reload
-  useEffect(() => {
-    if (isConnected && address) {
-      refetch().then((res) => {
-        if (decryptedBalance !== null && res.data !== undefined) {
-          setDecryptedBalance(res.data as bigint);
-        }
-      });
-    } else {
-      setDecryptedBalance(null);
-    }
-  }, [address, isConnected]);
-
-  const balance = rawBalance !== undefined ? (rawBalance as bigint) : 0n;
+  const isDecrypted = decryptedBalance !== undefined && decryptedBalance !== null;
 
   return (
     <Card variant="glass" padding="md" hover>
@@ -174,9 +125,11 @@ function TokenPositionCard({
             <Skeleton width="120px" height="28px" />
             <span className="text-xs text-muted">Awaiting Permit...</span>
           </div>
-        ) : isBalanceLoading ? (
-          <Skeleton width="100px" height="28px" />
-        ) : decryptedBalance !== null ? (
+        ) : decryptError ? (
+          <div className="text-xs text-danger">
+            Error: {decryptError.message}
+          </div>
+        ) : isDecrypted ? (
           <div className="flex items-end gap-2">
             <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 700 }}>
               {formatAmount(decryptedBalance, wrapper.decimals)}
@@ -203,18 +156,16 @@ function TokenPositionCard({
                 <Lock size={10} /> Encrypted
               </Badge>
             </div>
-            {balance > 0n && (
-              <span className="text-xs text-muted">
-                Decrypt to View
-              </span>
-            )}
+            <span className="text-xs text-muted">
+              Decrypt to View
+            </span>
           </div>
         )}
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
-        {decryptedBalance === null ? (
+        {!isDecrypted ? (
           <Button
             variant="primary"
             fullWidth

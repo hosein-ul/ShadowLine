@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SiEthereum, SiTether } from 'react-icons/si';
 import { Coins, Cpu, PoundSterling, Landmark, CircleDollarSign } from 'lucide-react';
 
@@ -9,10 +9,38 @@ interface TokenIconProps {
   style?: React.CSSProperties;
 }
 
+const LOGO_URLS: Record<string, string> = {
+  ZAMA: 'https://assets.coingecko.com/coins/images/70921/standard/zama.png?1764591992',
+  XAUT: 'https://assets.coingecko.com/coins/images/10481/large/Tether_Gold.png',
+  WETH: 'https://portfolio.zama.org/assets/weth.svg?dpl=dpl_A42M31W2J82sHH92WvFod72a3znX',
+  ETH: 'https://portfolio.zama.org/assets/weth.svg?dpl=dpl_A42M31W2J82sHH92WvFod72a3znX',
+  BRON: 'https://assets.coingecko.com/coins/images/70826/standard/Bron_logo_sq.png?1764044817',
+  USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+  TGBP: 'https://assets.coingecko.com/coins/images/70647/standard/tgbp-square.png?1762953800',
+  USDC: 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
+};
+
+const getBaseSymbol = (symbol: string): string => {
+  let sym = symbol.toUpperCase();
+  if (sym.endsWith('MOCK')) {
+    sym = sym.slice(0, -4);
+  }
+  if (sym.startsWith('C') && sym !== 'COIN' && sym !== 'CHIPS') {
+    const rest = sym.slice(1);
+    if (LOGO_URLS[rest] || rest === 'TGBP') {
+      return rest;
+    }
+  }
+  return sym;
+};
+
 export default function TokenIcon({ symbol, size = 24, className, style }: TokenIconProps) {
+  const [imageError, setImageError] = useState(false);
   const sym = symbol.toUpperCase();
-  
-  const getIcon = () => {
+  const baseSym = getBaseSymbol(symbol);
+  const logoUrl = LOGO_URLS[baseSym];
+
+  const getFallbackIcon = () => {
     if (sym.includes('USDC')) return <CircleDollarSign size={size} style={{ color: '#2775CA', ...style }} className={className} />;
     if (sym.includes('USDT')) return <SiTether size={size} style={{ color: '#50AF95', ...style }} className={className} />;
     if (sym.includes('WETH') || sym === 'ETH') return <SiEthereum size={size} style={{ color: '#627EEA', ...style }} className={className} />;
@@ -23,5 +51,27 @@ export default function TokenIcon({ symbol, size = 24, className, style }: Token
     return <Coins size={size} style={{ color: 'var(--text-muted)', ...style }} className={className} />;
   };
 
-  return <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{getIcon()}</span>;
+  if (logoUrl && !imageError) {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src={logoUrl}
+          alt={symbol}
+          width={size}
+          height={size}
+          onError={() => setImageError(true)}
+          style={{
+            borderRadius: '50%',
+            objectFit: 'cover',
+            width: `${size}px`,
+            height: `${size}px`,
+            ...style,
+          }}
+          className={className}
+        />
+      </span>
+    );
+  }
+
+  return <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{getFallbackIcon()}</span>;
 }
