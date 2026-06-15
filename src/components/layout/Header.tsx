@@ -1,0 +1,256 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import Badge from '@/components/ui/Badge';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { useTheme, useActiveNetwork } from '@/app/ClientLayout';
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import { sepolia, mainnet } from 'wagmi/chains';
+import { formatAddress } from '@/lib/utils';
+import {
+  SunIcon,
+  MoonIcon,
+  WalletIcon,
+  ChevronDownIcon,
+  CheckIcon,
+  CopyIcon,
+} from '@/components/ui/Icons';
+
+const NAV_ITEMS = [
+  { href: '/', label: 'Registry' },
+  { href: '/wrap', label: 'Wrap / Unwrap' },
+  { href: '/portfolio', label: 'Portfolio' },
+  { href: '/faucet', label: 'Faucet' },
+];
+
+export default function Header() {
+  const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
+  const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
+
+  // Wagmi Hooks
+  const { address, isConnected, connector } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+
+  // Local state for modals & dropdowns
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy address', err);
+    }
+  };
+
+  const handleNetworkToggle = (targetIsTestnet: boolean) => {
+    if (isConnected) {
+      // If connected, trigger wallet switchChain
+      const targetChainId = targetIsTestnet ? sepolia.id : mainnet.id;
+      switchChain({ chainId: targetChainId });
+    } else {
+      // If not connected, simply toggle the local UI network preference
+      setIsTestnet(targetIsTestnet);
+    }
+  };
+
+  return (
+    <header className="header">
+      <div className="header-inner">
+        {/* Logo */}
+        <Link href="/" className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="28" rx="8" fill="var(--accent)" />
+            <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
+          </svg>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Zama</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Vault</span>
+        </Link>
+
+        {/* Navigation */}
+        <nav className="header-nav">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn('header-link', pathname === item.href && 'active')}
+              style={{ display: 'inline-flex', alignItems: 'center' }}
+            >
+              {item.label}
+              {item.label === 'Faucet' && (
+                <Badge variant="accent" size="sm" style={{ marginLeft: '6px', fontSize: '9px' }}>
+                  TESTNET
+                </Badge>
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div className="header-actions">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="btn btn-ghost btn-icon"
+            aria-label="Toggle theme"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {theme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+          </button>
+
+          {/* Network Switcher */}
+          <div className="network-switcher">
+            <button
+              className={cn('network-option', isTestnet && 'active')}
+              onClick={() => handleNetworkToggle(true)}
+            >
+              Sepolia
+            </button>
+            <button
+              className={cn('network-option', !isTestnet && 'active')}
+              onClick={() => handleNetworkToggle(false)}
+            >
+              Mainnet
+            </button>
+          </div>
+
+          {/* Wallet Connection */}
+          {isConnected && address ? (
+            <div style={{ position: 'relative' }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsDetailsOpen((prev) => !prev)}
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+              >
+                <WalletIcon size={16} />
+                <span>{formatAddress(address)}</span>
+                <ChevronDownIcon size={14} />
+              </button>
+
+              {/* Connected Details Dropdown */}
+              {isDetailsOpen && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                    onClick={() => setIsDetailsOpen(false)}
+                  />
+                  <div
+                    className="card animate-slide-up"
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 'calc(100% + var(--sp-2))',
+                      width: '260px',
+                      zIndex: 200,
+                      boxShadow: 'var(--shadow-lg)',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      padding: 'var(--sp-4)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+                      <div>
+                        <div className="text-xs text-muted">Connected with</div>
+                        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                          {connector?.name || 'Injected Wallet'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted">Wallet Address</div>
+                        <div className="font-mono text-xs" style={{ wordBreak: 'break-all', marginTop: '2px' }}>
+                          {address}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 'var(--sp-2)', marginTop: 'var(--sp-1)' }}>
+                        <Button variant="secondary" size="sm" fullWidth onClick={handleCopy}>
+                          {copied ? (
+                            <>
+                              <CheckIcon size={14} /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <CopyIcon size={14} /> Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          fullWidth
+                          onClick={() => {
+                            disconnect();
+                            setIsDetailsOpen(false);
+                          }}
+                        >
+                          Disconnect
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsConnectModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+            >
+              <WalletIcon size={16} />
+              Connect Wallet
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Connect Wallet Modal */}
+      {isConnectModalOpen && (
+        <Modal
+          isOpen={isConnectModalOpen}
+          onClose={() => setIsConnectModalOpen(false)}
+          title="Connect a Wallet"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <div className="text-sm text-muted" style={{ marginBottom: 'var(--sp-2)' }}>
+              Choose a wallet provider to connect to ZamaVault.
+            </div>
+            {connectors.map((c) => (
+              <button
+                key={c.id}
+                className="btn btn-secondary btn-full"
+                style={{
+                  justifyContent: 'space-between',
+                  padding: 'var(--sp-4) var(--sp-5)',
+                  fontSize: 'var(--text-base)',
+                }}
+                onClick={() => {
+                  connect({ connector: c });
+                  setIsConnectModalOpen(false);
+                }}
+              >
+                <span>{c.name}</span>
+                <span className="text-xs text-muted">→</span>
+              </button>
+            ))}
+            {connectors.length === 0 && (
+              <div className="text-sm text-center text-muted" style={{ padding: 'var(--sp-4) 0' }}>
+                No wallets detected. Please install MetaMask or Rabby to get started.
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+    </header>
+  );
+}
