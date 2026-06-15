@@ -29,15 +29,14 @@ const NAV_ITEMS = [
 ];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
-  { value: 'nordic', label: 'Nordic Zinc' },
-  { value: 'nebula', label: 'Deep Nebula' },
-  { value: 'cyber', label: 'Obsidian Amber' },
-  { value: 'emerald', label: 'Cyber Emerald' },
+  { value: 'charcoal', label: 'Nordic Charcoal' },
+  { value: 'midnight', label: 'Nordic Midnight' },
+  { value: 'steel', label: 'Nordic Steel' },
 ];
 
 export default function Header() {
   const pathname = usePathname();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { designTheme, setDesignTheme } = useDesignTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
@@ -73,7 +72,7 @@ export default function Header() {
     }
   };
 
-  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Zinc';
+  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Charcoal';
 
   return (
     <header className="header">
@@ -108,46 +107,66 @@ export default function Header() {
         </nav>
 
         {/* Actions */}
-        <div className="header-actions">
-          {/* Design Swapper Dropdown */}
-          <div className="theme-selector-dropdown">
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
-              style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
-            >
-              <Palette size={14} />
-              <span>{activeThemeLabel}</span>
-              <ChevronDown size={14} />
-            </button>
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          {/* Light/Dark Toggle */}
+          <button
+            className="btn btn-secondary btn-icon"
+            onClick={toggleTheme}
+            style={{ 
+              width: '32px', 
+              height: '32px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)'
+            }}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
 
-            {isDesignDropdownOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-                  onClick={() => setIsDesignDropdownOpen(false)}
-                />
-                <div className="theme-dropdown-menu animate-slide-up">
-                  {THEME_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={cn(
-                        'theme-dropdown-item',
-                        designTheme === opt.value && 'active'
-                      )}
-                      onClick={() => {
-                        setDesignTheme(opt.value);
-                        setIsDesignDropdownOpen(false);
-                      }}
-                    >
-                      <span>{opt.label}</span>
-                      {designTheme === opt.value && <Check size={14} />}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          {/* Design Swapper Dropdown */}
+          {theme === 'dark' && (
+            <div className="theme-selector-dropdown">
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+              >
+                <Palette size={14} />
+                <span>{activeThemeLabel}</span>
+                <ChevronDown size={14} />
+              </button>
+
+              {isDesignDropdownOpen && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                    onClick={() => setIsDesignDropdownOpen(false)}
+                  />
+                  <div className="theme-dropdown-menu animate-slide-up">
+                    {THEME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={cn(
+                          'theme-dropdown-item',
+                          designTheme === opt.value && 'active'
+                        )}
+                        onClick={() => {
+                          setDesignTheme(opt.value);
+                          setIsDesignDropdownOpen(false);
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        {designTheme === opt.value && <Check size={14} />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Network Switcher */}
           <div className="network-switcher">

@@ -108,31 +108,73 @@ table { border-collapse: collapse; }
    THEME DIRECTIONS
    ========================================================================== */
 
-/* ---------- 1. OBSIDIAN AMBER THEME (DARK) ---------- */
-html[data-design-theme='cyber'] {
-  --bg-base: #060508;
-  --bg-surface: #0c0b11;
-  --bg-elevated: #15131c;
-  --bg-card: rgba(12, 11, 17, 0.75);
-  --bg-card-hover: rgba(21, 19, 28, 0.85);
-  --bg-input: rgba(6, 5, 8, 0.95);
+/* ---------- 1. NORDIC CHARCOAL THEME (DARK - DEFAULT) ---------- */
+html[data-design-theme='charcoal'], html:not([data-design-theme]) {
+  --bg-base: #0b0b0f;
+  --bg-surface: #121217;
+  --bg-elevated: #1a1a22;
+  --bg-card: rgba(18, 18, 23, 0.9);
+  --bg-card-hover: rgba(26, 26, 34, 0.95);
+  --bg-input: #0b0b0f;
   
-  --accent: #f59e0b;
-  --accent-hover: #fbbf24;
-  --accent-muted: rgba(245, 158, 11, 0.15);
-  --accent-subtle: rgba(245, 158, 11, 0.04);
-  --accent-glow: rgba(245, 158, 11, 0.2);
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-muted: rgba(56, 189, 248, 0.15);
+  --accent-subtle: rgba(56, 189, 248, 0.05);
+  --accent-glow: rgba(56, 189, 248, 0.2);
 
-  --text-primary: #fafafa;
-  --text-secondary: #d1d5db;
-  --text-muted: #78716c;
-  --text-accent: #f59e0b;
-  --text-inverse: #060508;
+  --text-primary: #f8f9fa;
+  --text-secondary: #a0a5b5;
+  --text-muted: #64748b;
+  --text-accent: #38bdf8;
+  --text-inverse: #0b0b0f;
 
-  --border: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(245, 158, 11, 0.2);
-  --border-accent: rgba(245, 158, 11, 0.35);
-  --border-focus: #f59e0b;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.25);
+  --border-accent: rgba(56, 189, 248, 0.4);
+  --border-focus: #38bdf8;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 26px;
+
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.6);
+  --shadow-lg: 0 16px 36px rgba(0,0,0,0.8);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
+  
+  --radial-glow-1: rgba(56, 189, 248, 0.04);
+  --radial-glow-2: rgba(255, 255, 255, 0.02);
+  --grid-line: rgba(255, 255, 255, 0.012);
+}
+
+/* ---------- 2. NORDIC MIDNIGHT THEME (DARK) ---------- */
+html[data-design-theme='midnight'] {
+  --bg-base: #000000;
+  --bg-surface: #09090b;
+  --bg-elevated: #141418;
+  --bg-card: rgba(9, 9, 11, 0.95);
+  --bg-card-hover: rgba(20, 20, 24, 0.98);
+  --bg-input: #000000;
+  
+  --accent: #f4f4f5;
+  --accent-hover: #ffffff;
+  --accent-muted: rgba(244, 244, 245, 0.15);
+  --accent-subtle: rgba(244, 244, 245, 0.04);
+  --accent-glow: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --text-accent: #f4f4f5;
+  --text-inverse: #000000;
+
+  --border: rgba(255, 255, 255, 0.22);
+  --border-hover: rgba(255, 255, 255, 0.4);
+  --border-accent: rgba(255, 255, 255, 0.6);
+  --border-focus: #ffffff;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -140,136 +182,92 @@ html[data-design-theme='cyber'] {
   --radius-xl: 18px;
   --radius-2xl: 24px;
 
-  --shadow-glow: 0 0 20px rgba(245, 158, 11, 0.15);
-  --radial-glow-1: rgba(245, 158, 11, 0.04);
-  --radial-glow-2: rgba(239, 68, 68, 0.03);
-  --grid-line: rgba(245, 158, 11, 0.010);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.6);
+  --shadow-md: 0 6px 18px rgba(0,0,0,0.7);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,0.9);
+  --shadow-glow: 0 0 25px rgba(255, 255, 255, 0.08);
+  
+  --radial-glow-1: rgba(255, 255, 255, 0.02);
+  --radial-glow-2: rgba(255, 255, 255, 0.01);
+  --grid-line: rgba(255, 255, 255, 0.022);
 }
 
-/* ---------- 2. DEEP NEBULA THEME (DARK) ---------- */
-html[data-design-theme='nebula'] {
-  --bg-base: #030206;
-  --bg-surface: #080612;
-  --bg-elevated: #110d24;
-  --bg-card: rgba(8, 6, 18, 0.65);
-  --bg-card-hover: rgba(17, 13, 36, 0.75);
-  --bg-input: rgba(3, 2, 6, 0.9);
+/* ---------- 3. NORDIC STEEL THEME (DARK) ---------- */
+html[data-design-theme='steel'] {
+  --bg-base: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-elevated: #334155;
+  --bg-card: rgba(30, 41, 59, 0.9);
+  --bg-card-hover: rgba(51, 65, 85, 0.95);
+  --bg-input: #0f172a;
   
-  --accent: #8b5cf6;
-  --accent-hover: #a78bfa;
-  --accent-muted: rgba(139, 92, 246, 0.18);
-  --accent-subtle: rgba(139, 92, 246, 0.05);
-  --accent-glow: rgba(139, 92, 246, 0.25);
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --accent-muted: rgba(56, 189, 248, 0.15);
+  --accent-subtle: rgba(56, 189, 248, 0.05);
+  --accent-glow: rgba(56, 189, 248, 0.2);
 
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-muted: #6b7280;
-  --text-accent: #a78bfa;
-  --text-inverse: #ffffff;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --text-accent: #38bdf8;
+  --text-inverse: #0f172a;
 
-  --border: rgba(139, 92, 246, 0.15);
-  --border-hover: rgba(139, 92, 246, 0.3);
-  --border-accent: rgba(139, 92, 246, 0.5);
-  --border-focus: #a78bfa;
-
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-2xl: 36px;
-
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
-  --shadow-md: 0 8px 20px rgba(0,0,0,0.5);
-  --shadow-lg: 0 16px 40px rgba(0,0,0,0.7);
-  --shadow-glow: 0 0 25px rgba(139, 92, 246, 0.22);
-  
-  --radial-glow-1: rgba(139, 92, 246, 0.06);
-  --radial-glow-2: rgba(236, 72, 153, 0.05);
-  --grid-line: rgba(139, 92, 246, 0.012);
-}
-
-/* ---------- 3. NORDIC ZINC THEME (DARK) ---------- */
-html[data-design-theme='nordic'] {
-  --bg-base: #09090b;
-  --bg-surface: #0e0e11;
-  --bg-elevated: #18181b;
-  --bg-card: rgba(14, 14, 17, 0.8);
-  --bg-card-hover: rgba(24, 24, 27, 0.9);
-  --bg-input: #09090b;
-  
-  --accent: #f4f4f5;
-  --accent-hover: #ffffff;
-  --accent-muted: rgba(244, 244, 245, 0.1);
-  --accent-subtle: rgba(244, 244, 245, 0.03);
-  --accent-glow: rgba(56, 189, 248, 0.1);
-
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
-  --text-accent: #f4f4f5;
-  --text-inverse: #09090b;
-
-  --border: #27272a;
-  --border-hover: #3f3f46;
-  --border-accent: rgba(56, 189, 248, 0.35);
+  --border: rgba(148, 163, 184, 0.3);
+  --border-hover: rgba(148, 163, 184, 0.55);
+  --border-accent: rgba(56, 189, 248, 0.5);
   --border-focus: #38bdf8;
 
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 10px rgba(0,0,0,0.5);
-  --shadow-lg: 0 10px 24px rgba(0,0,0,0.6);
-  --shadow-glow: 0 0 15px rgba(56, 189, 248, 0.05);
-  
-  --radial-glow-1: rgba(255,255,255,0.01);
-  --radial-glow-2: rgba(56, 189, 248, 0.01);
-  --grid-line: rgba(255, 255, 255, 0.015);
-}
-
-/* ---------- 4. CYBER EMERALD THEME (DARK) ---------- */
-html[data-design-theme='emerald'] {
-  --bg-base: #010705;
-  --bg-surface: #02120b;
-  --bg-elevated: #052417;
-  --bg-card: rgba(2, 18, 11, 0.75);
-  --bg-card-hover: rgba(5, 36, 23, 0.85);
-  --bg-input: rgba(1, 7, 5, 0.95);
-  
-  --accent: #10b981;
-  --accent-hover: #34d399;
-  --accent-muted: rgba(16, 185, 129, 0.18);
-  --accent-subtle: rgba(16, 185, 129, 0.05);
-  --accent-glow: rgba(16, 185, 129, 0.25);
-
-  --text-primary: #ecfdf5;
-  --text-secondary: #a7f3d0;
-  --text-muted: #065f46;
-  --text-accent: #10b981;
-  --text-inverse: #010705;
-
-  --border: rgba(16, 185, 129, 0.15);
-  --border-hover: rgba(16, 185, 129, 0.3);
-  --border-accent: rgba(16, 185, 129, 0.4);
-  --border-focus: #34d399;
-
-  --radius-sm: 5px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-2xl: 26px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
 
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,0.7);
-  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
+  --shadow-lg: 0 14px 32px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
   
-  --radial-glow-1: rgba(16, 185, 129, 0.04);
-  --radial-glow-2: rgba(251, 191, 36, 0.03);
-  --grid-line: rgba(16, 185, 129, 0.008);
+  --radial-glow-1: rgba(56, 189, 248, 0.05);
+  --radial-glow-2: rgba(148, 163, 184, 0.03);
+  --grid-line: rgba(148, 163, 184, 0.015);
+}
+
+/* ---------- 4. LIGHT MODE OVERRIDES ---------- */
+html[data-theme='light'] {
+  --bg-base: #f8f9fa;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f3f5;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-hover: #ffffff;
+  --bg-input: #f1f3f5;
+  
+  --accent: #0f172a;
+  --accent-hover: #1e293b;
+  --accent-muted: rgba(15, 23, 42, 0.08);
+  --accent-subtle: rgba(15, 23, 42, 0.03);
+  --accent-glow: rgba(15, 23, 42, 0.05);
+
+  --text-primary: #1a1a24;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-accent: #0f172a;
+  --text-inverse: #ffffff;
+
+  --border: #d2d6dc;
+  --border-hover: #a0aec0;
+  --border-accent: rgba(15, 23, 42, 0.4);
+  --border-focus: #0f172a;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 10px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 12px rgba(15, 23, 42, 0.03);
+  
+  --radial-glow-1: rgba(15, 23, 42, 0.01);
+  --radial-glow-2: rgba(113, 128, 150, 0.01);
+  --grid-line: rgba(0, 0, 0, 0.03);
 }
 
 /* ---------- BASE STYLES ---------- */
@@ -755,14 +753,10 @@ h4 { font-size: var(--text-xl); }
 }
 
 /* Override background for translucent header support */
-html[data-design-theme='cyber'] .header { background: rgba(5, 5, 8, 0.85); }
-html[data-theme='light'][data-design-theme='cyber'] .header { background: rgba(248, 249, 250, 0.85); }
-html[data-design-theme='nebula'] .header { background: rgba(6, 5, 11, 0.75); }
-html[data-theme='light'][data-design-theme='nebula'] .header { background: rgba(245, 244, 250, 0.75); }
-html[data-design-theme='nordic'] .header { background: #09090b; }
-html[data-theme='light'][data-design-theme='nordic'] .header { background: #ffffff; }
-html[data-design-theme='emerald'] .header { background: rgba(2, 44, 34, 0.85); }
-html[data-theme='light'][data-design-theme='emerald'] .header { background: rgba(240, 253, 244, 0.85); }
+html[data-design-theme='charcoal'] .header { background: rgba(18, 18, 23, 0.85); }
+html[data-design-theme='midnight'] .header { background: rgba(9, 9, 11, 0.85); }
+html[data-design-theme='steel'] .header { background: rgba(30, 41, 59, 0.85); }
+html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 
 .header-inner {
   display: flex;

@@ -11,9 +11,8 @@ import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useAccount, useConnect } from 'wagmi';
-import { useConfidentialBalances, useRevokeSession } from '@zama-fhe/react-sdk';
+import { useConfidentialBalance, useRevokeSession } from '@zama-fhe/react-sdk';
 import { useToast } from '@/components/ui/Toast';
-import { type SupportedChainId } from '@/config/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import {
   Lock,
@@ -27,22 +26,64 @@ import {
 interface TokenPositionProps {
   wrapper: WrapperPair;
   isConnected: boolean;
-  isDecrypted: boolean;
-  isDecrypting: boolean;
-  decryptedBalance: bigint | undefined;
-  decryptError: Error | null;
-  onDecrypt: () => void;
+  address: `0x${string}` | undefined;
+  triggerDecrypt: boolean;
+  resetKey: number;
+  onDecryptSuccess: (symbol: string, balance: bigint) => void;
 }
 
 function TokenPositionCard({
   wrapper,
   isConnected,
-  isDecrypted,
-  isDecrypting,
-  decryptedBalance,
-  decryptError,
-  onDecrypt,
+  address,
+  triggerDecrypt,
+  resetKey,
+  onDecryptSuccess,
 }: TokenPositionProps) {
+  const [isEnabled, setIsEnabled] = useState(false);
+  const { addToast } = useToast();
+
+  // Reset enable status when resetKey changes
+  useEffect(() => {
+    setIsEnabled(false);
+  }, [resetKey]);
+
+  // Zama Official useConfidentialBalance hook (handles EIP-712 permit signing & decryption for this token)
+  const {
+    data: decryptedBalance,
+    isLoading: isDecrypting,
+    error: decryptError,
+  } = useConfidentialBalance(
+    { tokenAddress: wrapper.erc7984Address },
+    { enabled: isConnected && isEnabled }
+  );
+
+  const handleDecrypt = () => {
+    if (!address) return;
+    setIsEnabled(true);
+    addToast({
+      variant: 'info',
+      title: `Decrypting ${wrapper.symbol}`,
+      message: 'Requesting decryption permit. Please sign in your wallet if prompted.',
+    });
+  };
+
+  // Sync trigger from parent (for Decrypt All)
+  useEffect(() => {
+    if (triggerDecrypt && !isEnabled && isConnected) {
+      setIsEnabled(true);
+    }
+  }, [triggerDecrypt, isEnabled, isConnected]);
+
+  // Report balance updates to parent
+  useEffect(() => {
+    if (decryptedBalance !== undefined && decryptedBalance !== null) {
+      onDecryptSuccess(wrapper.symbol, decryptedBalance);
+    }
+  }, [decryptedBalance, wrapper.symbol, onDecryptSuccess]);
+
+  const isDecrypted = decryptedBalance !== undefined && decryptedBalance !== null;
+
   return (
     <Card variant="glass" padding="md" hover>
       {/* Token Header */}
@@ -66,6 +107,7 @@ function TokenPositionCard({
           borderRadius: 'var(--radius-lg)',
           padding: 'var(--sp-4) var(--sp-5)',
           marginBottom: 'var(--sp-4)',
+          border: '1px solid var(--border)',
         }}
       >
         <div className="text-xs text-muted" style={{ marginBottom: 'var(--sp-2)' }}>
@@ -77,8 +119,8 @@ function TokenPositionCard({
             <span className="text-xs text-muted">Awaiting Permit...</span>
           </div>
         ) : decryptError ? (
-          <div className="text-xs text-danger">
-            Error: {decryptError.message}
+          <div className="text-xs text-danger" style={{ wordBreak: 'break-word' }}>
+            Error: {decryptError.message || 'Decryption failed. Ensure the wrapper is deployed.'}
           </div>
         ) : isDecrypted ? (
           <div className="flex items-end gap-2">
@@ -122,7 +164,7 @@ function TokenPositionCard({
             fullWidth
             isLoading={isDecrypting}
             disabled={!isConnected}
-            onClick={onDecrypt}
+            onClick={handleDecrypt}
             style={{ gap: '6px' }}
           >
             <Unlock size={14} /> Decrypt Balance
@@ -137,7 +179,7 @@ function TokenPositionCard({
             >
               Unshield
             </Button>
-            <Button variant="ghost" fullWidth size="sm" onClick={onDecrypt} style={{ gap: '4px' }}>
+            <Button variant="ghost" fullWidth size="sm" onClick={handleDecrypt} style={{ gap: '4px' }}>
               <Unlock size={12} /> Decrypt Again
             </Button>
           </>
@@ -155,62 +197,38 @@ export default function PortfolioPage() {
 
   const wrappers = useMemo(() => KNOWN_WRAPPERS[activeChainId] ?? [], [activeChainId]);
 
-  const [requestedAddresses, setRequestedAddresses] = useState<`0x${string}`[]>([]);
-  const [resolvedBalances, setResolvedBalances] = useState<Record<string, bigint>>({});
+  const [decryptedBalances, setDecryptedBalances] = useState<Record<string, bigint>>({});
+  const [decryptTriggers, setDecryptTriggers] = useState<Record<string, boolean>>({});
+  const [resetKey, setResetKey] = useState(0);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
-  // Zama Official useConfidentialBalances hook (fetches multiple balances securely with a single/cached permit)
-  const {
-    data: decryptedBalances,
-    error: decryptError,
-  } = useConfidentialBalances(
-    { tokenAddresses: requestedAddresses },
-    { enabled: isConnected && requestedAddresses.length > 0 }
-  );
+  const handleDecryptSuccess = (symbol: string, balance: bigint) => {
+    setDecryptedBalances(prev => ({ ...prev, [symbol.toLowerCase()]: balance }));
+  };
 
-  // Sync resolved balances when the query returns data
-  useEffect(() => {
-    if (decryptedBalances && decryptedBalances.results) {
-      setResolvedBalances(prev => {
-        const nextBalances = { ...prev };
-        requestedAddresses.forEach((addr) => {
-          let val: bigint | undefined = undefined;
-          for (const [key, mapVal] of decryptedBalances.results.entries()) {
-            if (key.toLowerCase() === addr.toLowerCase()) {
-              val = mapVal;
-              break;
-            }
-          }
-          if (val !== undefined && val !== null) {
-            nextBalances[addr.toLowerCase()] = val;
-          }
-        });
-        return nextBalances;
-      });
+  // Staggered batch decryption of all wrappers to prevent FHE worker concurrent initialization race conditions
+  const handleDecryptAll = async () => {
+    if (!address) return;
+    addToast({
+      variant: 'info',
+      title: 'Decrypting All Balances',
+      message: 'Processing batch decryption with staggered activation to prevent FHE worker concurrent load issues.',
+    });
+    
+    for (let i = 0; i < wrappers.length; i++) {
+      const w = wrappers[i];
+      setDecryptTriggers(prev => ({ ...prev, [w.symbol.toLowerCase()]: true }));
+      // Stagger by 600ms
+      await new Promise(resolve => setTimeout(resolve, 600));
     }
-  }, [decryptedBalances, requestedAddresses]);
-
-  // Handle query error state gracefully
-  useEffect(() => {
-    if (decryptError) {
-      console.error('Decryption error:', decryptError);
-      addToast({
-        variant: 'error',
-        title: 'Decryption Failed',
-        message: decryptError.message || 'Permit signature request was rejected or FHE worker failed to initialize.',
-      });
-      // Remove unresolved addresses from requestedAddresses to stop loading states
-      setRequestedAddresses(prev =>
-        prev.filter(addr => resolvedBalances[addr.toLowerCase()] !== undefined)
-      );
-    }
-  }, [decryptError, resolvedBalances, addToast]);
+  };
 
   // Hook to revoke the session/clear permit signatures from the Zama SDK's cache
   const { mutate: revokeSession, isPending: isRevoking } = useRevokeSession({
     onSuccess: () => {
-      setRequestedAddresses([]);
-      setResolvedBalances({});
+      setDecryptedBalances({});
+      setDecryptTriggers({});
+      setResetKey(prev => prev + 1);
       addToast({
         variant: 'success',
         title: 'Decryption Session Reset',
@@ -227,40 +245,7 @@ export default function PortfolioPage() {
     },
   });
 
-  const handleDecryptToken = (tokenAddress: `0x${string}`, symbol: string) => {
-    if (!address) return;
-    const lowerAddress = tokenAddress.toLowerCase();
-    
-    // Add token to requested addresses if not already requested
-    if (!requestedAddresses.some(addr => addr.toLowerCase() === lowerAddress)) {
-      setRequestedAddresses(prev => [...prev, tokenAddress]);
-      addToast({
-        variant: 'info',
-        title: `Decrypting ${symbol}`,
-        message: 'Requesting decryption. Please sign the permit signature in your wallet if prompted.',
-      });
-    } else {
-      // If already requested, just trigger a query refresh
-      addToast({
-        variant: 'info',
-        title: `Decrypting ${symbol}`,
-        message: 'Querying decrypted balance...',
-      });
-    }
-  };
-
-  const handleDecryptAll = () => {
-    if (!address) return;
-    const allAddresses = wrappers.map(w => w.erc7984Address);
-    setRequestedAddresses(allAddresses);
-    addToast({
-      variant: 'info',
-      title: 'Decrypting All Balances',
-      message: 'Requesting decryption for all wrappers. Please sign the permit signature in your wallet if prompted.',
-    });
-  };
-
-  const totalDecrypted = Object.keys(resolvedBalances).length;
+  const totalDecrypted = Object.keys(decryptedBalances).length;
 
   return (
     <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
@@ -333,32 +318,16 @@ export default function PortfolioPage() {
         /* Token Positions Grid */
         <div className="grid grid-2 gap-4">
           {wrappers.map((wrapper) => {
-            const wrapperAddressLower = wrapper.erc7984Address.toLowerCase();
-            const isDecrypted = resolvedBalances[wrapperAddressLower] !== undefined;
-            const isDecrypting = requestedAddresses.some(addr => addr.toLowerCase() === wrapperAddressLower) && !isDecrypted;
-            const decryptedBalance = resolvedBalances[wrapperAddressLower];
-
-            // Resolve error case-insensitively
-            let decryptError: Error | null = null;
-            if (decryptedBalances?.errors) {
-              for (const [key, val] of decryptedBalances.errors.entries()) {
-                if (key.toLowerCase() === wrapperAddressLower) {
-                  decryptError = val;
-                  break;
-                }
-              }
-            }
-
+            const symbolLower = wrapper.symbol.toLowerCase();
             return (
               <TokenPositionCard
                 key={wrapper.symbol}
                 wrapper={wrapper}
                 isConnected={isConnected}
-                isDecrypted={isDecrypted}
-                isDecrypting={isDecrypting}
-                decryptedBalance={decryptedBalance}
-                decryptError={decryptError}
-                onDecrypt={() => handleDecryptToken(wrapper.erc7984Address, wrapper.symbol)}
+                address={address}
+                triggerDecrypt={!!decryptTriggers[symbolLower]}
+                resetKey={resetKey}
+                onDecryptSuccess={handleDecryptSuccess}
               />
             );
           })}

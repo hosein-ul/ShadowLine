@@ -10,7 +10,7 @@ import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
-export type DesignTheme = 'cyber' | 'nebula' | 'nordic' | 'emerald';
+export type DesignTheme = 'charcoal' | 'midnight' | 'steel';
 
 interface ThemeContextType {
   theme: Theme;
@@ -96,28 +96,30 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
-  const [designTheme, setDesignThemeState] = useState<DesignTheme>('nordic');
+  const [designTheme, setDesignThemeState] = useState<DesignTheme>('charcoal');
 
   // Load theme and design direction from localStorage on mount
   useEffect(() => {
-    // Lock base theme to dark
-    setTheme('dark');
-    document.documentElement.setAttribute('data-theme', 'dark');
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    const initialTheme = savedTheme || 'dark';
+    setTheme(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
 
     const savedDesign = localStorage.getItem('design-theme') as DesignTheme | null;
     if (savedDesign) {
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
-      setDesignThemeState('nordic');
-      document.documentElement.setAttribute('data-design-theme', 'nordic');
+      setDesignThemeState('charcoal');
+      document.documentElement.setAttribute('data-design-theme', 'charcoal');
     }
   }, []);
 
   const toggleTheme = () => {
-    // Keep locked to dark
-    setTheme('dark');
-    document.documentElement.setAttribute('data-theme', 'dark');
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
   };
 
   const setDesignTheme = (nextDesign: DesignTheme) => {
