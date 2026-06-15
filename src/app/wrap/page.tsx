@@ -21,6 +21,8 @@ import { ERC20_ABI } from '@/lib/wrapper-abi';
 import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
+import confetti from 'canvas-confetti';
+import { CHAIN_CONFIG } from '@/config/chains';
 import {
   Shield,
   ArrowUpDown,
@@ -28,6 +30,7 @@ import {
   Check,
   Info,
   Wallet,
+  ExternalLink,
 } from 'lucide-react';
 
 function WrapPageContent() {
@@ -40,6 +43,7 @@ function WrapPageContent() {
   const [amount, setAmount] = useState('');
   const [txStep, setTxStep] = useState<number>(0); // 0: idle, 1: approve pending, 2: approve mining, 3: action pending, 4: action mining, 5: completed
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
+  const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
 
   const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
@@ -126,7 +130,7 @@ function WrapPageContent() {
     try {
       if (action === 'wrap') {
         setTxStep(1); // Approval confirmation pending
-        await shield({
+        const res = await shield({
           amount: parsedInputAmount,
           onApprovalSubmitted: (txHash) => {
             setTxStep(2); // Approve mining
@@ -148,6 +152,15 @@ function WrapPageContent() {
           },
         });
         
+        setFinalTxHash(res.txHash);
+
+        // Success confetti!
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+
         addToast({
           variant: 'success',
           title: 'Shielding Confirmed',
@@ -159,7 +172,7 @@ function WrapPageContent() {
         refetchAllowance();
       } else {
         setTxStep(3); // Unshield pending
-        await unshield({
+        const res = await unshield({
           amount: parsedInputAmount,
           onUnwrapSubmitted: (txHash) => {
             setTxStep(4); // Unshield mining
@@ -172,6 +185,15 @@ function WrapPageContent() {
           },
         });
         
+        setFinalTxHash(res.txHash);
+
+        // Success confetti!
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+
         addToast({
           variant: 'success',
           title: 'Unshielding Confirmed',
@@ -198,6 +220,7 @@ function WrapPageContent() {
     setAmount('');
     setTxStep(0);
     setActiveTxHash(undefined);
+    setFinalTxHash(undefined);
   };
 
   const isChainMismatch = isConnected && chainId !== activeChainId;
@@ -374,6 +397,56 @@ function WrapPageContent() {
             </div>
           )}
 
+          {/* Transaction Link */}
+          {(activeTxHash || finalTxHash) && (
+            <div
+              className="animate-fade-in"
+              style={{
+                marginTop: 'var(--sp-4)',
+                padding: 'var(--sp-3) var(--sp-4)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 'var(--sp-2)',
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="text-xs text-muted" style={{ fontWeight: 500 }}>
+                  {txStep === 5
+                    ? `${action === 'wrap' ? 'Shield' : 'Unshield'} Successful`
+                    : txStep === 2
+                    ? 'Approval Pending...'
+                    : txStep === 4
+                    ? `${action === 'wrap' ? 'Shielding' : 'Unshielding'} Pending...`
+                    : 'Transaction Submitted'}
+                </span>
+                <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--accent)' }}>
+                  {formatAddress(finalTxHash || activeTxHash || '')}
+                </span>
+              </div>
+              <a
+                href={`${CHAIN_CONFIG[activeChainId]?.explorerUrl}/tx/${finalTxHash || activeTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: 'var(--sp-1.5) var(--sp-3)',
+                  fontSize: '11px',
+                  borderRadius: 'var(--radius-sm)',
+                  height: 'auto',
+                }}
+              >
+                View Explorer <ExternalLink size={12} />
+              </a>
+            </div>
+          )}
+
           {/* Submit Button */}
           <div style={{ marginTop: 'var(--sp-6)' }}>
             {!isConnected ? (
@@ -392,6 +465,8 @@ function WrapPageContent() {
                 onClick={() => {
                   setTxStep(0);
                   setAmount('');
+                  setFinalTxHash(undefined);
+                  setActiveTxHash(undefined);
                 }}
               >
                 <Check size={16} /> Complete — Wrap Another
