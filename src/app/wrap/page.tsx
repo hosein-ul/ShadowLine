@@ -307,6 +307,52 @@ function WrapPageContent() {
                 </select>
               </div>
             </div>
+
+            {/* Percentage Selector Pills */}
+            {isConnected && selectedToken && (
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  gap: 'var(--sp-1.5)', 
+                  marginTop: 'var(--sp-2)', 
+                  marginBottom: 'var(--sp-1)' 
+                }}
+              >
+                {[10, 25, 50, 75, 100].map((percent) => {
+                  const balanceBig = action === 'wrap' ? hasPublicBalance : hasWrapperBalance;
+                  return (
+                    <button
+                      key={percent}
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={txStep > 0 || balanceBig === 0n}
+                      onClick={() => {
+                        if (percent === 100) {
+                          setAmount(formatAmount(balanceBig, decimals, decimals));
+                        } else {
+                          const calculatedBig = (balanceBig * BigInt(percent)) / 100n;
+                          setAmount(formatAmount(calculatedBig, decimals, decimals));
+                        }
+                      }}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '10px',
+                        minWidth: '40px',
+                        height: 'auto',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        cursor: balanceBig === 0n ? 'not-allowed' : 'pointer',
+                        opacity: balanceBig === 0n ? 0.4 : 1
+                      }}
+                    >
+                      {percent === 100 ? 'MAX' : `${percent}%`}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {selectedWrapper && (
               <div className="text-xs text-muted" style={{ marginTop: 'var(--sp-2)' }}>
                 {action === 'wrap'
@@ -399,51 +445,71 @@ function WrapPageContent() {
 
           {/* Transaction Link */}
           {(activeTxHash || finalTxHash) && (
-            <div
-              className="animate-fade-in"
-              style={{
-                marginTop: 'var(--sp-4)',
-                padding: 'var(--sp-3) var(--sp-4)',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 'var(--sp-2)',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span className="text-xs text-muted" style={{ fontWeight: 500 }}>
-                  {txStep === 5
-                    ? `${action === 'wrap' ? 'Shield' : 'Unshield'} Successful`
-                    : txStep === 2
-                    ? 'Approval Pending...'
-                    : txStep === 4
-                    ? `${action === 'wrap' ? 'Shielding' : 'Unshielding'} Pending...`
-                    : 'Transaction Submitted'}
-                </span>
-                <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--accent)' }}>
-                  {formatAddress(finalTxHash || activeTxHash || '')}
-                </span>
-              </div>
-              <a
-                href={`${CHAIN_CONFIG[activeChainId]?.explorerUrl}/tx/${finalTxHash || activeTxHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>
+              <div
+                className="animate-fade-in"
                 style={{
-                  display: 'inline-flex',
+                  padding: 'var(--sp-3) var(--sp-4)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  padding: 'var(--sp-1.5) var(--sp-3)',
-                  fontSize: '11px',
-                  borderRadius: 'var(--radius-sm)',
-                  height: 'auto',
+                  justifyContent: 'space-between',
+                  gap: 'var(--sp-2)',
                 }}
               >
-                View Explorer <ExternalLink size={12} />
-              </a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span className="text-xs text-muted" style={{ fontWeight: 500 }}>
+                    {txStep === 5
+                      ? `${action === 'wrap' ? 'Shield' : 'Unshield'} Successful`
+                      : txStep === 2
+                      ? 'Approval Pending...'
+                      : txStep === 4
+                      ? `${action === 'wrap' ? 'Shielding' : 'Unshielding'} Pending...`
+                      : 'Transaction Submitted'}
+                  </span>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--accent)' }}>
+                    {formatAddress(finalTxHash || activeTxHash || '')}
+                  </span>
+                </div>
+                <a
+                  href={`${CHAIN_CONFIG[activeChainId]?.explorerUrl}/tx/${finalTxHash || activeTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 'var(--sp-1.5) var(--sp-3)',
+                    fontSize: '11px',
+                    borderRadius: 'var(--radius-sm)',
+                    height: 'auto',
+                  }}
+                >
+                  View Explorer <ExternalLink size={12} />
+                </a>
+              </div>
+
+              {/* Coprocessor / Gateway Delay Explanation */}
+              {txStep > 0 && txStep < 5 && (
+                <div 
+                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
+                  style={{ 
+                    padding: 'var(--sp-2) var(--sp-3)',
+                    background: 'rgba(255, 210, 8, 0.03)',
+                    border: '1px dashed rgba(255, 210, 8, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    lineHeight: '1.4'
+                  }}
+                >
+                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
+                  <span>
+                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

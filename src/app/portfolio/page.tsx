@@ -174,7 +174,13 @@ export default function PortfolioPage() {
       setResolvedBalances(prev => {
         const nextBalances = { ...prev };
         requestedAddresses.forEach((addr) => {
-          const val = decryptedBalances.results.get(addr);
+          let val: bigint | undefined = undefined;
+          for (const [key, mapVal] of decryptedBalances.results.entries()) {
+            if (key.toLowerCase() === addr.toLowerCase()) {
+              val = mapVal;
+              break;
+            }
+          }
           if (val !== undefined && val !== null) {
             nextBalances[addr.toLowerCase()] = val;
           }
@@ -332,6 +338,17 @@ export default function PortfolioPage() {
             const isDecrypting = requestedAddresses.some(addr => addr.toLowerCase() === wrapperAddressLower) && !isDecrypted;
             const decryptedBalance = resolvedBalances[wrapperAddressLower];
 
+            // Resolve error case-insensitively
+            let decryptError: Error | null = null;
+            if (decryptedBalances?.errors) {
+              for (const [key, val] of decryptedBalances.errors.entries()) {
+                if (key.toLowerCase() === wrapperAddressLower) {
+                  decryptError = val;
+                  break;
+                }
+              }
+            }
+
             return (
               <TokenPositionCard
                 key={wrapper.symbol}
@@ -340,7 +357,7 @@ export default function PortfolioPage() {
                 isDecrypted={isDecrypted}
                 isDecrypting={isDecrypting}
                 decryptedBalance={decryptedBalance}
-                decryptError={decryptedBalances?.errors?.get(wrapper.erc7984Address) || null}
+                decryptError={decryptError}
                 onDecrypt={() => handleDecryptToken(wrapper.erc7984Address, wrapper.symbol)}
               />
             );
