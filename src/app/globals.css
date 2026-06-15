@@ -101,109 +101,76 @@ table { border-collapse: collapse; }
 
   --radial-glow-1: rgba(255, 210, 8, 0.03);
   --radial-glow-2: rgba(59, 130, 246, 0.03);
+  --grid-line: rgba(255, 210, 8, 0.007);
 }
 
 /* ==========================================================================
    THEME DIRECTIONS
    ========================================================================== */
 
-/* ---------- 1. NEO-CYBER THEME (DARK) ---------- */
+/* ---------- 1. OBSIDIAN AMBER THEME (DARK) ---------- */
 html[data-design-theme='cyber'] {
-  --bg-base: #050508;
-  --bg-surface: #0a0a0f;
-  --bg-elevated: #111119;
-  --bg-card: rgba(10, 10, 15, 0.85);
-  --bg-card-hover: rgba(17, 17, 25, 0.95);
-  --bg-input: rgba(8, 8, 12, 0.9);
+  --bg-base: #060508;
+  --bg-surface: #0c0b11;
+  --bg-elevated: #15131c;
+  --bg-card: rgba(12, 11, 17, 0.75);
+  --bg-card-hover: rgba(21, 19, 28, 0.85);
+  --bg-input: rgba(6, 5, 8, 0.95);
   
-  --accent: #FFD208;
-  --accent-hover: #ffe044;
-  --accent-muted: rgba(255, 210, 8, 0.15);
-  --accent-subtle: rgba(255, 210, 8, 0.05);
-  --accent-glow: rgba(255, 210, 8, 0.25);
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-muted: rgba(245, 158, 11, 0.15);
+  --accent-subtle: rgba(245, 158, 11, 0.04);
+  --accent-glow: rgba(245, 158, 11, 0.2);
 
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0ba;
-  --text-muted: #5c5c78;
-  --text-accent: #FFD208;
-  --text-inverse: #050508;
+  --text-primary: #fafafa;
+  --text-secondary: #d1d5db;
+  --text-muted: #78716c;
+  --text-accent: #f59e0b;
+  --text-inverse: #060508;
 
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-accent: rgba(255, 210, 8, 0.35);
-  --border-focus: rgba(255, 210, 8, 0.55);
+  --border: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(245, 158, 11, 0.2);
+  --border-accent: rgba(245, 158, 11, 0.35);
+  --border-focus: #f59e0b;
 
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
 
-  --shadow-glow: 0 0 15px rgba(255, 210, 8, 0.15);
-  --radial-glow-1: rgba(255, 210, 8, 0.03);
-  --radial-glow-2: rgba(59, 130, 246, 0.03);
+  --shadow-glow: 0 0 20px rgba(245, 158, 11, 0.15);
+  --radial-glow-1: rgba(245, 158, 11, 0.04);
+  --radial-glow-2: rgba(239, 68, 68, 0.03);
+  --grid-line: rgba(245, 158, 11, 0.010);
 }
 
-/* ---------- 1. NEO-CYBER THEME (LIGHT) ---------- */
-html[data-theme='light'][data-design-theme='cyber'] {
-  --bg-base: #f8f9fa;
-  --bg-surface: #ffffff;
-  --bg-elevated: #f1f3f5;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --bg-card-hover: rgba(241, 243, 245, 0.95);
-  --bg-input: #ffffff;
-  
-  --accent: #d97706;
-  --accent-hover: #b45309;
-  --accent-muted: rgba(217, 119, 6, 0.12);
-  --accent-subtle: rgba(217, 119, 6, 0.05);
-  --accent-glow: rgba(217, 119, 6, 0.15);
-
-  --text-primary: #121217;
-  --text-secondary: #5c5c78;
-  --text-muted: #8e8eab;
-  --text-accent: #b45309;
-  --text-inverse: #ffffff;
-
-  --border: rgba(18, 18, 23, 0.08);
-  --border-hover: rgba(18, 18, 23, 0.15);
-  --border-accent: rgba(217, 119, 6, 0.35);
-  --border-focus: rgba(217, 119, 6, 0.55);
-
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
-  --shadow-glow: 0 0 15px rgba(217, 119, 6, 0.1);
-  --radial-glow-1: rgba(217, 119, 6, 0.02);
-  --radial-glow-2: rgba(59, 130, 246, 0.02);
-}
-
-
-/* ---------- 2. GLASSMORPHIC NEBULA THEME (DARK) ---------- */
+/* ---------- 2. DEEP NEBULA THEME (DARK) ---------- */
 html[data-design-theme='nebula'] {
-  --bg-base: #06050b;
-  --bg-surface: #0c0a17;
-  --bg-elevated: #16122c;
-  --bg-card: rgba(15, 12, 33, 0.5);
-  --bg-card-hover: rgba(24, 20, 50, 0.6);
-  --bg-input: rgba(10, 8, 24, 0.65);
+  --bg-base: #030206;
+  --bg-surface: #080612;
+  --bg-elevated: #110d24;
+  --bg-card: rgba(8, 6, 18, 0.65);
+  --bg-card-hover: rgba(17, 13, 36, 0.75);
+  --bg-input: rgba(3, 2, 6, 0.9);
   
   --accent: #8b5cf6;
   --accent-hover: #a78bfa;
   --accent-muted: rgba(139, 92, 246, 0.18);
-  --accent-subtle: rgba(139, 92, 246, 0.08);
-  --accent-glow: rgba(139, 92, 246, 0.3);
+  --accent-subtle: rgba(139, 92, 246, 0.05);
+  --accent-glow: rgba(139, 92, 246, 0.25);
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #a7a5c6;
-  --text-muted: #6b678c;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #6b7280;
   --text-accent: #a78bfa;
   --text-inverse: #ffffff;
 
-  --border: rgba(139, 92, 246, 0.18);
-  --border-hover: rgba(139, 92, 246, 0.28);
+  --border: rgba(139, 92, 246, 0.15);
+  --border-hover: rgba(139, 92, 246, 0.3);
   --border-accent: rgba(139, 92, 246, 0.5);
-  --border-focus: rgba(139, 92, 246, 0.7);
+  --border-focus: #a78bfa;
 
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -218,68 +185,34 @@ html[data-design-theme='nebula'] {
   
   --radial-glow-1: rgba(139, 92, 246, 0.06);
   --radial-glow-2: rgba(236, 72, 153, 0.05);
+  --grid-line: rgba(139, 92, 246, 0.012);
 }
 
-/* ---------- 2. GLASSMORPHIC NEBULA THEME (LIGHT) ---------- */
-html[data-theme='light'][data-design-theme='nebula'] {
-  --bg-base: #f5f4fa;
-  --bg-surface: #ffffff;
-  --bg-elevated: #ede9fe;
-  --bg-card: rgba(255, 255, 255, 0.65);
-  --bg-card-hover: rgba(237, 233, 254, 0.75);
-  --bg-input: rgba(255, 255, 255, 0.8);
-  
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-muted: rgba(124, 58, 237, 0.15);
-  --accent-subtle: rgba(124, 58, 237, 0.06);
-  --accent-glow: rgba(124, 58, 237, 0.25);
-
-  --text-primary: #1e1b4b;
-  --text-secondary: #4f46e5;
-  --text-muted: #8b5cf6;
-  --text-accent: #7c3aed;
-  --text-inverse: #ffffff;
-
-  --border: rgba(124, 58, 237, 0.12);
-  --border-hover: rgba(124, 58, 237, 0.22);
-  --border-accent: rgba(124, 58, 237, 0.45);
-  --border-focus: rgba(124, 58, 237, 0.65);
-
-  --shadow-sm: 0 2px 6px rgba(124, 58, 237, 0.04);
-  --shadow-md: 0 8px 20px rgba(124, 58, 237, 0.06);
-  --shadow-lg: 0 16px 32px rgba(124, 58, 237, 0.08);
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.15);
-  --radial-glow-1: rgba(124, 58, 237, 0.03);
-  --radial-glow-2: rgba(236, 72, 153, 0.02);
-}
-
-
-/* ---------- 3. NORDIC CLEAN THEME (DARK) ---------- */
+/* ---------- 3. NORDIC ZINC THEME (DARK) ---------- */
 html[data-design-theme='nordic'] {
   --bg-base: #09090b;
-  --bg-surface: #121215;
-  --bg-elevated: #1e1e24;
-  --bg-card: #121215;
-  --bg-card-hover: #1e1e24;
+  --bg-surface: #0e0e11;
+  --bg-elevated: #18181b;
+  --bg-card: rgba(14, 14, 17, 0.8);
+  --bg-card-hover: rgba(24, 24, 27, 0.9);
   --bg-input: #09090b;
   
-  --accent: #ffffff;
-  --accent-hover: #e4e4e7;
-  --accent-muted: rgba(255, 255, 255, 0.1);
-  --accent-subtle: rgba(255, 255, 255, 0.04);
-  --accent-glow: rgba(255, 255, 255, 0.06);
+  --accent: #f4f4f5;
+  --accent-hover: #ffffff;
+  --accent-muted: rgba(244, 244, 245, 0.1);
+  --accent-subtle: rgba(244, 244, 245, 0.03);
+  --accent-glow: rgba(56, 189, 248, 0.1);
 
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #52525b;
-  --text-accent: #ffffff;
+  --text-accent: #f4f4f5;
   --text-inverse: #09090b;
 
   --border: #27272a;
   --border-hover: #3f3f46;
-  --border-accent: #e4e4e7;
-  --border-focus: #ffffff;
+  --border-accent: rgba(56, 189, 248, 0.35);
+  --border-focus: #38bdf8;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -290,72 +223,38 @@ html[data-design-theme='nordic'] {
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
   --shadow-md: 0 4px 10px rgba(0,0,0,0.5);
   --shadow-lg: 0 10px 24px rgba(0,0,0,0.6);
-  --shadow-glow: none;
+  --shadow-glow: 0 0 15px rgba(56, 189, 248, 0.05);
   
-  --radial-glow-1: rgba(255,255,255,0.005);
-  --radial-glow-2: rgba(255,255,255,0.005);
+  --radial-glow-1: rgba(255,255,255,0.01);
+  --radial-glow-2: rgba(56, 189, 248, 0.01);
+  --grid-line: rgba(255, 255, 255, 0.015);
 }
 
-/* ---------- 3. NORDIC CLEAN THEME (LIGHT) ---------- */
-html[data-theme='light'][data-design-theme='nordic'] {
-  --bg-base: #ffffff;
-  --bg-surface: #f4f4f5;
-  --bg-elevated: #e4e4e7;
-  --bg-card: #f4f4f5;
-  --bg-card-hover: #e4e4e7;
-  --bg-input: #ffffff;
-  
-  --accent: #09090b;
-  --accent-hover: #27272a;
-  --accent-muted: rgba(9, 9, 11, 0.08);
-  --accent-subtle: rgba(9, 9, 11, 0.03);
-  --accent-glow: rgba(9, 9, 11, 0.05);
-
-  --text-primary: #09090b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
-  --text-accent: #09090b;
-  --text-inverse: #ffffff;
-
-  --border: #e4e4e7;
-  --border-hover: #d4d4d8;
-  --border-accent: #27272a;
-  --border-focus: #09090b;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.02);
-  --shadow-md: 0 4px 8px rgba(0,0,0,0.03);
-  --shadow-lg: 0 8px 16px rgba(0,0,0,0.04);
-  --shadow-glow: none;
-  --radial-glow-1: transparent;
-  --radial-glow-2: transparent;
-}
-
-
-/* ---------- 4. EMERALD & GOLD THEME (DARK) ---------- */
+/* ---------- 4. CYBER EMERALD THEME (DARK) ---------- */
 html[data-design-theme='emerald'] {
-  --bg-base: #022019;
-  --bg-surface: #04382c;
-  --bg-elevated: #084d3d;
-  --bg-card: rgba(4, 56, 44, 0.8);
-  --bg-card-hover: rgba(8, 77, 61, 0.9);
-  --bg-input: rgba(2, 32, 25, 0.9);
+  --bg-base: #010705;
+  --bg-surface: #02120b;
+  --bg-elevated: #052417;
+  --bg-card: rgba(2, 18, 11, 0.75);
+  --bg-card-hover: rgba(5, 36, 23, 0.85);
+  --bg-input: rgba(1, 7, 5, 0.95);
   
-  --accent: #fbbf24;
-  --accent-hover: #f59e0b;
-  --accent-muted: rgba(251, 191, 36, 0.15);
-  --accent-subtle: rgba(251, 191, 36, 0.06);
-  --accent-glow: rgba(251, 191, 36, 0.25);
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --accent-muted: rgba(16, 185, 129, 0.18);
+  --accent-subtle: rgba(16, 185, 129, 0.05);
+  --accent-glow: rgba(16, 185, 129, 0.25);
 
   --text-primary: #ecfdf5;
   --text-secondary: #a7f3d0;
-  --text-muted: #059669;
-  --text-accent: #fbbf24;
-  --text-inverse: #022019;
+  --text-muted: #065f46;
+  --text-accent: #10b981;
+  --text-inverse: #010705;
 
-  --border: rgba(52, 211, 153, 0.12);
-  --border-hover: rgba(52, 211, 153, 0.24);
-  --border-accent: rgba(251, 191, 36, 0.4);
-  --border-focus: rgba(251, 191, 36, 0.6);
+  --border: rgba(16, 185, 129, 0.15);
+  --border-hover: rgba(16, 185, 129, 0.3);
+  --border-accent: rgba(16, 185, 129, 0.4);
+  --border-focus: #34d399;
 
   --radius-sm: 5px;
   --radius-md: 10px;
@@ -366,50 +265,14 @@ html[data-design-theme='emerald'] {
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
   --shadow-lg: 0 12px 30px rgba(0,0,0,0.7);
-  --shadow-glow: 0 0 20px rgba(251, 191, 36, 0.15);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
   
-  --radial-glow-1: rgba(52, 211, 153, 0.04);
+  --radial-glow-1: rgba(16, 185, 129, 0.04);
   --radial-glow-2: rgba(251, 191, 36, 0.03);
+  --grid-line: rgba(16, 185, 129, 0.008);
 }
 
-/* ---------- 4. EMERALD & GOLD THEME (LIGHT) ---------- */
-html[data-theme='light'][data-design-theme='emerald'] {
-  --bg-base: #f0fdf4;
-  --bg-surface: #ffffff;
-  --bg-elevated: #dcfce7;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-card-hover: rgba(220, 252, 231, 0.95);
-  --bg-input: #ffffff;
-  
-  --accent: #047857;
-  --accent-hover: #065f46;
-  --accent-muted: rgba(4, 120, 87, 0.12);
-  --accent-subtle: rgba(4, 120, 87, 0.05);
-  --accent-glow: rgba(4, 120, 87, 0.2);
-
-  --text-primary: #064e3b;
-  --text-secondary: #0f766e;
-  --text-muted: #059669;
-  --text-accent: #047857;
-  --text-inverse: #ffffff;
-
-  --border: rgba(4, 120, 87, 0.1);
-  --border-hover: rgba(4, 120, 87, 0.2);
-  --border-accent: rgba(4, 120, 87, 0.35);
-  --border-focus: rgba(4, 120, 87, 0.55);
-
-  --shadow-sm: 0 1px 3px rgba(4, 120, 87, 0.03);
-  --shadow-md: 0 4px 12px rgba(4, 120, 87, 0.05);
-  --shadow-lg: 0 8px 24px rgba(4, 120, 87, 0.06);
-  --shadow-glow: 0 0 15px rgba(4, 120, 87, 0.1);
-  --radial-glow-1: rgba(4, 120, 87, 0.02);
-  --radial-glow-2: rgba(251, 191, 36, 0.01);
-}
-
-
-/* ==========================================================================
-   BASE STYLES
-   ========================================================================== */
+/* ---------- BASE STYLES ---------- */
 body {
   font-family: var(--font-sans);
   font-size: var(--text-base);
@@ -427,7 +290,10 @@ body::before {
   top: 0; left: 0; right: 0; bottom: 0;
   background:
     radial-gradient(ellipse 65% 45% at 50% 0%, var(--radial-glow-1) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 80% 20%, var(--radial-glow-2) 0%, transparent 50%);
+    radial-gradient(ellipse 40% 30% at 80% 20%, var(--radial-glow-2) 0%, transparent 50%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
   pointer-events: none;
   z-index: 0;
   transition: background var(--t-normal);

@@ -20,6 +20,7 @@ import { ERC20_ABI } from '@/lib/wrapper-abi';
 import { sepolia } from 'wagmi/chains';
 import { parseAmount } from '@/lib/utils';
 import BlurIn from '@/components/ui/BlurIn';
+import TransactionSuccessModal from '@/components/ui/TransactionSuccessModal';
 import {
   Droplets,
   Check,
@@ -47,6 +48,8 @@ export default function FaucetPage() {
   const [requestCount, setRequestCount] = useState(0);
   const [isRequestPending, setIsRequestPending] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
@@ -67,6 +70,8 @@ export default function FaucetPage() {
   // Track transaction receipt updates
   useEffect(() => {
     if (activeTxHash && isTxSuccess) {
+      setFinalTxHash(activeTxHash);
+      setIsSuccessModalOpen(true);
       addToast({
         variant: 'success',
         title: 'Tokens Minted Successfully',
@@ -370,6 +375,20 @@ export default function FaucetPage() {
             ))}
           </div>
         </Modal>
+      )}
+
+      {isSuccessModalOpen && finalTxHash && (
+        <TransactionSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => {
+            setIsSuccessModalOpen(false);
+            setFinalTxHash(undefined);
+          }}
+          action="faucet"
+          amount={FAUCET_AMOUNTS[selectedToken] ?? '100'}
+          tokenSymbol={selectedToken}
+          txHash={finalTxHash}
+        />
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useTheme, useActiveNetwork } from '@/app/ClientLayout';
+import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/app/ClientLayout';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Check,
   Copy,
+  Palette,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -27,9 +28,17 @@ const NAV_ITEMS = [
   { href: '/faucet', label: 'Faucet' },
 ];
 
+const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
+  { value: 'nordic', label: 'Nordic Zinc' },
+  { value: 'nebula', label: 'Deep Nebula' },
+  { value: 'cyber', label: 'Obsidian Amber' },
+  { value: 'emerald', label: 'Cyber Emerald' },
+];
+
 export default function Header() {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
+  const { designTheme, setDesignTheme } = useDesignTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
   // Wagmi Hooks
@@ -41,6 +50,7 @@ export default function Header() {
   // Local state for modals & dropdowns
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isDesignDropdownOpen, setIsDesignDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -62,6 +72,8 @@ export default function Header() {
       setIsTestnet(targetIsTestnet);
     }
   };
+
+  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Zinc';
 
   return (
     <header className="header">
@@ -97,16 +109,45 @@ export default function Header() {
 
         {/* Actions */}
         <div className="header-actions">
+          {/* Design Swapper Dropdown */}
+          <div className="theme-selector-dropdown">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+            >
+              <Palette size={14} />
+              <span>{activeThemeLabel}</span>
+              <ChevronDown size={14} />
+            </button>
 
-          {/* Light/Dark Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="btn btn-ghost btn-icon"
-            aria-label="Toggle theme"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+            {isDesignDropdownOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                  onClick={() => setIsDesignDropdownOpen(false)}
+                />
+                <div className="theme-dropdown-menu animate-slide-up">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      className={cn(
+                        'theme-dropdown-item',
+                        designTheme === opt.value && 'active'
+                      )}
+                      onClick={() => {
+                        setDesignTheme(opt.value);
+                        setIsDesignDropdownOpen(false);
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {designTheme === opt.value && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Network Switcher */}
           <div className="network-switcher">

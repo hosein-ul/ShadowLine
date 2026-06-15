@@ -100,28 +100,24 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   // Load theme and design direction from localStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
+    // Lock base theme to dark
+    setTheme('dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
 
     const savedDesign = localStorage.getItem('design-theme') as DesignTheme | null;
     if (savedDesign) {
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
+      setDesignThemeState('nordic');
       document.documentElement.setAttribute('data-design-theme', 'nordic');
     }
   }, []);
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
+    // Keep locked to dark
+    setTheme('dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
   };
 
   const setDesignTheme = (nextDesign: DesignTheme) => {

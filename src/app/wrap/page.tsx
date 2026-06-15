@@ -23,6 +23,7 @@ import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
 import confetti from 'canvas-confetti';
 import { CHAIN_CONFIG } from '@/config/chains';
+import TransactionSuccessModal from '@/components/ui/TransactionSuccessModal';
 import {
   Shield,
   ArrowUpDown,
@@ -44,6 +45,7 @@ function WrapPageContent() {
   const [txStep, setTxStep] = useState<number>(0); // 0: idle, 1: approve pending, 2: approve mining, 3: action pending, 4: action mining, 5: completed
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
@@ -154,19 +156,13 @@ function WrapPageContent() {
         
         setFinalTxHash(res.txHash);
 
-        // Success confetti!
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
-
         addToast({
           variant: 'success',
           title: 'Shielding Confirmed',
           message: `Successfully wrapped ${amount} ${selectedToken} into confidential c${selectedToken}.`,
         });
         setTxStep(5); // Completed
+        setIsSuccessModalOpen(true);
         refetchPublicBalance();
         refetchWrapperBalance();
         refetchAllowance();
@@ -187,19 +183,13 @@ function WrapPageContent() {
         
         setFinalTxHash(res.txHash);
 
-        // Success confetti!
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
-
         addToast({
           variant: 'success',
           title: 'Unshielding Confirmed',
           message: `Successfully unshielded ${amount} c${selectedToken} into public ${selectedToken}.`,
         });
         setTxStep(5); // Completed
+        setIsSuccessModalOpen(true);
         refetchPublicBalance();
         refetchWrapperBalance();
       }
@@ -617,6 +607,23 @@ function WrapPageContent() {
             ))}
           </div>
         </Modal>
+      )}
+
+      {isSuccessModalOpen && finalTxHash && (
+        <TransactionSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => {
+            setIsSuccessModalOpen(false);
+            setTxStep(0);
+            setAmount('');
+            setFinalTxHash(undefined);
+            setActiveTxHash(undefined);
+          }}
+          action={action}
+          amount={amount}
+          tokenSymbol={selectedToken}
+          txHash={finalTxHash}
+        />
       )}
     </div>
   );
