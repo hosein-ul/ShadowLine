@@ -6,8 +6,8 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
-import { KNOWN_WRAPPERS, REGISTRY_ADDRESSES } from '@/config/contracts';
-import { getTokenInfo, getTokenInitials } from '@/config/tokens';
+import TokenIcon from '@/components/ui/TokenIcon';
+import { KNOWN_WRAPPERS } from '@/config/contracts';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -23,13 +23,13 @@ import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
 import {
-  ShieldIcon,
-  ArrowDownUpIcon,
-  LockIcon,
-  UnlockIcon,
-  CheckIcon,
-  InfoIcon,
-} from '@/components/ui/Icons';
+  Shield,
+  ArrowUpDown,
+  Lock,
+  Check,
+  Info,
+  Wallet,
+} from 'lucide-react';
 
 function WrapPageContent() {
   const searchParams = useSearchParams();
@@ -39,10 +39,10 @@ function WrapPageContent() {
   const [action, setAction] = useState<'wrap' | 'unwrap'>(initialAction);
   const [selectedToken, setSelectedToken] = useState(initialToken);
   const [amount, setAmount] = useState('');
-  const [txStep, setTxStep] = useState<number>(0); // 0: idle, 1: approve tx pending, 2: approve tx mining, 3: action tx pending, 4: action tx mining, 5: completed
+  const [txStep, setTxStep] = useState<number>(0); // 0: idle, 1: approve pending, 2: approve mining, 3: action pending, 4: action mining, 5: completed
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
 
-  const { isTestnet, activeChainId } = useActiveNetwork();
+  const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
 
   // Wallet Connection Hooks
@@ -52,7 +52,6 @@ function WrapPageContent() {
 
   const wrappers = KNOWN_WRAPPERS[activeChainId] ?? [];
   const selectedWrapper = wrappers.find(w => w.symbol === selectedToken);
-  const tokenInfo = selectedToken ? getTokenInfo(selectedToken) : null;
 
   // Real contract balance reads
   const { data: rawPublicBalance, refetch: refetchPublicBalance } = useReadContract({
@@ -106,22 +105,20 @@ function WrapPageContent() {
   useEffect(() => {
     if (activeTxHash && isTxSuccess) {
       if (txStep === 2) {
-        // Approve success
         addToast({
           variant: 'success',
-          title: 'Approval Successful',
+          title: 'Approval Confirmed',
           message: 'The token allowance has been successfully approved.',
         });
         refetchAllowance();
         setTxStep(0);
         setActiveTxHash(undefined);
       } else if (txStep === 4) {
-        // Wrap/Unwrap success
         addToast({
           variant: 'success',
-          title: action === 'wrap' ? 'Shielding Successful' : 'Unshielding Successful',
+          title: action === 'wrap' ? 'Shielding Confirmed' : 'Unshielding Confirmed',
           message: action === 'wrap'
-            ? `Successfully shielded ${amount} ${selectedToken} into confidential c${selectedToken}.`
+            ? `Successfully wrapped ${amount} ${selectedToken} into confidential c${selectedToken}.`
             : `Successfully unshielded ${amount} c${selectedToken} into public ${selectedToken}.`,
         });
         refetchPublicBalance();
@@ -178,8 +175,8 @@ function WrapPageContent() {
       setTxStep(0);
       addToast({
         variant: 'error',
-        title: 'Approval Cancelled',
-        message: err.message || 'The approval transaction was rejected.',
+        title: 'Approval Rejected',
+        message: err.message || 'The approval transaction was rejected in wallet.',
       });
     }
   };
@@ -197,7 +194,6 @@ function WrapPageContent() {
           args: [address, parsedInputAmount],
         });
       } else {
-        // Mock wrapper uses standard withdrawTo for unwrap transactions
         txHash = await writeContractAsync({
           abi: WRAPPER_ABI,
           address: selectedWrapper.erc7984Address,
@@ -209,7 +205,7 @@ function WrapPageContent() {
       setTxStep(4); // Mining action
       addToast({
         variant: 'info',
-        title: action === 'wrap' ? 'Shielding In Progress' : 'Unshielding In Progress',
+        title: action === 'wrap' ? 'Shielding Submitted' : 'Unshielding Submitted',
         message: 'Transaction sent. Waiting for confirmation...',
       });
     } catch (err: any) {
@@ -217,8 +213,8 @@ function WrapPageContent() {
       setTxStep(0);
       addToast({
         variant: 'error',
-        title: 'Transaction Cancelled',
-        message: err.message || 'The transaction was rejected.',
+        title: 'Transaction Rejected',
+        message: err.message || 'The transaction was rejected in wallet.',
       });
     }
   };
@@ -237,7 +233,7 @@ function WrapPageContent() {
       <div className="page-header" style={{ textAlign: 'center' }}>
         <h1>
           <BlurIn text={action === 'wrap' ? 'Shield' : 'Unshield'} />{' '}
-          <TypingAnimation words={['Tokens', 'Confidential', 'Privacy']} />
+          <TypingAnimation words={['Balances', 'Assets', 'Transactions']} />
         </h1>
         <p style={{ margin: 'var(--sp-2) auto 0' }}>
           {action === 'wrap'
@@ -264,7 +260,7 @@ function WrapPageContent() {
                   ''
                 ) : (
                   <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-                    <LockIcon size={12} />
+                    <Lock size={12} />
                   </span>
                 )}
               </span>
@@ -282,33 +278,37 @@ function WrapPageContent() {
                 }}
                 style={{ flex: 1, background: 'transparent', border: 'none', padding: 0 }}
               />
-              {/* Token Selector */}
-              <select
-                className="btn btn-secondary"
-                disabled={txStep > 0}
-                style={{
-                  appearance: 'none',
-                  padding: 'var(--sp-2) var(--sp-4)',
-                  background: 'var(--bg-elevated)',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  color: 'var(--text-primary)',
-                  minWidth: '110px',
-                }}
-                value={selectedToken}
-                onChange={e => {
-                  setSelectedToken(e.target.value);
-                  setTxStep(0);
-                  setAmount('');
-                }}
-              >
-                <option value="">Select token</option>
-                {wrappers.map(w => (
-                  <option key={w.symbol} value={w.symbol}>
-                    {w.symbol}
-                  </option>
-                ))}
-              </select>
+              
+              {/* Token Display / Selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                {selectedToken && <TokenIcon symbol={selectedToken} size={20} />}
+                <select
+                  className="btn btn-secondary"
+                  disabled={txStep > 0}
+                  style={{
+                    appearance: 'none',
+                    padding: 'var(--sp-2) var(--sp-4)',
+                    background: 'var(--bg-elevated)',
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer',
+                    color: 'var(--text-primary)',
+                    minWidth: '110px',
+                  }}
+                  value={selectedToken}
+                  onChange={e => {
+                    setSelectedToken(e.target.value);
+                    setTxStep(0);
+                    setAmount('');
+                  }}
+                >
+                  <option value="">Select Token</option>
+                  {wrappers.map(w => (
+                    <option key={w.symbol} value={w.symbol}>
+                      {w.symbol}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             {selectedWrapper && (
               <div className="text-xs text-muted" style={{ marginTop: 'var(--sp-2)' }}>
@@ -322,7 +322,7 @@ function WrapPageContent() {
           {/* Swap Direction Arrow */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button className="swap-arrow" onClick={handleToggleAction} disabled={txStep > 0}>
-              <ArrowDownUpIcon size={16} />
+              <ArrowUpDown size={16} />
             </button>
           </div>
 
@@ -352,14 +352,17 @@ function WrapPageContent() {
                 {amount || '0.0'}
               </div>
               {selectedToken && (
-                <Badge variant="accent" size="md" style={{ gap: '4px' }}>
-                  {action === 'wrap' && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                      <LockIcon size={12} />
-                    </span>
-                  )}
-                  {action === 'wrap' ? `c${selectedToken}` : selectedToken}
-                </Badge>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                  <TokenIcon symbol={selectedToken} size={20} />
+                  <Badge variant="accent" size="md" style={{ gap: '4px' }}>
+                    {action === 'wrap' && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        <Lock size={12} />
+                      </span>
+                    )}
+                    {action === 'wrap' ? `c${selectedToken}` : selectedToken}
+                  </Badge>
+                </div>
               )}
             </div>
             {selectedWrapper && (
@@ -378,19 +381,19 @@ function WrapPageContent() {
                 {action === 'wrap' && (
                   <>
                     <div className={`step ${txStep >= 2 ? 'completed' : txStep === 1 ? 'active' : ''}`}>
-                      <div className="step-dot">{txStep >= 2 ? <CheckIcon size={12} /> : '1'}</div>
+                      <div className="step-dot">{txStep >= 2 ? <Check size={12} /> : '1'}</div>
                       <span className="text-xs">Approve</span>
                     </div>
                     <div className="step-line" />
                   </>
                 )}
                 <div className={`step ${txStep >= 4 ? 'completed' : txStep === 3 ? 'active' : ''}`}>
-                  <div className="step-dot">{txStep >= 4 ? <CheckIcon size={12} /> : action === 'wrap' ? '2' : '1'}</div>
+                  <div className="step-dot">{txStep >= 4 ? <Check size={12} /> : action === 'wrap' ? '2' : '1'}</div>
                   <span className="text-xs">{action === 'wrap' ? 'Shield' : 'Unshield'}</span>
                 </div>
                 <div className="step-line" />
                 <div className={`step ${txStep === 5 ? 'completed' : ''}`}>
-                  <div className="step-dot">{txStep === 5 ? <CheckIcon size={12} /> : action === 'wrap' ? '3' : '2'}</div>
+                  <div className="step-dot">{txStep === 5 ? <Check size={12} /> : action === 'wrap' ? '3' : '2'}</div>
                   <span className="text-xs">Done</span>
                 </div>
               </div>
@@ -417,7 +420,7 @@ function WrapPageContent() {
                   setAmount('');
                 }}
               >
-                <CheckIcon size={16} /> Complete — Make Another
+                <Check size={16} /> Complete — Wrap Another
               </Button>
             ) : needsApproval ? (
               <Button
@@ -446,9 +449,9 @@ function WrapPageContent() {
                 onClick={handleAction}
               >
                 {!selectedToken
-                  ? 'Select a token'
+                  ? 'Select Token'
                   : !amount || amount === '0'
-                  ? 'Enter an amount'
+                  ? 'Enter Amount'
                   : action === 'wrap'
                   ? parsedInputAmount > hasPublicBalance
                     ? 'Insufficient Balance'
@@ -465,12 +468,12 @@ function WrapPageContent() {
         <Card variant="glass" padding="sm" style={{ marginTop: 'var(--sp-4)' }}>
           <div className="flex items-start gap-3 text-xs text-muted">
             <div style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', marginTop: '2px' }}>
-              <InfoIcon size={16} />
+              <Info size={16} />
             </div>
             <span style={{ lineHeight: '1.4' }}>
               {action === 'wrap'
-                ? 'Shielding wraps your ERC-20 tokens into encrypted ERC-7984 tokens. Your balance becomes private on-chain.'
-                : 'Unshielding burns your encrypted tokens and releases the equivalent ERC-20 tokens back to your wallet.'}
+                ? 'Shielding wraps your public ERC-20 tokens into encrypted ERC-7984 confidential tokens. Your balance and amounts are encrypted on-chain.'
+                : 'Unshielding burns your encrypted wrappers and releases the equivalent underlying ERC-20 tokens back to your public address.'}
             </span>
           </div>
         </Card>

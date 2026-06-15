@@ -6,8 +6,8 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/ui/Modal';
+import TokenIcon from '@/components/ui/TokenIcon';
 import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
-import { getTokenInfo, getTokenInitials } from '@/config/tokens';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useAccount, useReadContract, useSignTypedData, useConnect } from 'wagmi';
@@ -16,13 +16,14 @@ import { useToast } from '@/components/ui/Toast';
 import { type SupportedChainId } from '@/config/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import {
-  LockIcon,
-  UnlockIcon,
-  CheckIcon,
-  InfoIcon,
-  ShieldIcon,
-  WalletIcon,
-} from '@/components/ui/Icons';
+  Lock,
+  Unlock,
+  Check,
+  Info,
+  Shield,
+  Wallet,
+  Coins,
+} from 'lucide-react';
 
 interface TokenPositionProps {
   wrapper: WrapperPair;
@@ -45,7 +46,6 @@ function TokenPositionCard({
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   const { addToast } = useToast();
-  const tokenInfo = getTokenInfo(wrapper.symbol);
 
   // Read wrapper contract balance (ERC-20 interface)
   const { data: rawBalance, refetch, isLoading: isBalanceLoading } = useReadContract({
@@ -145,18 +145,7 @@ function TokenPositionCard({
     <Card variant="glass" padding="md" hover>
       {/* Token Header */}
       <div className="flex items-center gap-3" style={{ marginBottom: 'var(--sp-5)' }}>
-        <div
-          className="table-token-icon"
-          style={{
-            borderColor: tokenInfo.color,
-            color: tokenInfo.color,
-            width: '44px',
-            height: '44px',
-            fontSize: 'var(--text-sm)',
-          }}
-        >
-          {getTokenInitials(wrapper.symbol)}
-        </div>
+        <TokenIcon symbol={wrapper.symbol} size={32} />
         <div>
           <div style={{ fontWeight: 600, fontSize: 'var(--text-lg)' }}>{wrapper.name}</div>
           <div className="text-xs text-muted">
@@ -211,12 +200,12 @@ function TokenPositionCard({
                 ••••••
               </span>
               <Badge variant="default" style={{ gap: '4px' }}>
-                <LockIcon size={10} /> Encrypted
+                <Lock size={10} /> Encrypted
               </Badge>
             </div>
             {balance > 0n && (
               <span className="text-xs text-muted">
-                Has Shielded Tokens
+                Decrypt to View
               </span>
             )}
           </div>
@@ -234,7 +223,7 @@ function TokenPositionCard({
             onClick={handleDecrypt}
             style={{ gap: '6px' }}
           >
-            <UnlockIcon size={14} /> Decrypt Balance
+            <Unlock size={14} /> Decrypt Balance
           </Button>
         ) : (
           <>
@@ -247,7 +236,7 @@ function TokenPositionCard({
               Unshield
             </Button>
             <Button variant="ghost" fullWidth size="sm" onClick={handleDecrypt} style={{ gap: '4px' }}>
-              <UnlockIcon size={12} /> Decrypt Again
+              <Unlock size={12} /> Decrypt Again
             </Button>
           </>
         )}
@@ -257,7 +246,7 @@ function TokenPositionCard({
 }
 
 export default function PortfolioPage() {
-  const { isTestnet, activeChainId } = useActiveNetwork();
+  const { activeChainId } = useActiveNetwork();
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
 
@@ -273,7 +262,6 @@ export default function PortfolioPage() {
 
   const handleDecryptAll = () => {
     setTriggerDecryptAll(true);
-    // Reset trigger after tick
     setTimeout(() => setTriggerDecryptAll(false), 500);
   };
 
@@ -297,7 +285,7 @@ export default function PortfolioPage() {
           </div>
           {isConnected && wrappers.length > 0 && totalDecrypted < wrappers.length && (
             <Button variant="secondary" onClick={handleDecryptAll} style={{ gap: '6px' }}>
-              <UnlockIcon size={14} /> Decrypt All
+              <Unlock size={14} /> Decrypt All
             </Button>
           )}
         </div>
@@ -324,7 +312,7 @@ export default function PortfolioPage() {
       {!isConnected ? (
         <div className="empty-state card" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
           <div className="empty-state-icon" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-            <WalletIcon size={48} />
+            <Wallet size={48} />
           </div>
           <h3 style={{ marginBottom: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>Connect Wallet</h3>
           <p className="text-muted" style={{ maxWidth: '400px', margin: '0 auto var(--sp-6)' }}>
@@ -355,7 +343,7 @@ export default function PortfolioPage() {
       {isConnected && wrappers.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-            <ShieldIcon size={48} />
+            <Shield size={48} />
           </div>
           <h3 style={{ marginBottom: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>No Registered Tokens</h3>
           <p className="text-muted">
@@ -368,7 +356,7 @@ export default function PortfolioPage() {
       <Card variant="glass" padding="sm" style={{ marginTop: 'var(--sp-8)' }}>
         <div className="flex items-start gap-3 text-xs text-muted">
           <div style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', marginTop: '2px' }}>
-            <InfoIcon size={16} />
+            <Info size={16} />
           </div>
           <span style={{ lineHeight: '1.4' }}>
             Decrypting balances requires an EIP-712 signature (permit) to verify you are the account owner. 

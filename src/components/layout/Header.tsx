@@ -7,18 +7,19 @@ import { cn } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useTheme, useActiveNetwork } from '@/app/ClientLayout';
+import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/app/ClientLayout';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
 import {
-  SunIcon,
-  MoonIcon,
-  WalletIcon,
-  ChevronDownIcon,
-  CheckIcon,
-  CopyIcon,
-} from '@/components/ui/Icons';
+  Sun,
+  Moon,
+  Wallet,
+  ChevronDown,
+  Check,
+  Copy,
+  Palette,
+} from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Registry' },
@@ -27,9 +28,17 @@ const NAV_ITEMS = [
   { href: '/faucet', label: 'Faucet' },
 ];
 
+const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
+  { value: 'cyber', label: 'Neo-Cyber' },
+  { value: 'nebula', label: 'Glassmorphic' },
+  { value: 'nordic', label: 'Nordic Clean' },
+  { value: 'emerald', label: 'Emerald & Gold' },
+];
+
 export default function Header() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { designTheme, setDesignTheme } = useDesignTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
   // Wagmi Hooks
@@ -41,6 +50,7 @@ export default function Header() {
   // Local state for modals & dropdowns
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isDesignDropdownOpen, setIsDesignDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -56,22 +66,22 @@ export default function Header() {
 
   const handleNetworkToggle = (targetIsTestnet: boolean) => {
     if (isConnected) {
-      // If connected, trigger wallet switchChain
       const targetChainId = targetIsTestnet ? sepolia.id : mainnet.id;
       switchChain({ chainId: targetChainId });
     } else {
-      // If not connected, simply toggle the local UI network preference
       setIsTestnet(targetIsTestnet);
     }
   };
+
+  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Theme';
 
   return (
     <header className="header">
       <div className="header-inner">
         {/* Logo */}
-        <Link href="/" className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+        <Link href="/" className="header-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="28" height="28" rx="8" fill="var(--accent)" />
+            <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
             <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
           </svg>
           <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Zama</span>
@@ -99,14 +109,54 @@ export default function Header() {
 
         {/* Actions */}
         <div className="header-actions">
-          {/* Theme Toggle */}
+          {/* Design Swapper Dropdown */}
+          <div className="theme-selector-dropdown">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+            >
+              <Palette size={14} />
+              <span>{activeThemeLabel}</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {isDesignDropdownOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                  onClick={() => setIsDesignDropdownOpen(false)}
+                />
+                <div className="theme-dropdown-menu animate-slide-up">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      className={cn(
+                        'theme-dropdown-item',
+                        designTheme === opt.value && 'active'
+                      )}
+                      onClick={() => {
+                        setDesignTheme(opt.value);
+                        setIsDesignDropdownOpen(false);
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {designTheme === opt.value && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Light/Dark Toggle */}
           <button
             onClick={toggleTheme}
             className="btn btn-ghost btn-icon"
             aria-label="Toggle theme"
             style={{ color: 'var(--text-secondary)' }}
           >
-            {theme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
           {/* Network Switcher */}
@@ -133,9 +183,9 @@ export default function Header() {
                 onClick={() => setIsDetailsOpen((prev) => !prev)}
                 style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
               >
-                <WalletIcon size={16} />
+                <Wallet size={16} />
                 <span>{formatAddress(address)}</span>
-                <ChevronDownIcon size={14} />
+                <ChevronDown size={14} />
               </button>
 
               {/* Connected Details Dropdown */}
@@ -176,11 +226,11 @@ export default function Header() {
                         <Button variant="secondary" size="sm" fullWidth onClick={handleCopy}>
                           {copied ? (
                             <>
-                              <CheckIcon size={14} /> Copied
+                              <Check size={14} /> Copied
                             </>
                           ) : (
                             <>
-                              <CopyIcon size={14} /> Copy
+                              <Copy size={14} /> Copy
                             </>
                           )}
                         </Button>
@@ -207,7 +257,7 @@ export default function Header() {
               onClick={() => setIsConnectModalOpen(true)}
               style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
             >
-              <WalletIcon size={16} />
+              <Wallet size={16} />
               Connect Wallet
             </button>
           )}

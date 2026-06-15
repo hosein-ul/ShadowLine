@@ -10,10 +10,16 @@ import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
+export type DesignTheme = 'cyber' | 'nebula' | 'nordic' | 'emerald';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+}
+
+interface DesignThemeContextType {
+  designTheme: DesignTheme;
+  setDesignTheme: (theme: DesignTheme) => void;
 }
 
 interface NetworkContextType {
@@ -23,11 +29,18 @@ interface NetworkContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const DesignThemeContext = createContext<DesignThemeContextType | undefined>(undefined);
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
+}
+
+export function useDesignTheme() {
+  const context = useContext(DesignThemeContext);
+  if (!context) throw new Error('useDesignTheme must be used within DesignThemeProvider');
   return context;
 }
 
@@ -69,7 +82,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <NetworkContext.Provider value={{ isTestnet, setIsTestnet: handleSetIsTestnet, activeChainId }}>
       <ToastProvider>
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background-color var(--t-normal), color var(--t-normal)' }}>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)' }}>
           <Header />
           <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 1, paddingBottom: 'var(--sp-12)' }}>
             {children}
@@ -83,8 +96,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
+  const [designTheme, setDesignThemeState] = useState<DesignTheme>('cyber');
 
-  // Load theme from localStorage on mount
+  // Load theme and design direction from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     if (savedTheme) {
@@ -92,6 +106,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
       document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    const savedDesign = localStorage.getItem('design-theme') as DesignTheme | null;
+    if (savedDesign) {
+      setDesignThemeState(savedDesign);
+      document.documentElement.setAttribute('data-design-theme', savedDesign);
+    } else {
+      document.documentElement.setAttribute('data-design-theme', 'cyber');
     }
   }, []);
 
@@ -102,10 +124,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     document.documentElement.setAttribute('data-theme', nextTheme);
   };
 
+  const setDesignTheme = (nextDesign: DesignTheme) => {
+    setDesignThemeState(nextDesign);
+    localStorage.setItem('design-theme', nextDesign);
+    document.documentElement.setAttribute('data-design-theme', nextDesign);
+  };
+
   return (
     <Providers>
       <ThemeContext.Provider value={{ theme, toggleTheme }}>
-        <LayoutContent>{children}</LayoutContent>
+        <DesignThemeContext.Provider value={{ designTheme, setDesignTheme }}>
+          <LayoutContent>{children}</LayoutContent>
+        </DesignThemeContext.Provider>
       </ThemeContext.Provider>
     </Providers>
   );

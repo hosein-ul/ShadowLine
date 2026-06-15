@@ -6,18 +6,18 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import CopyButton from '@/components/ui/CopyButton';
+import TokenIcon from '@/components/ui/TokenIcon';
 import { KNOWN_WRAPPERS } from '@/config/contracts';
-import { getTokenInfo, getTokenInitials } from '@/config/tokens';
 import { formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import BlurIn from '@/components/ui/BlurIn';
 import {
-  SearchIcon,
-  LockIcon,
-  ShieldIcon,
-  ExternalLinkIcon,
-  InfoIcon,
-} from '@/components/ui/Icons';
+  Search,
+  Lock,
+  Shield,
+  ExternalLink,
+  Info,
+} from 'lucide-react';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,11 +46,11 @@ export default function HomePage() {
       {/* Page Header */}
       <div className="page-header" style={{ position: 'relative', zIndex: 2 }}>
         <h1>
-          <BlurIn text="Wrapper Registry" duration={600} />
+          <BlurIn text="Confidential Wrapper Registry" duration={600} />
         </h1>
         <p style={{ marginTop: 'var(--sp-2)' }}>
           <BlurIn
-            text="Discover all ERC-20 ↔ ERC-7984 confidential wrapper pairs. Wrap tokens to encrypt your balances with Fully Homomorphic Encryption."
+            text="Discover all verified ERC-20 ↔ ERC-7984 confidential wrapper pairs on Ethereum and Sepolia. Wrap standard assets using FHE to privatize balances."
             duration={800}
             delay={200}
           />
@@ -66,7 +66,7 @@ export default function HomePage() {
           </div>
         </Card>
         <Card variant="glass" padding="md" hover>
-          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Network</div>
+          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Active Network</div>
           <div className="flex items-center gap-2">
             <Badge variant={isTestnet ? 'warning' : 'success'} dot>
               {isTestnet ? 'Sepolia Testnet' : 'Ethereum Mainnet'}
@@ -74,13 +74,12 @@ export default function HomePage() {
           </div>
         </Card>
         <Card variant="glass" padding="md" hover>
-          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Standard</div>
+          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>FHE Security</div>
           <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }} className="flex items-center gap-2">
-            <span>ERC-7984</span>
+            <span>ERC-7984 Standard</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent)' }}>
-              <LockIcon size={16} />
+              <Lock size={16} />
             </span>
-            <span className="text-muted text-sm" style={{ fontWeight: 400 }}>Confidential</span>
           </div>
         </Card>
       </div>
@@ -89,12 +88,12 @@ export default function HomePage() {
       <div className="flex justify-between items-center gap-4" style={{ marginBottom: 'var(--sp-6)', position: 'relative', zIndex: 2 }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
-            <SearchIcon size={16} />
+            <Search size={16} />
           </span>
           <input
             type="text"
             className="input"
-            placeholder="Search by name, symbol, or address..."
+            placeholder="Search by token, symbol, or address..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{ paddingLeft: '40px' }}
@@ -121,9 +120,9 @@ export default function HomePage() {
         <table className="table">
           <thead>
             <tr>
-              <th>Token</th>
-              <th>ERC-20 Address</th>
-              <th>ERC-7984 Wrapper</th>
+              <th>Token Name</th>
+              <th>ERC-20 Public Address</th>
+              <th>ERC-7984 Wrapped Address</th>
               <th>Decimals</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
@@ -134,28 +133,22 @@ export default function HomePage() {
                 <td colSpan={5}>
                   <div className="empty-state" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
                     <div className="empty-state-icon" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-                      <SearchIcon size={40} />
+                      <Search size={32} />
                     </div>
                     <div style={{ color: 'var(--text-secondary)', marginTop: 'var(--sp-4)' }}>
-                      {searchQuery ? 'No tokens match your search' : 'No wrapper pairs found on this network'}
+                      {searchQuery ? 'No tokens match your search query' : 'No registered wrappers found on this network'}
                     </div>
                   </div>
                 </td>
               </tr>
             ) : (
               filteredWrappers.map(wrapper => {
-                const tokenInfo = getTokenInfo(wrapper.symbol);
                 return (
                   <tr key={wrapper.erc20Address}>
                     {/* Token Info */}
                     <td>
                       <div className="table-token">
-                        <div
-                          className="table-token-icon"
-                          style={{ borderColor: tokenInfo.color, color: tokenInfo.color }}
-                        >
-                          {getTokenInitials(wrapper.symbol)}
-                        </div>
+                        <TokenIcon symbol={wrapper.symbol} size={28} />
                         <div>
                           <div style={{ fontWeight: 600 }}>{wrapper.name}</div>
                           <div className="text-muted text-xs">{wrapper.symbol}</div>
@@ -176,7 +169,7 @@ export default function HomePage() {
                           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
                         >
                           {formatAddress(wrapper.erc20Address, 6)}
-                          <ExternalLinkIcon size={12} />
+                          <ExternalLink size={12} />
                         </a>
                         <CopyButton text={wrapper.erc20Address} />
                       </div>
@@ -195,7 +188,7 @@ export default function HomePage() {
                           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                         >
                           {formatAddress(wrapper.erc7984Address, 6)}
-                          <ExternalLinkIcon size={12} style={{ color: 'var(--accent)' }} />
+                          <ExternalLink size={12} style={{ color: 'var(--accent)' }} />
                         </a>
                         <CopyButton text={wrapper.erc7984Address} />
                       </div>
@@ -211,7 +204,7 @@ export default function HomePage() {
                       <div className="flex justify-end gap-2">
                         <Link href={`/wrap?token=${wrapper.symbol}&action=wrap`}>
                           <Button variant="primary" size="sm" style={{ gap: '4px' }}>
-                            <ShieldIcon size={12} /> Shield
+                            <Shield size={12} /> Shield
                           </Button>
                         </Link>
                         <Link href={`/wrap?token=${wrapper.symbol}&action=unwrap`}>
@@ -233,19 +226,19 @@ export default function HomePage() {
       <Card variant="glass" padding="md" style={{ marginTop: 'var(--sp-8)', position: 'relative', zIndex: 2 }}>
         <div className="flex items-start gap-4">
           <div style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', marginTop: '2px' }}>
-            <InfoIcon size={24} />
+            <Info size={22} />
           </div>
           <div>
             <div style={{ fontWeight: 600, marginBottom: 'var(--sp-2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>What is a Confidential Wrapper?</span>
+              <span>Underlying Mechanism</span>
               <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-                <LockIcon size={16} />
+                <Lock size={14} />
               </span>
             </div>
             <div className="text-muted text-sm" style={{ lineHeight: 'var(--lh-relaxed)' }}>
-              Confidential wrappers convert standard ERC-20 tokens into ERC-7984 confidential tokens using
-              Fully Homomorphic Encryption (FHE). Your balance and transfer amounts are encrypted on-chain —
-              only you (and authorized parties) can see them. The wrapper maintains a 1:1 peg with the underlying token.
+              Confidential wrappers convert standard public tokens into ERC-7984 tokens utilizing Fully Homomorphic Encryption (FHE) on the fhEVM. 
+              On-chain values (like account balances and transaction transfer quantities) are fully encrypted into cryptographic handles, 
+              protecting transaction details from public ledger scraping.
             </div>
           </div>
         </div>

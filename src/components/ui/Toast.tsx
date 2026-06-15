@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckIcon, InfoIcon } from '@/components/ui/Icons';
+import { Check, Info, AlertCircle, X } from 'lucide-react';
 
 type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -61,14 +61,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const size = 18;
     switch (variant) {
       case 'success':
-        return <CheckIcon size={size} style={{ color: 'var(--success)' }} />;
+        return <Check size={size} style={{ color: 'var(--success)' }} />;
       case 'error':
-        return <span style={{ color: 'var(--error)', fontWeight: 800, fontSize: '16px', lineHeight: '1' }}>✕</span>;
+        return <AlertCircle size={size} style={{ color: 'var(--error)' }} />;
       case 'warning':
-        return <InfoIcon size={size} style={{ color: 'var(--warning)' }} />;
+        return <AlertCircle size={size} style={{ color: 'var(--warning)' }} />;
       case 'info':
       default:
-        return <InfoIcon size={size} style={{ color: 'var(--info)' }} />;
+        return <Info size={size} style={{ color: 'var(--info)' }} />;
     }
   };
 
@@ -107,9 +107,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => removeToast(toast.id)}
               className="btn btn-icon btn-ghost"
-              style={{ padding: 0, width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', opacity: 0.5, flexShrink: 0 }}
+              style={{ padding: 0, width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5, flexShrink: 0 }}
             >
-              ✕
+              <X size={14} />
             </button>
             <div
               className="toast-progress"

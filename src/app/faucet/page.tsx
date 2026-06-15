@@ -5,8 +5,8 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
+import TokenIcon from '@/components/ui/TokenIcon';
 import { KNOWN_WRAPPERS } from '@/config/contracts';
-import { getTokenInitials, getTokenInfo } from '@/config/tokens';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -20,14 +20,13 @@ import { ERC20_ABI } from '@/lib/wrapper-abi';
 import { sepolia } from 'wagmi/chains';
 import { parseAmount } from '@/lib/utils';
 import BlurIn from '@/components/ui/BlurIn';
-import TypingAnimation from '@/components/ui/TypingAnimation';
 import {
-  FaucetIcon,
-  CheckIcon,
-  InfoIcon,
-  WalletIcon,
-  ExternalLinkIcon,
-} from '@/components/ui/Icons';
+  Droplets,
+  Check,
+  Info,
+  Wallet,
+  ExternalLink,
+} from 'lucide-react';
 
 const FAUCET_AMOUNTS: Record<string, string> = {
   USDC: '1000',
@@ -49,7 +48,6 @@ export default function FaucetPage() {
   const [isRequestPending, setIsRequestPending] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
-  const { activeChainId } = useActiveNetwork();
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
   const { switchChain } = useSwitchChain();
@@ -140,7 +138,7 @@ export default function FaucetPage() {
     <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
       <div className="page-header" style={{ textAlign: 'center' }}>
         <h1>
-          <BlurIn text="Sepolia Faucet" duration={600} />
+          <BlurIn text="Sepolia Test Faucet" duration={600} />
         </h1>
         <p style={{ margin: 'var(--sp-2) auto 0' }}>
           <BlurIn
@@ -170,7 +168,7 @@ export default function FaucetPage() {
         <Card variant="accent" padding="lg" className="animate-slide-up">
           <h3 style={{ textAlign: 'center', marginBottom: 'var(--sp-6)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-              <FaucetIcon size={24} />
+              <Droplets size={24} />
             </span>
             <span>Request Test Tokens</span>
           </h3>
@@ -182,7 +180,6 @@ export default function FaucetPage() {
             </label>
             <div className="grid grid-2 gap-3">
               {wrappers.map(w => {
-                const info = getTokenInfo(w.symbol);
                 const isSelected = selectedToken === w.symbol;
                 return (
                   <button
@@ -201,17 +198,7 @@ export default function FaucetPage() {
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className="table-token-icon"
-                        style={{
-                          borderColor: info.color,
-                          color: info.color,
-                          width: '36px',
-                          height: '36px',
-                        }}
-                      >
-                        {getTokenInitials(w.symbol)}
-                      </div>
+                      <TokenIcon symbol={w.symbol} size={28} />
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{w.symbol}</div>
                         <div className="text-xs text-muted">
@@ -220,7 +207,7 @@ export default function FaucetPage() {
                       </div>
                       {isSelected && (
                         <Badge variant="accent" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center' }}>
-                          <CheckIcon size={10} />
+                          <Check size={10} />
                         </Badge>
                       )}
                     </div>
@@ -254,7 +241,7 @@ export default function FaucetPage() {
           {/* Request Button */}
           {!isConnected ? (
             <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)}>
-              <WalletIcon size={16} style={{ marginRight: '6px' }} />
+              <Wallet size={16} style={{ marginRight: '6px' }} />
               Connect Wallet
             </Button>
           ) : isWrongNetwork ? (
@@ -305,7 +292,7 @@ export default function FaucetPage() {
                 className="text-xs flex items-center justify-center gap-1"
                 style={{ color: 'var(--accent)', wordBreak: 'break-all' }}
               >
-                View on Etherscan <ExternalLinkIcon size={10} />
+                View on Etherscan <ExternalLink size={10} />
               </a>
             </div>
           )}
@@ -322,7 +309,7 @@ export default function FaucetPage() {
         <Card variant="glass" padding="md" style={{ marginTop: 'var(--sp-6)' }}>
           <h4 style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-              <InfoIcon size={18} />
+              <Info size={18} />
             </span>
             <span>Getting Started Flow</span>
           </h4>
