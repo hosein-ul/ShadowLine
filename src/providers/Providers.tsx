@@ -11,9 +11,9 @@ import { WagmiSigner } from '@zama-fhe/react-sdk/wagmi';
 // WalletConnect project ID — register at https://cloud.walletconnect.com
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo';
 
-// Stable high-performance public RPC endpoints
-const SEPOLIA_RPC = 'https://rpc.ankr.com/eth_sepolia';
-const MAINNET_RPC = 'https://cloudflare-eth.com';
+// Stable high-performance Alchemy RPC endpoints
+const SEPOLIA_RPC = 'https://eth-sepolia.g.alchemy.com/v2/_uNuASCm2sr7jMiSe_Cth';
+const MAINNET_RPC = 'https://eth-mainnet.g.alchemy.com/v2/_uNuASCm2sr7jMiSe_Cth';
 
 export const wagmiConfig = createConfig({
   chains: [sepolia, mainnet],
