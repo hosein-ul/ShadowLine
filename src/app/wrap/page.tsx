@@ -116,15 +116,18 @@ function WrapPageContent() {
     tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
   });
 
-  const decimals = selectedWrapper?.decimals ?? 18;
+  const underlyingDecimals = selectedWrapper?.decimals ?? 18;
+  const wrapperDecimals = selectedWrapper?.wrapperDecimals ?? 6;
+  const inputDecimals = action === 'wrap' ? underlyingDecimals : wrapperDecimals;
+
   const parsedInputAmount = useMemo(() => {
     if (!amount) return 0n;
     try {
-      return parseAmount(amount, decimals);
+      return parseAmount(amount, inputDecimals);
     } catch {
       return 0n;
     }
-  }, [amount, decimals]);
+  }, [amount, inputDecimals]);
 
   const hasPublicBalance = rawPublicBalance !== undefined ? (rawPublicBalance as bigint) : 0n;
   const hasWrapperBalance = decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? decryptedWrapperBalance : 0n;
@@ -247,10 +250,10 @@ function WrapPageContent() {
                 Balance:{' '}
                 {isConnected ? (
                   action === 'wrap' ? (
-                    formatAmount(hasPublicBalance, decimals)
+                    formatAmount(hasPublicBalance, underlyingDecimals)
                   ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
                     <span className="flex items-center gap-1">
-                      {formatAmount(hasWrapperBalance, decimals)}
+                      {formatAmount(hasWrapperBalance, wrapperDecimals)}
                       <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
                         <Lock size={12} />
                       </span>
@@ -347,10 +350,10 @@ function WrapPageContent() {
                       disabled={txStep > 0 || balanceBig === 0n}
                       onClick={() => {
                         if (percent === 100) {
-                          setAmount(formatAmount(balanceBig, decimals, decimals));
+                          setAmount(formatAmount(balanceBig, inputDecimals, inputDecimals));
                         } else {
                           const calculatedBig = (balanceBig * BigInt(percent)) / 100n;
-                          setAmount(formatAmount(calculatedBig, decimals, decimals));
+                          setAmount(formatAmount(calculatedBig, inputDecimals, inputDecimals));
                         }
                       }}
                       style={{
@@ -398,10 +401,10 @@ function WrapPageContent() {
                 Balance:{' '}
                 {isConnected ? (
                   action === 'unwrap' ? (
-                    formatAmount(hasPublicBalance, decimals)
+                    formatAmount(hasPublicBalance, underlyingDecimals)
                   ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
                     <span className="flex items-center gap-1">
-                      {formatAmount(hasWrapperBalance, decimals)}
+                      {formatAmount(hasWrapperBalance, wrapperDecimals)}
                       <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
                         <Lock size={12} />
                       </span>

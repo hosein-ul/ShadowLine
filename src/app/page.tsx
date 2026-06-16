@@ -196,7 +196,17 @@ export default function HomePage() {
 
                     {/* Decimals */}
                     <td>
-                      <Badge variant="default">{wrapper.decimals}</Badge>
+                      <Badge variant="default" style={{ gap: '4px' }}>
+                        {wrapper.decimals !== wrapper.wrapperDecimals ? (
+                          <>
+                            <span>{wrapper.decimals}</span>
+                            <span style={{ opacity: 0.5 }}>/</span>
+                            <span style={{ color: 'var(--accent)' }}>{wrapper.wrapperDecimals}</span>
+                          </>
+                        ) : (
+                          wrapper.decimals
+                        )}
+                      </Badge>
                     </td>
 
                     {/* Actions */}

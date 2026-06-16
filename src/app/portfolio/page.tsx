@@ -82,7 +82,7 @@ function TokenPositionCard({
         ) : isDecrypted ? (
           <div className="flex items-end gap-2">
             <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 700 }}>
-              {formatAmount(decryptedBalance ?? 0n, wrapper.decimals)}
+              {formatAmount(decryptedBalance ?? 0n, wrapper.wrapperDecimals)}
             </span>
             <span className="text-muted" style={{ marginBottom: '3px' }}>
               c{wrapper.symbol}

@@ -14,6 +14,7 @@ export interface WrapperPair {
   symbol: string;
   name: string;
   decimals: number;
+  wrapperDecimals: number;
 }
 
 // Registry contract addresses per network
@@ -31,6 +32,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'USDC',
       name: 'USD Coin',
       decimals: 6,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xa7dA08FafDC9097Cc0E7D4f113A61e31d7e8e9b0',
@@ -38,6 +40,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'USDT',
       name: 'Tether USD',
       decimals: 6,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xff54739b16576FA5402F211D0b938469Ab9A5f3F',
@@ -45,6 +48,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'WETH',
       name: 'Wrapped Ether',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0x75355a85c6FB9df5f0C80FF54e8747EEe9a0BF57',
@@ -52,6 +56,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'ZAMA',
       name: 'Zama Token',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xFf021fB13cA64e5354c62c954b949a88cfDEb25E',
@@ -59,6 +64,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'BRON',
       name: 'BRON Token',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0x93c931278A2aad1916783F952f94276eA5111442',
@@ -66,6 +72,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'tGBP',
       name: 'Tether GBP',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0x24377AE4AA0C45ecEe71225007f17c5D423dd940',
@@ -73,6 +80,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'XAUt',
       name: 'Tether Gold',
       decimals: 6,
+      wrapperDecimals: 6,
     },
   ],
   [mainnet.id]: [
@@ -82,6 +90,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'USDC',
       name: 'USD Coin',
       decimals: 6,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
@@ -89,6 +98,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'USDT',
       name: 'Tether USD',
       decimals: 6,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -96,6 +106,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'WETH',
       name: 'Wrapped Ether',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xA12CC123ba206d4031D1c7f6223D1C2Ec249f4f3',
@@ -103,6 +114,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'ZAMA',
       name: 'Zama Token',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0xBA2C598E11eD093079cC324FCa5BbbA99F616E83',
@@ -110,6 +122,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'BRON',
       name: 'BRON Token',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0x27f6c8289550fce67f6b50bed1f519966afe5287',
@@ -117,6 +130,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'tGBP',
       name: 'Tether GBP',
       decimals: 18,
+      wrapperDecimals: 6,
     },
     {
       erc20Address: '0x68749665FF8D2d112Fa859AA293F07A622782F38',
@@ -124,6 +138,7 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       symbol: 'XAUt',
       name: 'Tether Gold',
       decimals: 6,
+      wrapperDecimals: 6,
     },
   ],
 };

@@ -57,8 +57,8 @@ table { border-collapse: collapse; }
   --bg-base: #0b0b0f;
   --bg-surface: #121217;
   --bg-elevated: #1a1a22;
-  --bg-card: rgba(18, 18, 23, 0.9);
-  --bg-card-hover: rgba(26, 26, 34, 0.95);
+  --bg-card: rgba(30, 30, 38, 0.95);
+  --bg-card-hover: rgba(40, 40, 50, 0.98);
   --bg-input: #0b0b0f;
   
   --accent: #38bdf8;
@@ -82,9 +82,9 @@ table { border-collapse: collapse; }
   --info: #3b82f6;
   --info-muted: rgba(59, 130, 246, 0.1);
 
-  --border: rgba(255, 255, 255, 0.18);
-  --border-hover: rgba(255, 255, 255, 0.32);
-  --border-accent: rgba(56, 189, 248, 0.45);
+  --border: rgba(255, 255, 255, 0.3);
+  --border-hover: rgba(255, 255, 255, 0.45);
+  --border-accent: rgba(56, 189, 248, 0.6);
   --border-focus: #38bdf8;
 
   --radius-sm: 6px;
@@ -118,8 +118,8 @@ html[data-design-theme='midnight'] {
   --bg-base: #000000;
   --bg-surface: #09090b;
   --bg-elevated: #141418;
-  --bg-card: rgba(9, 9, 11, 0.95);
-  --bg-card-hover: rgba(20, 20, 24, 0.98);
+  --bg-card: rgba(20, 20, 24, 0.95);
+  --bg-card-hover: rgba(30, 30, 36, 0.98);
   --bg-input: #000000;
   
   --accent: #f4f4f5;
@@ -134,9 +134,9 @@ html[data-design-theme='midnight'] {
   --text-accent: #ffffff;
   --text-inverse: #000000;
 
-  --border: rgba(255, 255, 255, 0.28);
-  --border-hover: rgba(255, 255, 255, 0.5);
-  --border-accent: rgba(255, 255, 255, 0.7);
+  --border: rgba(255, 255, 255, 0.35);
+  --border-hover: rgba(255, 255, 255, 0.55);
+  --border-accent: rgba(255, 255, 255, 0.8);
   --border-focus: #ffffff;
 
   --radius-sm: 4px;
@@ -160,8 +160,8 @@ html[data-design-theme='frost'] {
   --bg-base: #0b0f19;
   --bg-surface: #141b2d;
   --bg-elevated: #1e293b;
-  --bg-card: rgba(20, 27, 45, 0.9);
-  --bg-card-hover: rgba(30, 41, 59, 0.95);
+  --bg-card: rgba(30, 41, 59, 0.95);
+  --bg-card-hover: rgba(45, 60, 85, 0.98);
   --bg-input: #0b0f19;
   
   --accent: #38bdf8;
@@ -176,9 +176,9 @@ html[data-design-theme='frost'] {
   --text-accent: #38bdf8;
   --text-inverse: #0b0f19;
 
-  --border: rgba(125, 211, 252, 0.25);
-  --border-hover: rgba(125, 211, 252, 0.5);
-  --border-accent: rgba(56, 189, 248, 0.5);
+  --border: rgba(125, 211, 252, 0.35);
+  --border-hover: rgba(125, 211, 252, 0.6);
+  --border-accent: rgba(56, 189, 248, 0.7);
   --border-focus: #38bdf8;
 
   --radius-sm: 6px;
@@ -202,8 +202,8 @@ html[data-design-theme='aurora'] {
   --bg-base: #050a0a;
   --bg-surface: #0f1817;
   --bg-elevated: #172624;
-  --bg-card: rgba(15, 24, 23, 0.9);
-  --bg-card-hover: rgba(23, 38, 36, 0.95);
+  --bg-card: rgba(25, 38, 36, 0.95);
+  --bg-card-hover: rgba(35, 50, 48, 0.98);
   --bg-input: #050a0a;
   
   --accent: #2dd4bf;
@@ -218,9 +218,9 @@ html[data-design-theme='aurora'] {
   --text-accent: #2dd4bf;
   --text-inverse: #050a0a;
 
-  --border: rgba(45, 212, 191, 0.25);
-  --border-hover: rgba(45, 212, 191, 0.45);
-  --border-accent: rgba(45, 212, 191, 0.5);
+  --border: rgba(167, 243, 208, 0.35);
+  --border-hover: rgba(167, 243, 208, 0.55);
+  --border-accent: rgba(52, 211, 153, 0.65);
   --border-focus: #2dd4bf;
 
   --radius-sm: 6px;
