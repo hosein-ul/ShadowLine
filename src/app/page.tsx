@@ -10,7 +10,7 @@ import TokenIcon from '@/components/ui/TokenIcon';
 import { KNOWN_WRAPPERS } from '@/config/contracts';
 import { formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
-import BlurIn from '@/components/ui/BlurIn';
+import { TextAnimate } from '@/registry/magicui/text-animate';
 import {
   Search,
   Lock,
@@ -46,14 +46,18 @@ export default function HomePage() {
       {/* Page Header */}
       <div className="page-header" style={{ position: 'relative', zIndex: 2 }}>
         <h1>
-          <BlurIn text="Confidential Wrapper Registry" duration={600} />
+          <TextAnimate animation="slideUp" by="word">
+            Confidential Wrapper Registry
+          </TextAnimate>
         </h1>
         <p style={{ marginTop: 'var(--sp-2)' }}>
-          <BlurIn
-            text="Discover all verified ERC-20 ↔ ERC-7984 confidential wrapper pairs on Ethereum and Sepolia. Wrap standard assets using FHE to privatize balances."
-            duration={800}
-            delay={200}
-          />
+          <TextAnimate
+            animation="slideUp"
+            by="word"
+            delay={0.1}
+          >
+            Discover all verified ERC-20 ↔ ERC-7984 confidential wrapper pairs on Ethereum and Sepolia. Wrap standard assets using FHE to privatize balances.
+          </TextAnimate>
         </p>
       </div>
 

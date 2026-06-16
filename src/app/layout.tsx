@@ -39,11 +39,11 @@ export default function RootLayout({
                 try {
                   const theme = localStorage.getItem('theme') || 'dark';
                   document.documentElement.setAttribute('data-theme', theme);
-                  const design = localStorage.getItem('design-theme') || 'charcoal';
+                  const design = localStorage.getItem('design-theme') || 'zama';
                   document.documentElement.setAttribute('data-design-theme', design);
                 } catch (e) {
                   document.documentElement.setAttribute('data-theme', 'dark');
-                  document.documentElement.setAttribute('data-design-theme', 'charcoal');
+                  document.documentElement.setAttribute('data-design-theme', 'zama');
                 }
               })()
             `,

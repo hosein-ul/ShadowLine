@@ -15,9 +15,11 @@ import {
   useAccount,
   useReadContract,
   useConnect,
+  useWriteContract,
+  usePublicClient,
 } from 'wagmi';
-import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
-import { ERC20_ABI } from '@/lib/wrapper-abi';
+import { useConfidentialBalance, useUnshield } from '@zama-fhe/react-sdk';
+import { ERC20_ABI, WRAPPER_ABI } from '@/lib/wrapper-abi';
 import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
@@ -107,10 +109,8 @@ function WrapPageContent() {
     }
   }, [address, selectedWrapper, refetchPublicBalance, refetchWrapperBalance, refetchAllowance]);
 
-  // Zama official Shield/Unshield hooks
-  const { mutateAsync: shield } = useShield({
-    tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
-  });
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
 
   const { mutateAsync: unshield } = useUnshield({
     tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
@@ -139,30 +139,74 @@ function WrapPageContent() {
     if (!selectedWrapper || !address) return;
     try {
       if (action === 'wrap') {
-        setTxStep(1); // Approval confirmation pending
-        const res = await shield({
-          amount: parsedInputAmount,
-          onApprovalSubmitted: (txHash) => {
+        let currentAllowance = hasAllowance;
+
+        // 1. Approve if needed
+        if (currentAllowance < parsedInputAmount) {
+          setTxStep(1); // Approval confirmation pending
+
+          // Check if current allowance > 0 and token has zero-allowance protection
+          const needsRevoke = currentAllowance > 0n && (selectedToken === 'USDT' || selectedToken === 'XAUt' || selectedToken === 'BRON');
+
+          if (needsRevoke) {
+            addToast({
+              variant: 'info',
+              title: 'Revoke Required',
+              message: 'USDT-like tokens require setting allowance to 0 first. Revoking...',
+            });
+            const revokeTx = await writeContractAsync({
+              abi: ERC20_ABI,
+              address: selectedWrapper.erc20Address,
+              functionName: 'approve',
+              args: [selectedWrapper.erc7984Address, 0n],
+            });
             setTxStep(2); // Approve mining
-            setActiveTxHash(txHash);
+            setActiveTxHash(revokeTx);
+            if (publicClient) {
+              await publicClient.waitForTransactionReceipt({ hash: revokeTx });
+            }
             addToast({
-              variant: 'info',
-              title: 'Approval Submitted',
-              message: 'Approve transaction sent. Waiting for confirmation...',
+              variant: 'success',
+              title: 'Revoked Successfully',
+              message: 'Allowance reset to 0. Preparing to approve exact amount...',
             });
-          },
-          onShieldSubmitted: (txHash) => {
-            setTxStep(4); // Shield mining
-            setActiveTxHash(txHash);
-            addToast({
-              variant: 'info',
-              title: 'Shielding Submitted',
-              message: 'Shield transaction sent. Waiting for confirmation...',
-            });
-          },
+            setTxStep(1); // Back to confirmation pending for the real approve
+          }
+
+          // Approve exact amount
+          const approveTx = await writeContractAsync({
+            abi: ERC20_ABI,
+            address: selectedWrapper.erc20Address,
+            functionName: 'approve',
+            args: [selectedWrapper.erc7984Address, parsedInputAmount],
+          });
+          setTxStep(2); // Approve mining
+          setActiveTxHash(approveTx);
+          if (publicClient) {
+            await publicClient.waitForTransactionReceipt({ hash: approveTx });
+          }
+          addToast({
+            variant: 'success',
+            title: 'Approval Confirmed',
+            message: `Allowance of ${amount} ${selectedToken} approved successfully.`,
+          });
+        }
+
+        // 2. Shield (wrap)
+        setTxStep(3); // Shield pending
+        const wrapTx = await writeContractAsync({
+          abi: WRAPPER_ABI,
+          address: selectedWrapper.erc7984Address,
+          functionName: 'wrap',
+          args: [address, parsedInputAmount],
         });
-        
-        setFinalTxHash(res.txHash);
+        setTxStep(4); // Shield mining
+        setActiveTxHash(wrapTx);
+        if (publicClient) {
+          await publicClient.waitForTransactionReceipt({ hash: wrapTx });
+        }
+
+        setFinalTxHash(wrapTx);
 
         addToast({
           variant: 'success',
@@ -496,20 +540,44 @@ function WrapPageContent() {
             </div>
           )}
 
-          {/* Transaction Link */}
+          {/* Transaction Link / Warning */}
           {(activeTxHash || finalTxHash) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>
+              {/* Coprocessor / Gateway Delay Explanation */}
+              {txStep > 0 && txStep < 5 && (
+                <div 
+                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
+                  style={{ 
+                    padding: 'var(--sp-2) var(--sp-3)',
+                    background: 'rgba(255, 210, 8, 0.03)',
+                    border: '1px dashed rgba(255, 210, 8, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    lineHeight: '1.4'
+                  }}
+                >
+                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
+                  <span>
+                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
+                  </span>
+                </div>
+              )}
+
+              {/* Transaction Link */}
               <div
                 className="animate-fade-in"
                 style={{
                   padding: 'var(--sp-3) var(--sp-4)',
                   background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-md)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 'var(--sp-2)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: txStep > 0 && txStep < 5 ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  boxShadow: txStep > 0 && txStep < 5 ? '0 0 12px var(--accent-glow)' : 'none',
+                  animation: txStep > 0 && txStep < 5 ? 'pulse 2s infinite ease-in-out' : 'none',
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -543,26 +611,23 @@ function WrapPageContent() {
                 >
                   View Explorer <ExternalLink size={12} />
                 </a>
-              </div>
 
-              {/* Coprocessor / Gateway Delay Explanation */}
-              {txStep > 0 && txStep < 5 && (
-                <div 
-                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
-                  style={{ 
-                    padding: 'var(--sp-2) var(--sp-3)',
-                    background: 'rgba(255, 210, 8, 0.03)',
-                    border: '1px dashed rgba(255, 210, 8, 0.15)',
-                    borderRadius: 'var(--radius-md)',
-                    lineHeight: '1.4'
-                  }}
-                >
-                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
-                  <span>
-                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
-                  </span>
-                </div>
-              )}
+                {/* Sliding scanning line for pending transactions */}
+                {txStep > 0 && txStep < 5 && (
+                  <div 
+                    style={{ 
+                      position: 'absolute', 
+                      bottom: 0, 
+                      left: 0, 
+                      right: 0, 
+                      height: '2px', 
+                      animation: 'shimmer 1.5s infinite linear',
+                      backgroundSize: '200% 100%',
+                      backgroundImage: 'linear-gradient(to right, transparent, var(--accent), transparent)',
+                    }}
+                  />
+                )}
+              </div>
             </div>
           )}
 

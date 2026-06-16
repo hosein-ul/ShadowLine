@@ -29,10 +29,8 @@ const NAV_ITEMS = [
 ];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
-  { value: 'charcoal', label: 'Nordic Charcoal' },
+  { value: 'zama', label: 'Zama Brand' },
   { value: 'midnight', label: 'Nordic Midnight' },
-  { value: 'frost', label: 'Nordic Frost' },
-  { value: 'aurora', label: 'Nordic Aurora' },
 ];
 
 export default function Header() {
@@ -73,7 +71,7 @@ export default function Header() {
     }
   };
 
-  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Charcoal';
+  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Zama Brand';
 
   return (
     <header className="header">

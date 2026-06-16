@@ -10,7 +10,7 @@ import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
-export type DesignTheme = 'charcoal' | 'midnight' | 'frost' | 'aurora';
+export type DesignTheme = 'zama' | 'midnight';
 
 interface ThemeContextType {
   theme: Theme;
@@ -96,7 +96,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
-  const [designTheme, setDesignThemeState] = useState<DesignTheme>('charcoal');
+  const [designTheme, setDesignThemeState] = useState<DesignTheme>('zama');
 
   // Load theme and design direction from localStorage on mount
   useEffect(() => {
@@ -106,13 +106,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     document.documentElement.setAttribute('data-theme', initialTheme);
 
     const savedDesign = localStorage.getItem('design-theme') as DesignTheme | null;
-    const validDesigns: DesignTheme[] = ['charcoal', 'midnight', 'frost', 'aurora'];
+    const validDesigns: DesignTheme[] = ['zama', 'midnight'];
     if (savedDesign && validDesigns.includes(savedDesign)) {
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
-      setDesignThemeState('charcoal');
-      document.documentElement.setAttribute('data-design-theme', 'charcoal');
+      setDesignThemeState('zama');
+      document.documentElement.setAttribute('data-design-theme', 'zama');
     }
   }, []);
 
