@@ -12,7 +12,42 @@ import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
 export type DesignTheme = 'zama' | 'midnight';
-export type BackgroundTheme = 'none' | 'matrix' | 'particles' | 'aurora';
+export type BackgroundTheme =
+  | 'none'
+  | 'aurora'
+  | 'sunset'
+  | 'forest'
+  | 'glacier'
+  | 'matrix-neon'
+  | 'lavender'
+  | 'cyber-abyss'
+  | 'rose-gold'
+  | 'solar-flare'
+  | 'cherry-blossom'
+  | 'deep-space'
+  | 'zama-laser'
+  | 'matrix'
+  | 'particles'
+  | 'stars'
+  | 'grid'
+  | 'digital-fever'
+  | 'dna-helix'
+  | 'crypto-snow'
+  | 'binary-wind'
+  | 'constellation'
+  | 'cyber-pulse'
+  | 'cyber-vault'
+  | 'crypto-mesh'
+  | 'fhe-matrix'
+  | 'fhe-secure-shield'
+  | 'quantum-encryption'
+  | 'confidential-vault'
+  | 'zero-knowledge-proof'
+  | 'digital-sanctuary'
+  | 'cyberpunk-zama'
+  | 'fhe-key-generation'
+  | 'decrypted-reality'
+  | 'secure-blockchain';
 
 interface ThemeContextType {
   theme: Theme;
@@ -132,7 +167,43 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
 
     const savedBg = localStorage.getItem('background-theme') as BackgroundTheme | null;
-    const validBgs: BackgroundTheme[] = ['none', 'matrix', 'particles', 'aurora'];
+    const validBgs: BackgroundTheme[] = [
+      'none',
+      'aurora',
+      'sunset',
+      'forest',
+      'glacier',
+      'matrix-neon',
+      'lavender',
+      'cyber-abyss',
+      'rose-gold',
+      'solar-flare',
+      'cherry-blossom',
+      'deep-space',
+      'zama-laser',
+      'matrix',
+      'particles',
+      'stars',
+      'grid',
+      'digital-fever',
+      'dna-helix',
+      'crypto-snow',
+      'binary-wind',
+      'constellation',
+      'cyber-pulse',
+      'cyber-vault',
+      'crypto-mesh',
+      'fhe-matrix',
+      'fhe-secure-shield',
+      'quantum-encryption',
+      'confidential-vault',
+      'zero-knowledge-proof',
+      'digital-sanctuary',
+      'cyberpunk-zama',
+      'fhe-key-generation',
+      'decrypted-reality',
+      'secure-blockchain'
+    ];
     if (savedBg && validBgs.includes(savedBg)) {
       setBackgroundThemeState(savedBg);
     } else {

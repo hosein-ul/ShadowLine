@@ -33,11 +33,60 @@ const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
   { value: 'midnight', label: 'Nordic Midnight' },
 ];
 
-const BACKGROUND_OPTIONS: { value: BackgroundTheme; label: string }[] = [
-  { value: 'none', label: 'Solid Dark (Default)' },
-  { value: 'matrix', label: 'Matrix Cryptic Code' },
-  { value: 'particles', label: 'Blockchain Node Mesh' },
-  { value: 'aurora', label: 'Cosmic Nebula Aura' },
+const BACKGROUND_GROUPS: {
+  groupLabel: string;
+  options: { value: BackgroundTheme; label: string }[];
+}[] = [
+  {
+    groupLabel: 'Ambient Auras',
+    options: [
+      { value: 'none', label: 'Flat Color (Clean)' },
+      { value: 'aurora', label: 'Cosmic Nebula' },
+      { value: 'sunset', label: 'Cyberpunk Sunset' },
+      { value: 'forest', label: 'Emerald Forest' },
+      { value: 'glacier', label: 'Arctic Glacier' },
+      { value: 'matrix-neon', label: 'Matrix Neon Glow' },
+      { value: 'lavender', label: 'Lavender Dream' },
+      { value: 'cyber-abyss', label: 'Cyber Abyss Deep' },
+      { value: 'rose-gold', label: 'Rose Gold Luxury' },
+      { value: 'solar-flare', label: 'Solar Flare' },
+      { value: 'cherry-blossom', label: 'Cherry Blossom' },
+      { value: 'deep-space', label: 'Deep Space' },
+      { value: 'zama-laser', label: 'Zama Laser Pulse' },
+    ]
+  },
+  {
+    groupLabel: 'Interactive Canvas Effects',
+    options: [
+      { value: 'matrix', label: 'Matrix Rain (Slow)' },
+      { value: 'particles', label: 'Blockchain Node Mesh' },
+      { value: 'stars', label: 'Starfield Warp' },
+      { value: 'grid', label: '3D Retro Grid' },
+      { value: 'digital-fever', label: 'Digital Wave Flow' },
+      { value: 'dna-helix', label: 'FHE Helix Cryptography' },
+      { value: 'crypto-snow', label: 'Falling Crypto Keys' },
+      { value: 'binary-wind', label: 'Horizontal Binary Wind' },
+      { value: 'constellation', label: 'Mouse Constellations' },
+      { value: 'cyber-pulse', label: 'Concentric Cyber Pulse' },
+    ]
+  },
+  {
+    groupLabel: 'Textured Art & Images (4K)',
+    options: [
+      { value: 'cyber-vault', label: 'Cyber Vault Art' },
+      { value: 'crypto-mesh', label: 'Crypto Mesh Art' },
+      { value: 'fhe-matrix', label: 'FHE Matrix Art' },
+      { value: 'fhe-secure-shield', label: 'FHE Secure Shield' },
+      { value: 'quantum-encryption', label: 'Quantum Encryption' },
+      { value: 'confidential-vault', label: 'Confidential Vault' },
+      { value: 'zero-knowledge-proof', label: 'Zero Knowledge Proof' },
+      { value: 'digital-sanctuary', label: 'Digital Sanctuary' },
+      { value: 'cyberpunk-zama', label: 'Cyberpunk Zama City' },
+      { value: 'fhe-key-generation', label: 'FHE Key Generation' },
+      { value: 'decrypted-reality', label: 'Decrypted Reality' },
+      { value: 'secure-blockchain', label: 'Secure Blockchain' },
+    ]
+  }
 ];
 
 export default function Header() {
@@ -155,6 +204,8 @@ export default function Header() {
                   className="theme-dropdown-menu animate-slide-up"
                   style={{ 
                     width: '210px', 
+                    maxHeight: '380px',
+                    overflowY: 'auto',
                     padding: 'var(--sp-2)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -183,29 +234,33 @@ export default function Header() {
                     </button>
                   ))}
 
-                  {/* Divider */}
-                  <div style={{ height: '1px', background: 'var(--border)', margin: '6px 0' }} />
+                  {BACKGROUND_GROUPS.map((group) => (
+                    <React.Fragment key={group.groupLabel}>
+                      {/* Divider */}
+                      <div style={{ height: '1px', background: 'var(--border)', margin: '6px 0' }} />
 
-                  {/* Header: Dynamic Background */}
-                  <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Background Effect
-                  </div>
+                      {/* Group Header */}
+                      <div style={{ padding: '4px 8px', fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {group.groupLabel}
+                      </div>
 
-                  {BACKGROUND_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={cn(
-                        'theme-dropdown-item',
-                        backgroundTheme === opt.value && 'active'
-                      )}
-                      onClick={() => {
-                        setBackgroundTheme(opt.value);
-                        setIsDesignDropdownOpen(false);
-                      }}
-                    >
-                      <span>{opt.label}</span>
-                      {backgroundTheme === opt.value && <Check size={14} />}
-                    </button>
+                      {group.options.map((opt) => (
+                        <button
+                          key={opt.value}
+                          className={cn(
+                            'theme-dropdown-item',
+                            backgroundTheme === opt.value && 'active'
+                          )}
+                          onClick={() => {
+                            setBackgroundTheme(opt.value);
+                            setIsDesignDropdownOpen(false);
+                          }}
+                        >
+                          <span>{opt.label}</span>
+                          {backgroundTheme === opt.value && <Check size={14} />}
+                        </button>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </div>
               </>
