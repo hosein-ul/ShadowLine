@@ -134,85 +134,83 @@ export default function Header() {
           </button>
 
           {/* Design & Background Swapper Dropdown */}
-          {theme === 'dark' && (
-            <div className="theme-selector-dropdown">
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
-              >
-                <Palette size={14} />
-                <span>Design</span>
-                <ChevronDown size={14} />
-              </button>
+          <div className="theme-selector-dropdown">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+            >
+              <Palette size={14} />
+              <span>Design</span>
+              <ChevronDown size={14} />
+            </button>
 
-              {isDesignDropdownOpen && (
-                <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-                    onClick={() => setIsDesignDropdownOpen(false)}
-                  />
-                  <div 
-                    className="theme-dropdown-menu animate-slide-up"
-                    style={{ 
-                      width: '210px', 
-                      padding: 'var(--sp-2)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px'
-                    }}
-                  >
-                    {/* Header: Theme style */}
-                    <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Theme Style
-                    </div>
-
-                    {THEME_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        className={cn(
-                          'theme-dropdown-item',
-                          designTheme === opt.value && 'active'
-                        )}
-                        onClick={() => {
-                          setDesignTheme(opt.value);
-                          setIsDesignDropdownOpen(false);
-                        }}
-                      >
-                        <span>{opt.label}</span>
-                        {designTheme === opt.value && <Check size={14} />}
-                      </button>
-                    ))}
-
-                    {/* Divider */}
-                    <div style={{ height: '1px', background: 'var(--border)', margin: '6px 0' }} />
-
-                    {/* Header: Dynamic Background */}
-                    <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Background Effect
-                    </div>
-
-                    {BACKGROUND_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        className={cn(
-                          'theme-dropdown-item',
-                          backgroundTheme === opt.value && 'active'
-                        )}
-                        onClick={() => {
-                          setBackgroundTheme(opt.value);
-                          setIsDesignDropdownOpen(false);
-                        }}
-                      >
-                        <span>{opt.label}</span>
-                        {backgroundTheme === opt.value && <Check size={14} />}
-                      </button>
-                    ))}
+            {isDesignDropdownOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                  onClick={() => setIsDesignDropdownOpen(false)}
+                />
+                <div 
+                  className="theme-dropdown-menu animate-slide-up"
+                  style={{ 
+                    width: '210px', 
+                    padding: 'var(--sp-2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  {/* Header: Theme style */}
+                  <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Theme Style
                   </div>
-                </>
-              )}
-            </div>
-          )}
+
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      className={cn(
+                        'theme-dropdown-item',
+                        designTheme === opt.value && 'active'
+                      )}
+                      onClick={() => {
+                        setDesignTheme(opt.value);
+                        setIsDesignDropdownOpen(false);
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {designTheme === opt.value && <Check size={14} />}
+                    </button>
+                  ))}
+
+                  {/* Divider */}
+                  <div style={{ height: '1px', background: 'var(--border)', margin: '6px 0' }} />
+
+                  {/* Header: Dynamic Background */}
+                  <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Background Effect
+                  </div>
+
+                  {BACKGROUND_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      className={cn(
+                        'theme-dropdown-item',
+                        backgroundTheme === opt.value && 'active'
+                      )}
+                      onClick={() => {
+                        setBackgroundTheme(opt.value);
+                        setIsDesignDropdownOpen(false);
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {backgroundTheme === opt.value && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Network Switcher */}
           <div className="network-switcher">

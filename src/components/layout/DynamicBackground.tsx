@@ -77,8 +77,8 @@ export default function DynamicBackground() {
     // Render loop
     const render = () => {
       if (backgroundTheme === 'matrix') {
-        // Draw semi-transparent overlay matching the active theme's background
-        ctx.fillStyle = theme === 'light' ? 'rgba(244, 244, 245, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+        // Draw semi-transparent overlay matching the active theme's background for smooth trails
+        ctx.fillStyle = theme === 'light' ? 'rgba(244, 244, 245, 0.15)' : 'rgba(6, 6, 8, 0.12)';
         ctx.fillRect(0, 0, width, height);
 
         ctx.font = '12px monospace';
@@ -88,10 +88,10 @@ export default function DynamicBackground() {
           const x = i * 22;
           const y = yPositions[i];
 
-          const isBright = Math.random() > 0.96;
+          const isBright = Math.random() > 0.95;
           ctx.fillStyle = isBright 
             ? (theme === 'light' ? '#000000' : '#FFFFFF') 
-            : (theme === 'light' ? 'rgba(255, 170, 0, 0.35)' : 'rgba(255, 210, 8, 0.65)');
+            : (theme === 'light' ? 'rgba(255, 170, 0, 0.65)' : 'rgba(255, 210, 8, 0.75)');
           
           ctx.fillText(char, x, y);
 
@@ -118,14 +118,14 @@ export default function DynamicBackground() {
             const dx = p.x - mouse.x;
             const dy = p.y - mouse.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 130) {
+            if (dist < 150) {
               ctx.beginPath();
               ctx.moveTo(p.x, p.y);
               ctx.lineTo(mouse.x, mouse.y);
               ctx.strokeStyle = theme === 'light'
-                ? `rgba(255, 150, 0, ${(1 - dist / 130) * 0.18})`
-                : `rgba(255, 210, 8, ${(1 - dist / 130) * 0.14})`;
-              ctx.lineWidth = 0.8;
+                ? `rgba(255, 130, 0, ${(1 - dist / 150) * 0.28})`
+                : `rgba(255, 210, 8, ${(1 - dist / 150) * 0.35})`;
+              ctx.lineWidth = 1.0;
               ctx.stroke();
             }
           }
@@ -134,8 +134,8 @@ export default function DynamicBackground() {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
           ctx.fillStyle = theme === 'light'
-            ? `rgba(255, 140, 0, ${p.alpha * 0.65})`
-            : `rgba(255, 210, 8, ${p.alpha * 0.75})`;
+            ? `rgba(255, 120, 0, ${p.alpha * 0.8})`
+            : `rgba(255, 210, 8, ${p.alpha * 0.9})`;
           ctx.fill();
         });
 
@@ -148,14 +148,14 @@ export default function DynamicBackground() {
             const dy = pi.y - pj.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < 110) {
+            if (dist < 120) {
               ctx.beginPath();
               ctx.moveTo(pi.x, pi.y);
               ctx.lineTo(pj.x, pj.y);
               ctx.strokeStyle = theme === 'light'
-                ? `rgba(0, 0, 0, ${(1 - dist / 110) * 0.08})`
-                : `rgba(255, 210, 8, ${(1 - dist / 110) * 0.15})`;
-              ctx.lineWidth = 0.6;
+                ? `rgba(0, 0, 0, ${(1 - dist / 120) * 0.12})`
+                : `rgba(255, 210, 8, ${(1 - dist / 120) * 0.25})`;
+              ctx.lineWidth = 0.8;
               ctx.stroke();
             }
           }
@@ -188,8 +188,8 @@ export default function DynamicBackground() {
             width: '100vw',
             height: '100vh',
             pointerEvents: 'none',
-            zIndex: 0,
-            opacity: backgroundTheme === 'matrix' ? (theme === 'light' ? 0.18 : 0.12) : (theme === 'light' ? 0.45 : 0.35),
+            zIndex: 1, // Draw on top of body grid, behind content
+            opacity: backgroundTheme === 'matrix' ? (theme === 'light' ? 0.35 : 0.25) : (theme === 'light' ? 0.65 : 0.55),
           }}
         />
       )}
@@ -204,9 +204,9 @@ export default function DynamicBackground() {
             width: '100vw',
             height: '100vh',
             pointerEvents: 'none',
-            zIndex: 0,
+            zIndex: 1, // Draw on top of body grid, behind content
             overflow: 'hidden',
-            background: 'var(--bg-base)',
+            background: 'transparent', // Transparent to let body grid lines pass through
           }}
         >
           {/* Yellow Blob */}
@@ -219,8 +219,8 @@ export default function DynamicBackground() {
               height: '42vw',
               borderRadius: '50%',
               background: theme === 'light'
-                ? 'radial-gradient(circle, rgba(255, 170, 0, 0.05) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(255, 210, 8, 0.055) 0%, transparent 70%)',
+                ? 'radial-gradient(circle, rgba(255, 170, 0, 0.09) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(255, 210, 8, 0.12) 0%, transparent 70%)',
               filter: 'blur(90px)',
               animation: 'aurora-float 28s infinite alternate ease-in-out',
             }}
@@ -235,8 +235,8 @@ export default function DynamicBackground() {
               height: '48vw',
               borderRadius: '50%',
               background: theme === 'light'
-                ? 'radial-gradient(circle, rgba(0, 180, 255, 0.04) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(0, 242, 254, 0.035) 0%, transparent 70%)',
+                ? 'radial-gradient(circle, rgba(0, 180, 255, 0.08) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, transparent 70%)',
               filter: 'blur(100px)',
               animation: 'aurora-float-reverse 34s infinite alternate ease-in-out',
             }}
@@ -251,8 +251,8 @@ export default function DynamicBackground() {
               height: '38vw',
               borderRadius: '50%',
               background: theme === 'light'
-                ? 'radial-gradient(circle, rgba(79, 70, 229, 0.032) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(79, 70, 229, 0.038) 0%, transparent 70%)',
+                ? 'radial-gradient(circle, rgba(79, 70, 229, 0.07) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(79, 70, 229, 0.09) 0%, transparent 70%)',
               filter: 'blur(90px)',
               animation: 'aurora-float 32s infinite alternate-reverse ease-in-out',
             }}

@@ -96,10 +96,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <NetworkContext.Provider value={{ isTestnet, setIsTestnet: handleSetIsTestnet, activeChainId }}>
       <ToastProvider>
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ minHeight: '100vh', color: 'var(--text-primary)', position: 'relative', overflow: 'hidden' }}>
           <DynamicBackground />
           <Header />
-          <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 1, paddingBottom: 'var(--sp-12)' }}>
+          <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 2, paddingBottom: 'var(--sp-12)' }}>
             {children}
           </main>
           <Footer />
