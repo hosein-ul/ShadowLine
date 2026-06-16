@@ -9,8 +9,8 @@ export default function DynamicBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    // If backgroundTheme is none/aurora, or the theme is light, we don't run canvas animation
-    if (backgroundTheme === 'none' || backgroundTheme === 'aurora' || theme === 'light') {
+    // If backgroundTheme is none/aurora, we don't run canvas animation
+    if (backgroundTheme === 'none' || backgroundTheme === 'aurora') {
       return;
     }
 
@@ -77,8 +77,8 @@ export default function DynamicBackground() {
     // Render loop
     const render = () => {
       if (backgroundTheme === 'matrix') {
-        // Draw semi-transparent black overlay for smooth trails
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        // Draw semi-transparent overlay matching the active theme's background
+        ctx.fillStyle = theme === 'light' ? 'rgba(244, 244, 245, 0.12)' : 'rgba(0, 0, 0, 0.08)';
         ctx.fillRect(0, 0, width, height);
 
         ctx.font = '12px monospace';
@@ -89,8 +89,9 @@ export default function DynamicBackground() {
           const y = yPositions[i];
 
           const isBright = Math.random() > 0.96;
-          // Zama Brand style yellow: #FFD208
-          ctx.fillStyle = isBright ? '#FFFFFF' : 'rgba(255, 210, 8, 0.65)';
+          ctx.fillStyle = isBright 
+            ? (theme === 'light' ? '#000000' : '#FFFFFF') 
+            : (theme === 'light' ? 'rgba(255, 170, 0, 0.35)' : 'rgba(255, 210, 8, 0.65)');
           
           ctx.fillText(char, x, y);
 
@@ -121,7 +122,9 @@ export default function DynamicBackground() {
               ctx.beginPath();
               ctx.moveTo(p.x, p.y);
               ctx.lineTo(mouse.x, mouse.y);
-              ctx.strokeStyle = `rgba(255, 210, 8, ${(1 - dist / 130) * 0.14})`;
+              ctx.strokeStyle = theme === 'light'
+                ? `rgba(255, 150, 0, ${(1 - dist / 130) * 0.18})`
+                : `rgba(255, 210, 8, ${(1 - dist / 130) * 0.14})`;
               ctx.lineWidth = 0.8;
               ctx.stroke();
             }
@@ -130,7 +133,9 @@ export default function DynamicBackground() {
           // Draw node dot
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 210, 8, ${p.alpha * 0.75})`;
+          ctx.fillStyle = theme === 'light'
+            ? `rgba(255, 140, 0, ${p.alpha * 0.65})`
+            : `rgba(255, 210, 8, ${p.alpha * 0.75})`;
           ctx.fill();
         });
 
@@ -147,7 +152,9 @@ export default function DynamicBackground() {
               ctx.beginPath();
               ctx.moveTo(pi.x, pi.y);
               ctx.lineTo(pj.x, pj.y);
-              ctx.strokeStyle = `rgba(255, 210, 8, ${(1 - dist / 110) * 0.15})`;
+              ctx.strokeStyle = theme === 'light'
+                ? `rgba(0, 0, 0, ${(1 - dist / 110) * 0.08})`
+                : `rgba(255, 210, 8, ${(1 - dist / 110) * 0.15})`;
               ctx.lineWidth = 0.6;
               ctx.stroke();
             }
@@ -168,8 +175,6 @@ export default function DynamicBackground() {
     };
   }, [backgroundTheme, theme]);
 
-  if (theme === 'light') return null;
-
   return (
     <>
       {/* Canvas for Matrix & Particles */}
@@ -184,7 +189,7 @@ export default function DynamicBackground() {
             height: '100vh',
             pointerEvents: 'none',
             zIndex: 0,
-            opacity: backgroundTheme === 'matrix' ? 0.12 : 0.35,
+            opacity: backgroundTheme === 'matrix' ? (theme === 'light' ? 0.18 : 0.12) : (theme === 'light' ? 0.45 : 0.35),
           }}
         />
       )}
@@ -213,7 +218,9 @@ export default function DynamicBackground() {
               width: '42vw',
               height: '42vw',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255, 210, 8, 0.055) 0%, transparent 70%)',
+              background: theme === 'light'
+                ? 'radial-gradient(circle, rgba(255, 170, 0, 0.05) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(255, 210, 8, 0.055) 0%, transparent 70%)',
               filter: 'blur(90px)',
               animation: 'aurora-float 28s infinite alternate ease-in-out',
             }}
@@ -227,7 +234,9 @@ export default function DynamicBackground() {
               width: '48vw',
               height: '48vw',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(0, 242, 254, 0.035) 0%, transparent 70%)',
+              background: theme === 'light'
+                ? 'radial-gradient(circle, rgba(0, 180, 255, 0.04) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(0, 242, 254, 0.035) 0%, transparent 70%)',
               filter: 'blur(100px)',
               animation: 'aurora-float-reverse 34s infinite alternate ease-in-out',
             }}
@@ -241,7 +250,9 @@ export default function DynamicBackground() {
               width: '38vw',
               height: '38vw',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(79, 70, 229, 0.038) 0%, transparent 70%)',
+              background: theme === 'light'
+                ? 'radial-gradient(circle, rgba(79, 70, 229, 0.032) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(79, 70, 229, 0.038) 0%, transparent 70%)',
               filter: 'blur(90px)',
               animation: 'aurora-float 32s infinite alternate-reverse ease-in-out',
             }}

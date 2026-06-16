@@ -36,6 +36,36 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+function DecryptButton({ onClick, isLoading }: { onClick: () => void; isLoading: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isLoading}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        background: 'var(--accent)',
+        color: 'var(--bg-base)',
+        border: 'none',
+        borderRadius: 'var(--radius-sm)',
+        padding: '2px 8px',
+        fontSize: '10px',
+        fontWeight: 700,
+        cursor: 'pointer',
+        transition: 'opacity 0.2s',
+        marginLeft: '4px'
+      }}
+      onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+    >
+      <Lock size={10} />
+      {isLoading ? 'Decrypting...' : 'Decrypt'}
+    </button>
+  );
+}
+
 function WrapPageContent() {
   const searchParams = useSearchParams();
   const initialToken = searchParams.get('token') || '';
@@ -48,6 +78,7 @@ function WrapPageContent() {
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [shouldDecrypt, setShouldDecrypt] = useState(false);
 
   const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
@@ -78,6 +109,11 @@ function WrapPageContent() {
     }
   }, [publicBalanceError]);
 
+  // Reset decryption state on token, network, or account change
+  useEffect(() => {
+    setShouldDecrypt(false);
+  }, [selectedToken, activeChainId, address]);
+
   // Real contract balance reads (Confidential FHE)
   const {
     data: decryptedWrapperBalance,
@@ -86,7 +122,7 @@ function WrapPageContent() {
     error: decryptWrapperError,
   } = useConfidentialBalance(
     { tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000' },
-    { enabled: !!address && !!selectedWrapper?.erc7984Address }
+    { enabled: !!address && !!selectedWrapper?.erc7984Address && shouldDecrypt }
   );
 
   // Read allowance
@@ -104,10 +140,12 @@ function WrapPageContent() {
   useEffect(() => {
     if (address && selectedWrapper) {
       refetchPublicBalance();
-      refetchWrapperBalance();
+      if (shouldDecrypt) {
+        refetchWrapperBalance();
+      }
       refetchAllowance();
     }
-  }, [address, selectedWrapper, refetchPublicBalance, refetchWrapperBalance, refetchAllowance]);
+  }, [address, selectedWrapper, refetchPublicBalance, refetchWrapperBalance, refetchAllowance, shouldDecrypt]);
 
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -302,26 +340,11 @@ function WrapPageContent() {
                         <Lock size={12} />
                       </span>
                     </span>
-                  ) : isDecryptingWrapper ? (
-                    <span>Awaiting Permit...</span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => refetchWrapperBalance()}
-                      style={{
-                        color: 'var(--accent)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '11px',
-                        border: 'none',
-                        background: 'none',
-                        padding: 0
-                      }}
-                      title="Click to sign EIP-712 permit and view FHE balance"
-                    >
-                      Decrypt to view
-                    </button>
+                    <DecryptButton
+                      onClick={() => setShouldDecrypt(true)}
+                      isLoading={isDecryptingWrapper}
+                    />
                   )
                 ) : (
                   '0.00'
@@ -379,43 +402,75 @@ function WrapPageContent() {
               <div 
                 style={{ 
                   display: 'flex', 
-                  gap: 'var(--sp-1.5)', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   marginTop: 'var(--sp-2)', 
                   marginBottom: 'var(--sp-1)' 
                 }}
               >
-                {[10, 25, 50, 75, 100].map((percent) => {
-                  const balanceBig = action === 'wrap' ? hasPublicBalance : hasWrapperBalance;
-                  return (
-                    <button
-                      key={percent}
-                      type="button"
-                      className="btn btn-secondary"
-                      disabled={txStep > 0 || balanceBig === 0n}
-                      onClick={() => {
-                        if (percent === 100) {
-                          setAmount(formatAmount(balanceBig, inputDecimals, inputDecimals));
-                        } else {
+                {/* 10% - 75% Pills */}
+                <div style={{ display: 'flex', gap: 'var(--sp-1.5)' }}>
+                  {[10, 25, 50, 75].map((percent) => {
+                    const balanceBig = action === 'wrap' ? hasPublicBalance : hasWrapperBalance;
+                    return (
+                      <button
+                        key={percent}
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={txStep > 0 || balanceBig === 0n}
+                        onClick={() => {
                           const calculatedBig = (balanceBig * BigInt(percent)) / 100n;
                           setAmount(formatAmount(calculatedBig, inputDecimals, inputDecimals));
-                        }
-                      }}
-                      style={{
-                        padding: '2px 8px',
-                        fontSize: '10px',
-                        minWidth: '40px',
-                        height: 'auto',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        cursor: balanceBig === 0n ? 'not-allowed' : 'pointer',
-                        opacity: balanceBig === 0n ? 0.4 : 1
-                      }}
-                    >
-                      {percent === 100 ? 'MAX' : `${percent}%`}
-                    </button>
-                  );
-                })}
+                        }}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '10px',
+                          minWidth: '40px',
+                          height: 'auto',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          cursor: balanceBig === 0n ? 'not-allowed' : 'pointer',
+                          opacity: balanceBig === 0n ? 0.4 : 1
+                        }}
+                      >
+                        {`${percent}%`}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* MAX Button on the right */}
+                <div>
+                  {(() => {
+                    const balanceBig = action === 'wrap' ? hasPublicBalance : hasWrapperBalance;
+                    return (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={txStep > 0 || balanceBig === 0n}
+                        onClick={() => {
+                          setAmount(formatAmount(balanceBig, inputDecimals, inputDecimals));
+                        }}
+                        style={{
+                          padding: '2px 10px',
+                          fontSize: '10px',
+                          minWidth: '45px',
+                          height: 'auto',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'rgba(255, 210, 8, 0.1)',
+                          border: '1px solid rgba(255, 210, 8, 0.25)',
+                          color: 'var(--accent)',
+                          fontWeight: 700,
+                          cursor: balanceBig === 0n ? 'not-allowed' : 'pointer',
+                          opacity: balanceBig === 0n ? 0.4 : 1
+                        }}
+                      >
+                        MAX
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 
@@ -453,26 +508,11 @@ function WrapPageContent() {
                         <Lock size={12} />
                       </span>
                     </span>
-                  ) : isDecryptingWrapper ? (
-                    <span>Awaiting Permit...</span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => refetchWrapperBalance()}
-                      style={{
-                        color: 'var(--accent)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '11px',
-                        border: 'none',
-                        background: 'none',
-                        padding: 0
-                      }}
-                      title="Click to sign EIP-712 permit and view FHE balance"
-                    >
-                      Decrypt to view
-                    </button>
+                    <DecryptButton
+                      onClick={() => setShouldDecrypt(true)}
+                      isLoading={isDecryptingWrapper}
+                    />
                   )
                 ) : (
                   '0.00'

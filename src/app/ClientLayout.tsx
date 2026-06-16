@@ -112,7 +112,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [designTheme, setDesignThemeState] = useState<DesignTheme>('zama');
-  const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>('none');
+  const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>('aurora');
 
   // Load theme, design direction and background from localStorage on mount
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     if (savedBg && validBgs.includes(savedBg)) {
       setBackgroundThemeState(savedBg);
     } else {
-      setBackgroundThemeState('none');
+      setBackgroundThemeState('aurora');
     }
   }, []);
 
