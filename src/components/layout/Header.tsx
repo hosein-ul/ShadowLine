@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/app/ClientLayout';
+import { useTheme, useDesignTheme, useBackgroundTheme, useActiveNetwork, type DesignTheme, type BackgroundTheme } from '@/app/ClientLayout';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
@@ -33,10 +33,18 @@ const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
   { value: 'midnight', label: 'Nordic Midnight' },
 ];
 
+const BACKGROUND_OPTIONS: { value: BackgroundTheme; label: string }[] = [
+  { value: 'none', label: 'Solid Dark (Default)' },
+  { value: 'matrix', label: 'Matrix Cryptic Code' },
+  { value: 'particles', label: 'Blockchain Node Mesh' },
+  { value: 'aurora', label: 'Cosmic Nebula Aura' },
+];
+
 export default function Header() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { designTheme, setDesignTheme } = useDesignTheme();
+  const { backgroundTheme, setBackgroundTheme } = useBackgroundTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
   // Wagmi Hooks
@@ -125,7 +133,7 @@ export default function Header() {
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
 
-          {/* Design Swapper Dropdown */}
+          {/* Design & Background Swapper Dropdown */}
           {theme === 'dark' && (
             <div className="theme-selector-dropdown">
               <button
@@ -134,7 +142,7 @@ export default function Header() {
                 style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
               >
                 <Palette size={14} />
-                <span>{activeThemeLabel}</span>
+                <span>Design</span>
                 <ChevronDown size={14} />
               </button>
 
@@ -144,7 +152,21 @@ export default function Header() {
                     style={{ position: 'fixed', inset: 0, zIndex: 199 }}
                     onClick={() => setIsDesignDropdownOpen(false)}
                   />
-                  <div className="theme-dropdown-menu animate-slide-up">
+                  <div 
+                    className="theme-dropdown-menu animate-slide-up"
+                    style={{ 
+                      width: '210px', 
+                      padding: 'var(--sp-2)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    {/* Header: Theme style */}
+                    <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Theme Style
+                    </div>
+
                     {THEME_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
@@ -159,6 +181,31 @@ export default function Header() {
                       >
                         <span>{opt.label}</span>
                         {designTheme === opt.value && <Check size={14} />}
+                      </button>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: '1px', background: 'var(--border)', margin: '6px 0' }} />
+
+                    {/* Header: Dynamic Background */}
+                    <div style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Background Effect
+                    </div>
+
+                    {BACKGROUND_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={cn(
+                          'theme-dropdown-item',
+                          backgroundTheme === opt.value && 'active'
+                        )}
+                        onClick={() => {
+                          setBackgroundTheme(opt.value);
+                          setIsDesignDropdownOpen(false);
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        {backgroundTheme === opt.value && <Check size={14} />}
                       </button>
                     ))}
                   </div>

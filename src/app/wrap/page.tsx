@@ -514,6 +514,71 @@ function WrapPageContent() {
             )}
           </div>
 
+          {/* Submit Button */}
+          <div style={{ marginTop: 'var(--sp-6)' }}>
+            {!isConnected ? (
+              <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)}>
+                Connect Wallet
+              </Button>
+            ) : isChainMismatch ? (
+              <Button variant="danger" fullWidth size="lg" disabled>
+                Wrong Network Connection
+              </Button>
+            ) : txStep === 5 ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                size="lg"
+                onClick={() => {
+                  setTxStep(0);
+                  setAmount('');
+                  setFinalTxHash(undefined);
+                  setActiveTxHash(undefined);
+                }}
+              >
+                <Check size={16} /> Complete — Wrap Another
+              </Button>
+            ) : needsApproval ? (
+              <Button
+                variant="primary"
+                fullWidth
+                size="lg"
+                isLoading={txStep === 1 || txStep === 2}
+                disabled={!selectedToken || !amount || amount === '0' || parsedInputAmount > hasPublicBalance}
+                onClick={handleAction}
+              >
+                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedToken}`}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                fullWidth
+                size="lg"
+                isLoading={txStep === 3 || txStep === 4}
+                disabled={
+                  !selectedToken ||
+                  !amount ||
+                  amount === '0' ||
+                  (action === 'wrap' && parsedInputAmount > hasPublicBalance) ||
+                  (action === 'unwrap' && parsedInputAmount > hasWrapperBalance)
+                }
+                onClick={handleAction}
+              >
+                {!selectedToken
+                  ? 'Select Token'
+                  : !amount || amount === '0'
+                  ? 'Enter Amount'
+                  : action === 'wrap'
+                  ? parsedInputAmount > hasPublicBalance
+                    ? 'Insufficient Balance'
+                    : `Shield ${amount} ${selectedToken}`
+                  : parsedInputAmount > hasWrapperBalance
+                  ? 'Insufficient Shielded Balance'
+                  : `Unshield ${amount} c${selectedToken}`}
+              </Button>
+            )}
+          </div>
+
           {/* Progress Steps */}
           {txStep > 0 && (
             <div style={{ marginTop: 'var(--sp-5)', padding: '0 var(--sp-2)' }}>
@@ -543,25 +608,6 @@ function WrapPageContent() {
           {/* Transaction Link / Warning */}
           {(activeTxHash || finalTxHash) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>
-              {/* Coprocessor / Gateway Delay Explanation */}
-              {txStep > 0 && txStep < 5 && (
-                <div 
-                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
-                  style={{ 
-                    padding: 'var(--sp-2) var(--sp-3)',
-                    background: 'rgba(255, 210, 8, 0.03)',
-                    border: '1px dashed rgba(255, 210, 8, 0.15)',
-                    borderRadius: 'var(--radius-md)',
-                    lineHeight: '1.4'
-                  }}
-                >
-                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
-                  <span>
-                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
-                  </span>
-                </div>
-              )}
-
               {/* Transaction Link */}
               <div
                 className="animate-fade-in"
@@ -628,73 +674,27 @@ function WrapPageContent() {
                   />
                 )}
               </div>
+
+              {/* Coprocessor / Gateway Delay Explanation */}
+              {txStep > 0 && txStep < 5 && (
+                <div 
+                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
+                  style={{ 
+                    padding: 'var(--sp-2) var(--sp-3)',
+                    background: 'rgba(255, 210, 8, 0.03)',
+                    border: '1px dashed rgba(255, 210, 8, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    lineHeight: '1.4'
+                  }}
+                >
+                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
+                  <span>
+                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
+                  </span>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Submit Button */}
-          <div style={{ marginTop: 'var(--sp-6)' }}>
-            {!isConnected ? (
-              <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)}>
-                Connect Wallet
-              </Button>
-            ) : isChainMismatch ? (
-              <Button variant="danger" fullWidth size="lg" disabled>
-                Wrong Network Connection
-              </Button>
-            ) : txStep === 5 ? (
-              <Button
-                variant="secondary"
-                fullWidth
-                size="lg"
-                onClick={() => {
-                  setTxStep(0);
-                  setAmount('');
-                  setFinalTxHash(undefined);
-                  setActiveTxHash(undefined);
-                }}
-              >
-                <Check size={16} /> Complete — Wrap Another
-              </Button>
-            ) : needsApproval ? (
-              <Button
-                variant="primary"
-                fullWidth
-                size="lg"
-                isLoading={txStep === 1 || txStep === 2}
-                disabled={!selectedToken || !amount || amount === '0' || parsedInputAmount > hasPublicBalance}
-                onClick={handleAction}
-              >
-                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedToken}`}
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                fullWidth
-                size="lg"
-                isLoading={txStep === 3 || txStep === 4}
-                disabled={
-                  !selectedToken ||
-                  !amount ||
-                  amount === '0' ||
-                  (action === 'wrap' && parsedInputAmount > hasPublicBalance) ||
-                  (action === 'unwrap' && parsedInputAmount > hasWrapperBalance)
-                }
-                onClick={handleAction}
-              >
-                {!selectedToken
-                  ? 'Select Token'
-                  : !amount || amount === '0'
-                  ? 'Enter Amount'
-                  : action === 'wrap'
-                  ? parsedInputAmount > hasPublicBalance
-                    ? 'Insufficient Balance'
-                    : `Shield ${amount} ${selectedToken}`
-                  : parsedInputAmount > hasWrapperBalance
-                  ? 'Insufficient Shielded Balance'
-                  : `Unshield ${amount} c${selectedToken}`}
-              </Button>
-            )}
-          </div>
         </Card>
 
         {/* Info */}

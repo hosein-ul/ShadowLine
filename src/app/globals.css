@@ -910,3 +910,28 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   }
 }
 
+/* ---------- Aurora Float Animations ---------- */
+@keyframes aurora-float {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(8%, 5%) scale(1.15) rotate(180deg);
+  }
+  100% {
+    transform: translate(-5%, -10%) scale(0.9) rotate(360deg);
+  }
+}
+
+@keyframes aurora-float-reverse {
+  0% {
+    transform: translate(0, 0) scale(1.1) rotate(360deg);
+  }
+  50% {
+    transform: translate(-10%, 8%) scale(0.9) rotate(180deg);
+  }
+  100% {
+    transform: translate(5%, -5%) scale(1.2) rotate(0deg);
+  }
+}
+

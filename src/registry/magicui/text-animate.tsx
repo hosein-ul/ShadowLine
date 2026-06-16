@@ -22,6 +22,7 @@ interface TextAnimateProps {
   segmentClassName?: string
   delay?: number
   duration?: number
+  staggerDelay?: number
   by?: AnimationType
   animation?: AnimationVariant
 }
@@ -30,6 +31,7 @@ const TextAnimateBase = ({
   children,
   delay = 0,
   duration = 0.5,
+  staggerDelay,
   className,
   segmentClassName,
   by = "word",
@@ -62,8 +64,14 @@ const TextAnimateBase = ({
     animation === "blurInUp" ? "animate-text-blur-in-up" :
     "animate-text-fade-in"
 
-  // Stagger calculations
-  const staggerDelay = duration / Math.max(segments.length, 1)
+  // Dynamic stagger delay defaults: 
+  // Character level: 0.02s, Word level: 0.06s, Line level: 0.15s
+  const calculatedStaggerDelay = staggerDelay !== undefined
+    ? staggerDelay
+    : by === "character" ? 0.02
+    : by === "word" ? 0.06
+    : by === "line" ? 0.15
+    : 0.05
 
   return (
     <span className={cn("inline-flex flex-wrap", className)}>
@@ -78,7 +86,7 @@ const TextAnimateBase = ({
               segmentClassName
             )}
             style={{
-              animationDelay: `${delay + i * staggerDelay}s`,
+              animationDelay: `${delay + i * calculatedStaggerDelay}s`,
               animationDuration: `${duration}s`,
               animationFillMode: "both",
               whiteSpace: "pre-wrap",

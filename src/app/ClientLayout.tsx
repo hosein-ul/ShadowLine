@@ -5,12 +5,14 @@ import Providers from '@/providers/Providers';
 import { ToastProvider } from '@/components/ui/Toast';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import DynamicBackground from '@/components/layout/DynamicBackground';
 import { useAccount } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
 export type DesignTheme = 'zama' | 'midnight';
+export type BackgroundTheme = 'none' | 'matrix' | 'particles' | 'aurora';
 
 interface ThemeContextType {
   theme: Theme;
@@ -22,6 +24,11 @@ interface DesignThemeContextType {
   setDesignTheme: (theme: DesignTheme) => void;
 }
 
+interface BackgroundThemeContextType {
+  backgroundTheme: BackgroundTheme;
+  setBackgroundTheme: (bg: BackgroundTheme) => void;
+}
+
 interface NetworkContextType {
   isTestnet: boolean;
   setIsTestnet: (isTestnet: boolean) => void;
@@ -30,6 +37,7 @@ interface NetworkContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const DesignThemeContext = createContext<DesignThemeContextType | undefined>(undefined);
+const BackgroundThemeContext = createContext<BackgroundThemeContextType | undefined>(undefined);
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export function useTheme() {
@@ -41,6 +49,12 @@ export function useTheme() {
 export function useDesignTheme() {
   const context = useContext(DesignThemeContext);
   if (!context) throw new Error('useDesignTheme must be used within DesignThemeProvider');
+  return context;
+}
+
+export function useBackgroundTheme() {
+  const context = useContext(BackgroundThemeContext);
+  if (!context) throw new Error('useBackgroundTheme must be used within BackgroundThemeProvider');
   return context;
 }
 
@@ -82,7 +96,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <NetworkContext.Provider value={{ isTestnet, setIsTestnet: handleSetIsTestnet, activeChainId }}>
       <ToastProvider>
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)' }}>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)', position: 'relative', overflow: 'hidden' }}>
+          <DynamicBackground />
           <Header />
           <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 1, paddingBottom: 'var(--sp-12)' }}>
             {children}
@@ -97,8 +112,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [designTheme, setDesignThemeState] = useState<DesignTheme>('zama');
+  const [backgroundTheme, setBackgroundThemeState] = useState<BackgroundTheme>('none');
 
-  // Load theme and design direction from localStorage on mount
+  // Load theme, design direction and background from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     const initialTheme = savedTheme || 'dark';
@@ -113,6 +129,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     } else {
       setDesignThemeState('zama');
       document.documentElement.setAttribute('data-design-theme', 'zama');
+    }
+
+    const savedBg = localStorage.getItem('background-theme') as BackgroundTheme | null;
+    const validBgs: BackgroundTheme[] = ['none', 'matrix', 'particles', 'aurora'];
+    if (savedBg && validBgs.includes(savedBg)) {
+      setBackgroundThemeState(savedBg);
+    } else {
+      setBackgroundThemeState('none');
     }
   }, []);
 
@@ -129,11 +153,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     document.documentElement.setAttribute('data-design-theme', nextDesign);
   };
 
+  const setBackgroundTheme = (nextBg: BackgroundTheme) => {
+    setBackgroundThemeState(nextBg);
+    localStorage.setItem('background-theme', nextBg);
+  };
+
   return (
     <Providers>
       <ThemeContext.Provider value={{ theme, toggleTheme }}>
         <DesignThemeContext.Provider value={{ designTheme, setDesignTheme }}>
-          <LayoutContent>{children}</LayoutContent>
+          <BackgroundThemeContext.Provider value={{ backgroundTheme, setBackgroundTheme }}>
+            <LayoutContent>{children}</LayoutContent>
+          </BackgroundThemeContext.Provider>
         </DesignThemeContext.Provider>
       </ThemeContext.Provider>
     </Providers>
