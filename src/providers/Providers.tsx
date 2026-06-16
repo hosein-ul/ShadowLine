@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider as WagmiProviderBase, createConfig, http } from 'wagmi';
+import { WagmiProvider as WagmiProviderBase, createConfig, http, fallback } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { injected, walletConnect } from 'wagmi/connectors';
 import { ZamaProvider, RelayerWeb, indexedDBStorage, SepoliaConfig, MainnetConfig } from '@zama-fhe/react-sdk';
@@ -11,9 +11,9 @@ import { WagmiSigner } from '@zama-fhe/react-sdk/wagmi';
 // WalletConnect project ID — register at https://cloud.walletconnect.com
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo';
 
-// Stable high-performance Alchemy RPC endpoints
-const SEPOLIA_RPC = process.env.NEXT_PUBLIC_SEPOLIA_RPC || 'https://rpc.ankr.com/eth_sepolia';
-const MAINNET_RPC = process.env.NEXT_PUBLIC_MAINNET_RPC || 'https://cloudflare-eth.com';
+// Dedicated Alchemy RPCs and reliable public backups
+const SEPOLIA_ALCHEMY = process.env.NEXT_PUBLIC_SEPOLIA_RPC;
+const MAINNET_ALCHEMY = process.env.NEXT_PUBLIC_MAINNET_RPC;
 
 export const wagmiConfig = createConfig({
   chains: [sepolia, mainnet],
@@ -24,8 +24,16 @@ export const wagmiConfig = createConfig({
       : []),
   ],
   transports: {
-    [sepolia.id]: http(SEPOLIA_RPC),
-    [mainnet.id]: http(MAINNET_RPC),
+    [sepolia.id]: fallback([
+      ...(SEPOLIA_ALCHEMY ? [http(SEPOLIA_ALCHEMY)] : []),
+      http('https://ethereum-sepolia-rpc.publicnode.com'),
+      http('https://sepolia.gateway.tenderly.co'),
+    ]),
+    [mainnet.id]: fallback([
+      ...(MAINNET_ALCHEMY ? [http(MAINNET_ALCHEMY)] : []),
+      http('https://ethereum-rpc.publicnode.com'),
+      http('https://cloudflare-eth.com'),
+    ]),
   },
   ssr: true,
 });
@@ -37,11 +45,11 @@ export const relayer = new RelayerWeb({
   transports: {
     [sepolia.id]: {
       ...SepoliaConfig,
-      network: SEPOLIA_RPC,
+      network: SEPOLIA_ALCHEMY || 'https://ethereum-sepolia-rpc.publicnode.com',
     },
     [mainnet.id]: {
       ...MainnetConfig,
-      network: MAINNET_RPC,
+      network: MAINNET_ALCHEMY || 'https://ethereum-rpc.publicnode.com',
     },
   },
 });

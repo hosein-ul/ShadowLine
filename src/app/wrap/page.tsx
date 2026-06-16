@@ -77,7 +77,12 @@ function WrapPageContent() {
   }, [publicBalanceError]);
 
   // Real contract balance reads (Confidential FHE)
-  const { data: decryptedWrapperBalance, refetch: refetchWrapperBalance } = useConfidentialBalance(
+  const {
+    data: decryptedWrapperBalance,
+    refetch: refetchWrapperBalance,
+    isLoading: isDecryptingWrapper,
+    error: decryptWrapperError,
+  } = useConfidentialBalance(
     { tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000' },
     { enabled: !!address && !!selectedWrapper?.erc7984Address }
   );
@@ -240,15 +245,39 @@ function WrapPageContent() {
               </span>
               <span className="text-xs text-muted flex items-center gap-1">
                 Balance:{' '}
-                {isConnected
-                  ? formatAmount(action === 'wrap' ? hasPublicBalance : hasWrapperBalance, decimals)
-                  : '0.00'}
-                {action === 'wrap' ? (
-                  ''
+                {isConnected ? (
+                  action === 'wrap' ? (
+                    formatAmount(hasPublicBalance, decimals)
+                  ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
+                    <span className="flex items-center gap-1">
+                      {formatAmount(hasWrapperBalance, decimals)}
+                      <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
+                        <Lock size={12} />
+                      </span>
+                    </span>
+                  ) : isDecryptingWrapper ? (
+                    <span>Awaiting Permit...</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => refetchWrapperBalance()}
+                      style={{
+                        color: 'var(--accent)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        border: 'none',
+                        background: 'none',
+                        padding: 0
+                      }}
+                      title="Click to sign EIP-712 permit and view FHE balance"
+                    >
+                      Decrypt to view
+                    </button>
+                  )
                 ) : (
-                  <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-                    <Lock size={12} />
-                  </span>
+                  '0.00'
                 )}
               </span>
             </div>
@@ -365,11 +394,42 @@ function WrapPageContent() {
               <span className="text-sm text-muted">
                 {action === 'wrap' ? 'To (Confidential)' : 'To (Public)'}
               </span>
-              <span className="text-xs text-muted">
+              <span className="text-xs text-muted flex items-center gap-1">
                 Balance:{' '}
-                {isConnected
-                  ? formatAmount(action === 'wrap' ? hasWrapperBalance : hasPublicBalance, decimals)
-                  : '0.00'}
+                {isConnected ? (
+                  action === 'unwrap' ? (
+                    formatAmount(hasPublicBalance, decimals)
+                  ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
+                    <span className="flex items-center gap-1">
+                      {formatAmount(hasWrapperBalance, decimals)}
+                      <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
+                        <Lock size={12} />
+                      </span>
+                    </span>
+                  ) : isDecryptingWrapper ? (
+                    <span>Awaiting Permit...</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => refetchWrapperBalance()}
+                      style={{
+                        color: 'var(--accent)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        border: 'none',
+                        background: 'none',
+                        padding: 0
+                      }}
+                      title="Click to sign EIP-712 permit and view FHE balance"
+                    >
+                      Decrypt to view
+                    </button>
+                  )
+                ) : (
+                  '0.00'
+                )}
               </span>
             </div>
             <div className="flex items-center gap-3">

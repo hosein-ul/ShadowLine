@@ -15,7 +15,7 @@ ul, ol { list-style: none; }
 input, select, textarea { font: inherit; border: none; outline: none; background: none; }
 table { border-collapse: collapse; }
 
-/* ---------- Global Tokens & Default Cyber Mode ---------- */
+/* ---------- Global Tokens & Defaults (Nordic Charcoal Default) ---------- */
 :root {
   /* Layout & Defaults */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -53,25 +53,25 @@ table { border-collapse: collapse; }
   --sp-16: 64px;
   --sp-20: 80px;
 
-  /* Defaults (Fallback to Cyber Theme) */
-  --bg-base: #050508;
-  --bg-surface: #0a0a0f;
-  --bg-elevated: #111119;
-  --bg-card: rgba(10, 10, 15, 0.75);
-  --bg-card-hover: rgba(17, 17, 25, 0.85);
-  --bg-input: rgba(8, 8, 12, 0.9);
+  /* Nordic Charcoal (Default) variables */
+  --bg-base: #0b0b0f;
+  --bg-surface: #121217;
+  --bg-elevated: #1a1a22;
+  --bg-card: rgba(18, 18, 23, 0.9);
+  --bg-card-hover: rgba(26, 26, 34, 0.95);
+  --bg-input: #0b0b0f;
   
-  --accent: #FFD208;
-  --accent-hover: #ffe044;
-  --accent-muted: rgba(255, 210, 8, 0.15);
-  --accent-subtle: rgba(255, 210, 8, 0.05);
-  --accent-glow: rgba(255, 210, 8, 0.2);
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-muted: rgba(56, 189, 248, 0.18);
+  --accent-subtle: rgba(56, 189, 248, 0.05);
+  --accent-glow: rgba(56, 189, 248, 0.2);
 
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0ba;
-  --text-muted: #5c5c78;
-  --text-accent: #FFD208;
-  --text-inverse: #050508;
+  --text-primary: #f8f9fa;
+  --text-secondary: #a0a5b5;
+  --text-muted: #64748b;
+  --text-accent: #38bdf8;
+  --text-inverse: #0b0b0f;
 
   --success: #10b981;
   --success-muted: rgba(16, 185, 129, 0.1);
@@ -82,56 +82,9 @@ table { border-collapse: collapse; }
   --info: #3b82f6;
   --info-muted: rgba(59, 130, 246, 0.1);
 
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --border-accent: rgba(255, 210, 8, 0.3);
-  --border-focus: rgba(255, 210, 8, 0.5);
-
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-full: 9999px;
-
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.6);
-  --shadow-lg: 0 12px 30px rgba(0,0,0,0.8);
-  --shadow-glow: 0 0 20px rgba(255, 210, 8, 0.15);
-
-  --radial-glow-1: rgba(255, 210, 8, 0.03);
-  --radial-glow-2: rgba(59, 130, 246, 0.03);
-  --grid-line: rgba(255, 210, 8, 0.007);
-}
-
-/* ==========================================================================
-   THEME DIRECTIONS
-   ========================================================================== */
-
-/* ---------- 1. NORDIC CHARCOAL THEME (DARK - DEFAULT) ---------- */
-html[data-design-theme='charcoal'], html:not([data-design-theme]) {
-  --bg-base: #0b0b0f;
-  --bg-surface: #121217;
-  --bg-elevated: #1a1a22;
-  --bg-card: rgba(18, 18, 23, 0.9);
-  --bg-card-hover: rgba(26, 26, 34, 0.95);
-  --bg-input: #0b0b0f;
-  
-  --accent: #38bdf8;
-  --accent-hover: #7dd3fc;
-  --accent-muted: rgba(56, 189, 248, 0.15);
-  --accent-subtle: rgba(56, 189, 248, 0.05);
-  --accent-glow: rgba(56, 189, 248, 0.2);
-
-  --text-primary: #f8f9fa;
-  --text-secondary: #a0a5b5;
-  --text-muted: #64748b;
-  --text-accent: #38bdf8;
-  --text-inverse: #0b0b0f;
-
-  --border: rgba(255, 255, 255, 0.12);
-  --border-hover: rgba(255, 255, 255, 0.25);
-  --border-accent: rgba(56, 189, 248, 0.4);
+  --border: rgba(255, 255, 255, 0.18);
+  --border-hover: rgba(255, 255, 255, 0.32);
+  --border-accent: rgba(56, 189, 248, 0.45);
   --border-focus: #38bdf8;
 
   --radius-sm: 6px;
@@ -139,15 +92,25 @@ html[data-design-theme='charcoal'], html:not([data-design-theme]) {
   --radius-lg: 14px;
   --radius-xl: 20px;
   --radius-2xl: 26px;
+  --radius-full: 9999px;
 
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
   --shadow-md: 0 4px 14px rgba(0,0,0,0.6);
   --shadow-lg: 0 16px 36px rgba(0,0,0,0.8);
   --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
-  
+
   --radial-glow-1: rgba(56, 189, 248, 0.04);
   --radial-glow-2: rgba(255, 255, 255, 0.02);
   --grid-line: rgba(255, 255, 255, 0.012);
+}
+
+/* ==========================================================================
+   THEME DIRECTIONS
+   ========================================================================== */
+
+/* ---------- 1. NORDIC CHARCOAL THEME (DARK - DEFAULT) ---------- */
+html[data-design-theme='charcoal'] {
+  /* Inherits directly from :root */
 }
 
 /* ---------- 2. NORDIC MIDNIGHT THEME (DARK) ---------- */
@@ -161,19 +124,19 @@ html[data-design-theme='midnight'] {
   
   --accent: #f4f4f5;
   --accent-hover: #ffffff;
-  --accent-muted: rgba(244, 244, 245, 0.15);
+  --accent-muted: rgba(244, 244, 245, 0.18);
   --accent-subtle: rgba(244, 244, 245, 0.04);
   --accent-glow: rgba(255, 255, 255, 0.1);
 
   --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
-  --text-accent: #f4f4f5;
+  --text-secondary: #e4e4e7;
+  --text-muted: #71717a;
+  --text-accent: #ffffff;
   --text-inverse: #000000;
 
-  --border: rgba(255, 255, 255, 0.22);
-  --border-hover: rgba(255, 255, 255, 0.4);
-  --border-accent: rgba(255, 255, 255, 0.6);
+  --border: rgba(255, 255, 255, 0.28);
+  --border-hover: rgba(255, 255, 255, 0.5);
+  --border-accent: rgba(255, 255, 255, 0.7);
   --border-focus: #ffffff;
 
   --radius-sm: 4px;
@@ -192,18 +155,18 @@ html[data-design-theme='midnight'] {
   --grid-line: rgba(255, 255, 255, 0.022);
 }
 
-/* ---------- 3. NORDIC STEEL THEME (DARK) ---------- */
-html[data-design-theme='steel'] {
-  --bg-base: #0f172a;
-  --bg-surface: #1e293b;
-  --bg-elevated: #334155;
-  --bg-card: rgba(30, 41, 59, 0.9);
-  --bg-card-hover: rgba(51, 65, 85, 0.95);
-  --bg-input: #0f172a;
+/* ---------- 3. NORDIC FROST THEME (DARK) ---------- */
+html[data-design-theme='frost'] {
+  --bg-base: #0b0f19;
+  --bg-surface: #141b2d;
+  --bg-elevated: #1e293b;
+  --bg-card: rgba(20, 27, 45, 0.9);
+  --bg-card-hover: rgba(30, 41, 59, 0.95);
+  --bg-input: #0b0f19;
   
   --accent: #38bdf8;
   --accent-hover: #0ea5e9;
-  --accent-muted: rgba(56, 189, 248, 0.15);
+  --accent-muted: rgba(56, 189, 248, 0.18);
   --accent-subtle: rgba(56, 189, 248, 0.05);
   --accent-glow: rgba(56, 189, 248, 0.2);
 
@@ -211,10 +174,10 @@ html[data-design-theme='steel'] {
   --text-secondary: #94a3b8;
   --text-muted: #475569;
   --text-accent: #38bdf8;
-  --text-inverse: #0f172a;
+  --text-inverse: #0b0f19;
 
-  --border: rgba(148, 163, 184, 0.3);
-  --border-hover: rgba(148, 163, 184, 0.55);
+  --border: rgba(125, 211, 252, 0.25);
+  --border-hover: rgba(125, 211, 252, 0.5);
   --border-accent: rgba(56, 189, 248, 0.5);
   --border-focus: #38bdf8;
 
@@ -234,40 +197,82 @@ html[data-design-theme='steel'] {
   --grid-line: rgba(148, 163, 184, 0.015);
 }
 
-/* ---------- 4. LIGHT MODE OVERRIDES ---------- */
-html[data-theme='light'] {
-  --bg-base: #f8f9fa;
-  --bg-surface: #ffffff;
-  --bg-elevated: #f1f3f5;
-  --bg-card: rgba(255, 255, 255, 0.95);
-  --bg-card-hover: #ffffff;
-  --bg-input: #f1f3f5;
+/* ---------- 4. NORDIC AURORA THEME (DARK) ---------- */
+html[data-design-theme='aurora'] {
+  --bg-base: #050a0a;
+  --bg-surface: #0f1817;
+  --bg-elevated: #172624;
+  --bg-card: rgba(15, 24, 23, 0.9);
+  --bg-card-hover: rgba(23, 38, 36, 0.95);
+  --bg-input: #050a0a;
   
-  --accent: #0f172a;
-  --accent-hover: #1e293b;
-  --accent-muted: rgba(15, 23, 42, 0.08);
-  --accent-subtle: rgba(15, 23, 42, 0.03);
-  --accent-glow: rgba(15, 23, 42, 0.05);
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-muted: rgba(45, 212, 191, 0.18);
+  --accent-subtle: rgba(45, 212, 191, 0.05);
+  --accent-glow: rgba(45, 212, 191, 0.2);
 
-  --text-primary: #1a1a24;
-  --text-secondary: #4a5568;
-  --text-muted: #718096;
-  --text-accent: #0f172a;
+  --text-primary: #f2faf9;
+  --text-secondary: #8fa8a5;
+  --text-muted: #4d6360;
+  --text-accent: #2dd4bf;
+  --text-inverse: #050a0a;
+
+  --border: rgba(45, 212, 191, 0.25);
+  --border-hover: rgba(45, 212, 191, 0.45);
+  --border-accent: rgba(45, 212, 191, 0.5);
+  --border-focus: #2dd4bf;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 26px;
+
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.6);
+  --shadow-lg: 0 16px 36px rgba(0,0,0,0.8);
+  --shadow-glow: 0 0 20px rgba(45, 212, 191, 0.15);
+  
+  --radial-glow-1: rgba(45, 212, 191, 0.05);
+  --radial-glow-2: rgba(255, 255, 255, 0.01);
+  --grid-line: rgba(45, 212, 191, 0.012);
+}
+
+/* ---------- 5. LIGHT MODE OVERRIDES ---------- */
+html[data-theme='light'] {
+  --bg-base: #f4f4f5;
+  --bg-surface: #ffffff;
+  --bg-elevated: #e4e4e7;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffffff;
+  --bg-input: #ffffff;
+  
+  --accent: #09090b;
+  --accent-hover: #18181b;
+  --accent-muted: rgba(9, 9, 11, 0.08);
+  --accent-subtle: rgba(9, 9, 11, 0.03);
+  --accent-glow: rgba(9, 9, 11, 0.04);
+
+  --text-primary: #09090b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --text-accent: #09090b;
   --text-inverse: #ffffff;
 
-  --border: #d2d6dc;
-  --border-hover: #a0aec0;
-  --border-accent: rgba(15, 23, 42, 0.4);
-  --border-focus: #0f172a;
+  --border: #d4d4d8;
+  --border-hover: #a1a1aa;
+  --border-accent: rgba(9, 9, 11, 0.4);
+  --border-focus: #09090b;
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 10px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
-  --shadow-glow: 0 0 12px rgba(15, 23, 42, 0.03);
+  --shadow-glow: 0 0 12px rgba(9, 9, 11, 0.02);
   
-  --radial-glow-1: rgba(15, 23, 42, 0.01);
+  --radial-glow-1: rgba(9, 9, 11, 0.01);
   --radial-glow-2: rgba(113, 128, 150, 0.01);
-  --grid-line: rgba(0, 0, 0, 0.03);
+  --grid-line: rgba(0, 0, 0, 0.025);
 }
 
 /* ---------- BASE STYLES ---------- */
@@ -755,7 +760,8 @@ h4 { font-size: var(--text-xl); }
 /* Override background for translucent header support */
 html[data-design-theme='charcoal'] .header { background: rgba(18, 18, 23, 0.85); }
 html[data-design-theme='midnight'] .header { background: rgba(9, 9, 11, 0.85); }
-html[data-design-theme='steel'] .header { background: rgba(30, 41, 59, 0.85); }
+html[data-design-theme='frost'] .header { background: rgba(20, 27, 45, 0.85); }
+html[data-design-theme='aurora'] .header { background: rgba(15, 24, 23, 0.85); }
 html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 
 .header-inner {

@@ -31,7 +31,8 @@ const NAV_ITEMS = [
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
   { value: 'charcoal', label: 'Nordic Charcoal' },
   { value: 'midnight', label: 'Nordic Midnight' },
-  { value: 'steel', label: 'Nordic Steel' },
+  { value: 'frost', label: 'Nordic Frost' },
+  { value: 'aurora', label: 'Nordic Aurora' },
 ];
 
 export default function Header() {

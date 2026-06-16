@@ -10,7 +10,7 @@ import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
 
 type Theme = 'dark' | 'light';
-export type DesignTheme = 'charcoal' | 'midnight' | 'steel';
+export type DesignTheme = 'charcoal' | 'midnight' | 'frost' | 'aurora';
 
 interface ThemeContextType {
   theme: Theme;
@@ -106,7 +106,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     document.documentElement.setAttribute('data-theme', initialTheme);
 
     const savedDesign = localStorage.getItem('design-theme') as DesignTheme | null;
-    if (savedDesign) {
+    const validDesigns: DesignTheme[] = ['charcoal', 'midnight', 'frost', 'aurora'];
+    if (savedDesign && validDesigns.includes(savedDesign)) {
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
