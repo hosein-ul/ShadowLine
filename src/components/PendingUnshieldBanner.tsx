@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useResumeUnshield,
   useZamaSDK,
@@ -63,7 +63,7 @@ export default function PendingUnshieldBanner({ tokenAddress, symbol }: Props) {
     return () => { cancelled = true; };
   }, [isConnected, sdk?.storage, tokenAddress]);
 
-  const handleResume = useCallback(async () => {
+  const handleResume = async () => {
     if (!pendingTxHash || !sdk?.storage) return;
     setIsResuming(true);
     try {
@@ -87,9 +87,9 @@ export default function PendingUnshieldBanner({ tokenAddress, symbol }: Props) {
     } finally {
       setIsResuming(false);
     }
-  }, [pendingTxHash, sdk?.storage, tokenAddress, symbol, resumeUnshield, addToast]);
+  };
 
-  const handleDismiss = useCallback(async () => {
+  const handleDismiss = async () => {
     if (!sdk?.storage) return;
     try {
       await clearPendingUnshield(sdk.storage, tokenAddress);
@@ -97,7 +97,7 @@ export default function PendingUnshieldBanner({ tokenAddress, symbol }: Props) {
       // Best-effort clear
     }
     setPendingTxHash(null);
-  }, [sdk?.storage, tokenAddress]);
+  };
 
   // Nothing to show
   if (!pendingTxHash || isDone) return null;
