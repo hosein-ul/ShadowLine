@@ -7,9 +7,9 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS } from '@/config/contracts';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs, findPairBySymbol } from '@/lib/registry';
 import { useToast } from '@/components/ui/Toast';
 import {
   useAccount,
@@ -18,7 +18,6 @@ import {
 } from 'wagmi';
 import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
 import { ERC20_ABI } from '@/lib/wrapper-abi';
-import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
 import confetti from 'canvas-confetti';
@@ -55,8 +54,17 @@ function WrapPageContent() {
   const { connect, connectors } = useConnect();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
-  const wrappers = KNOWN_WRAPPERS[activeChainId] ?? [];
-  const selectedWrapper = wrappers.find(w => w.symbol === selectedToken);
+  // Dynamic registry: list of wrapper pairs for the active chain, including
+  // any pair added on-chain after this client was built.
+  const { pairs: allPairs } = useRegistryPairs(activeChainId);
+  // Only let users wrap/unwrap pairs that the registry still considers
+  // valid; revoked pairs are kept in `allPairs` so the registry table can
+  // surface them, but they have no business in the swap selector.
+  const wrappers = useMemo(
+    () => allPairs.filter((p) => p.isValid !== false),
+    [allPairs],
+  );
+  const selectedWrapper = findPairBySymbol(wrappers, selectedToken);
 
   // Real contract balance reads (Public underlying)
   const { data: rawPublicBalance, refetch: refetchPublicBalance, error: publicBalanceError } = useReadContract({

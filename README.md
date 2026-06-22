@@ -11,7 +11,7 @@ Using Fully Homomorphic Encryption (FHE), ZamaVault ensures that your token bala
 *   **🔒 Shielding (Wrap)**: Convert public ERC-20 tokens into encrypted ERC-7984 confidential wrappers. On-chain balances and transfer amounts are completely obfuscated.
 *   **🔓 Unshielding (Unwrap)**: Convert encrypted ERC-7984 confidential wrappers back into public ERC-20 tokens.
 *   **💼 Confidential Portfolio**: View all confidential assets in one place. Balances remain encrypted on-chain, but can be decrypted on the client side using **EIP-712 permit signatures**.
-*   **📊 Wrapper Registry Explorer**: Interactively explore registered ERC-20/ERC-7984 wrapper pairs deployed on the active network.
+*   **📊 Wrapper Registry Explorer**: Reads Zama's on-chain `WrappersRegistry` directly (via `useListPairs` from `@zama-fhe/react-sdk`) and lists every registered ERC-20 ↔ ERC-7984 pair on the active network — including pairs added after this client was built. Falls back to a hardcoded snapshot when no wallet is connected so anonymous visitors can still browse. Revoked pairs (`isValid === false`) are flagged with a "Revoked" badge and hidden from the wrap/unwrap selector.
 *   **🚰 Test Faucet**: A built-in developer faucet with a **5-second cooldown** to acquire test tokens (USDC, USDT, WETH, ZAMA, etc.) on the Sepolia network.
 *   **🎨 Nordic Clean Aesthetic**: A default premium dark-themed design system featuring smooth micro-animations, glassmorphism card layouts, custom typography, and official brand logos.
 *   **🎉 Transaction Feedback & Delighters**: Custom transaction tracking with direct links to block explorers and interactive confetti blasts on successful wrap/unwrap actions.

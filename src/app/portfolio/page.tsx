@@ -6,9 +6,10 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
+import { type WrapperPair } from '@/config/contracts';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs } from '@/lib/registry';
 import { useAccount, useConnect } from 'wagmi';
 import { useConfidentialBalances, useRevokeSession } from '@zama-fhe/react-sdk';
 import { useToast } from '@/components/ui/Toast';
@@ -152,7 +153,12 @@ export default function PortfolioPage() {
   const { connect, connectors } = useConnect();
   const { addToast } = useToast();
 
-  const wrappers = useMemo(() => KNOWN_WRAPPERS[activeChainId] ?? [], [activeChainId]);
+  // Live registry read with hardcoded fallback. We deliberately keep
+  // revoked pairs OUT of the portfolio: a revoked wrapper cannot accept new
+  // shields, but a user may still hold a non-zero confidential balance in
+  // one and need to decrypt + unshield it. We include all pairs and let
+  // the per-card UI reflect the revoked state.
+  const { pairs: wrappers } = useRegistryPairs(activeChainId);
 
   const [requestedAddresses, setRequestedAddresses] = useState<`0x${string}`[]>([]);
   const [resolvedBalances, setResolvedBalances] = useState<Record<string, bigint>>({});

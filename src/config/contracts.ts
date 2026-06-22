@@ -2,10 +2,19 @@ import { type SupportedChainId } from './chains';
 import { sepolia, mainnet } from 'wagmi/chains';
 
 /**
- * Contract addresses for the Wrapper Registry and known wrappers.
+ * Wrapper pair definitions.
  *
- * NOTE: These addresses are fetched directly from Zama's official deployments directory.
- * Update as needed or read dynamically from the Registry on-chain.
+ * As of the dynamic-registry migration, the canonical source of pairs is the
+ * on-chain `WrappersRegistry` contract, read via the `useRegistryPairs` hook
+ * in `src/lib/registry.ts` (which itself wraps `useListPairs` from
+ * `@zama-fhe/react-sdk`). The `KNOWN_WRAPPERS` map below is now a **fallback
+ * snapshot only**, used while the wallet is disconnected or while the live
+ * call is in flight. Do not rely on it for correctness — it WILL drift from
+ * the registry over time (the audit captured two missing pairs already:
+ * Sepolia `ctGBP` and Mainnet `cbbqTGBP`).
+ *
+ * `REGISTRY_ADDRESSES` is exported for any direct on-chain reads (indexers,
+ * CLI scripts) but the app itself goes through the SDK.
  */
 
 export interface WrapperPair {
@@ -15,6 +24,22 @@ export interface WrapperPair {
   name: string;
   decimals: number;
   wrapperDecimals: number;
+  /**
+   * Mirrors the registry's `isValid` flag. A pair with `isValid === false`
+   * has been revoked but is still present in the registry's enumeration.
+   * The UI should hide or visually mark such pairs. Optional because the
+   * hardcoded fallback predates this field; treat `undefined` as `true`.
+   */
+  isValid?: boolean;
+  /**
+   * Original underlying ERC-20 symbol as reported by the on-chain contract
+   * BEFORE any normalization (e.g. `USDCMock` rather than the normalized
+   * `USDC`). Used by the faucet to detect mintable mock tokens — only
+   * symbols ending in `Mock` (case-insensitive) have a public `mint()`.
+   * Optional because the hardcoded fallback doesn't carry it; the faucet
+   * falls back to the hardcoded mock list when this is absent.
+   */
+  underlyingRawSymbol?: string;
 }
 
 // Registry contract addresses per network

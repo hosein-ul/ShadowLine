@@ -7,9 +7,10 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import CopyButton from '@/components/ui/CopyButton';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS } from '@/config/contracts';
+import Skeleton from '@/components/ui/Skeleton';
 import { formatAddress } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs } from '@/lib/registry';
 import BlurIn from '@/components/ui/BlurIn';
 import {
   Search,
@@ -17,25 +18,39 @@ import {
   Shield,
   ExternalLink,
   Info,
+  AlertTriangle,
+  Database,
 } from 'lucide-react';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRevoked, setShowRevoked] = useState(false);
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
-  const wrappers = KNOWN_WRAPPERS[activeChainId] ?? [];
+  // Live on-chain read of the WrappersRegistry, with hardcoded fallback when
+  // disconnected or chain-misaligned (see src/lib/registry.ts).
+  const { pairs, isLoading, isFromCache, total } = useRegistryPairs(activeChainId);
+
+  const visibleWrappers = useMemo(
+    () => (showRevoked ? pairs : pairs.filter((p) => p.isValid !== false)),
+    [pairs, showRevoked],
+  );
+  const revokedCount = useMemo(
+    () => pairs.filter((p) => p.isValid === false).length,
+    [pairs],
+  );
 
   const filteredWrappers = useMemo(() => {
-    if (!searchQuery) return wrappers;
+    if (!searchQuery) return visibleWrappers;
     const q = searchQuery.toLowerCase();
-    return wrappers.filter(
+    return visibleWrappers.filter(
       w =>
         w.name.toLowerCase().includes(q) ||
         w.symbol.toLowerCase().includes(q) ||
         w.erc20Address.toLowerCase().includes(q) ||
         w.erc7984Address.toLowerCase().includes(q)
     );
-  }, [wrappers, searchQuery]);
+  }, [visibleWrappers, searchQuery]);
 
   const explorerBase = isTestnet
     ? 'https://sepolia.etherscan.io'
@@ -57,13 +72,36 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* Source-of-data indicator: lets the user know whether the list is a
+          live on-chain read or the hardcoded fallback. Critical for trust on
+          a "registry explorer" page. */}
+      {isFromCache && (
+        <Card variant="glass" padding="sm" style={{ marginBottom: 'var(--sp-4)', position: 'relative', zIndex: 2 }}>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
+              <Database size={14} />
+            </span>
+            <span>
+              Showing a cached snapshot. Connect a wallet on{' '}
+              {isTestnet ? 'Sepolia' : 'Ethereum Mainnet'} to read the live on-chain
+              WrappersRegistry — the live list may include newer pairs.
+            </span>
+          </div>
+        </Card>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-3 gap-4" style={{ marginBottom: 'var(--sp-8)', position: 'relative', zIndex: 2 }}>
         <Card variant="glass" padding="md" hover>
           <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Registered Pairs</div>
           <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }} className="text-gradient">
-            {wrappers.length}
+            {isLoading && pairs.length === 0 ? <Skeleton width={48} height={36} /> : total}
           </div>
+          {revokedCount > 0 && (
+            <div className="text-xs text-muted" style={{ marginTop: 'var(--sp-1)' }}>
+              {revokedCount} revoked
+            </div>
+          )}
         </Card>
         <Card variant="glass" padding="md" hover>
           <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Active Network</div>
@@ -99,19 +137,31 @@ export default function HomePage() {
             style={{ paddingLeft: '40px' }}
           />
         </div>
-        <div className="network-switcher">
-          <button
-            className={`network-option ${isTestnet ? 'active' : ''}`}
-            onClick={() => setIsTestnet(true)}
-          >
-            Sepolia
-          </button>
-          <button
-            className={`network-option ${!isTestnet ? 'active' : ''}`}
-            onClick={() => setIsTestnet(false)}
-          >
-            Mainnet
-          </button>
+        <div className="flex items-center gap-3">
+          {revokedCount > 0 && (
+            <label className="flex items-center gap-2 text-xs text-muted" style={{ cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showRevoked}
+                onChange={(e) => setShowRevoked(e.target.checked)}
+              />
+              Show revoked
+            </label>
+          )}
+          <div className="network-switcher">
+            <button
+              className={`network-option ${isTestnet ? 'active' : ''}`}
+              onClick={() => setIsTestnet(true)}
+            >
+              Sepolia
+            </button>
+            <button
+              className={`network-option ${!isTestnet ? 'active' : ''}`}
+              onClick={() => setIsTestnet(false)}
+            >
+              Mainnet
+            </button>
+          </div>
         </div>
       </div>
 
@@ -128,7 +178,17 @@ export default function HomePage() {
             </tr>
           </thead>
           <tbody>
-            {filteredWrappers.length === 0 ? (
+            {isLoading && filteredWrappers.length === 0 ? (
+              // Skeleton rows while the first registry read is in flight and
+              // we have no fallback cached for this chain.
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`skeleton-${i}`}>
+                  <td colSpan={5}>
+                    <Skeleton height={42} />
+                  </td>
+                </tr>
+              ))
+            ) : filteredWrappers.length === 0 ? (
               <tr>
                 <td colSpan={5}>
                   <div className="empty-state" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
@@ -143,14 +203,22 @@ export default function HomePage() {
               </tr>
             ) : (
               filteredWrappers.map(wrapper => {
+                const isRevoked = wrapper.isValid === false;
                 return (
-                  <tr key={wrapper.erc20Address}>
+                  <tr key={wrapper.erc20Address} style={isRevoked ? { opacity: 0.55 } : undefined}>
                     {/* Token Info */}
                     <td>
                       <div className="table-token">
                         <TokenIcon symbol={wrapper.symbol} size={28} />
                         <div>
-                          <div style={{ fontWeight: 600 }}>{wrapper.name}</div>
+                          <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {wrapper.name}
+                            {isRevoked && (
+                              <Badge variant="error" size="sm" style={{ gap: 4 }}>
+                                <AlertTriangle size={10} /> Revoked
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-muted text-xs">{wrapper.symbol}</div>
                         </div>
                       </div>
@@ -211,18 +279,24 @@ export default function HomePage() {
 
                     {/* Actions */}
                     <td style={{ textAlign: 'right' }}>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/wrap?token=${wrapper.symbol}&action=wrap`}>
-                          <Button variant="primary" size="sm" style={{ gap: '4px' }}>
-                            <Shield size={12} /> Shield
-                          </Button>
-                        </Link>
-                        <Link href={`/wrap?token=${wrapper.symbol}&action=unwrap`}>
-                          <Button variant="secondary" size="sm">
-                            Unshield
-                          </Button>
-                        </Link>
-                      </div>
+                      {isRevoked ? (
+                        <span className="text-xs text-muted" title="This pair has been revoked from the registry">
+                          Unavailable
+                        </span>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <Link href={`/wrap?token=${wrapper.symbol}&action=wrap`}>
+                            <Button variant="primary" size="sm" style={{ gap: '4px' }}>
+                              <Shield size={12} /> Shield
+                            </Button>
+                          </Link>
+                          <Link href={`/wrap?token=${wrapper.symbol}&action=unwrap`}>
+                            <Button variant="secondary" size="sm">
+                              Unshield
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
