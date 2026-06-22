@@ -11,7 +11,8 @@ import { sepolia, mainnet } from 'wagmi/chains';
  * snapshot only**, used while the wallet is disconnected or while the live
  * call is in flight. Do not rely on it for correctness — it WILL drift from
  * the registry over time (the audit captured two missing pairs already:
- * Sepolia `ctGBP` and Mainnet `cbbqTGBP`).
+ * Sepolia `ctGBP`; Mainnet `cbbqTGBP` is blocklisted as a suspected
+ * test entry — see `BLOCKLISTED_WRAPPERS` in `src/lib/registry.ts`).
  *
  * `REGISTRY_ADDRESSES` is exported for any direct on-chain reads (indexers,
  * CLI scripts) but the app itself goes through the SDK.

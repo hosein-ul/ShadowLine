@@ -8,6 +8,8 @@ import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
 import { type WrapperPair } from '@/config/contracts';
 import { formatAmount, formatAddress } from '@/lib/utils';
+import { classifyError } from '@/lib/errors';
+import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs } from '@/lib/registry';
 import { useAccount, useConnect } from 'wagmi';
@@ -272,12 +274,13 @@ export default function PortfolioPage() {
         message: 'All cached FHE permits have been cleared. Future decryptions will prompt for wallet signatures.',
       });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Error revoking session:', err);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Reset Failed',
-        message: err.message || 'Failed to revoke decryption session.',
+        title: classified.title,
+        message: classified.message,
       });
     },
   });
@@ -352,7 +355,17 @@ export default function PortfolioPage() {
           </Button>
         </div>
       ) : (
-        /* Token Positions Grid */
+        <>
+        {/* Pending unshield banners — one per wrapper token */}
+        {wrappers.map((w) => (
+          <PendingUnshieldBanner
+            key={`pending-${w.erc7984Address}`}
+            tokenAddress={w.erc7984Address}
+            symbol={`c${w.symbol}`}
+          />
+        ))}
+
+        {/* Token Positions Grid */}
         <div className="grid grid-2 gap-4">
           {wrappers.map((wrapper) => {
             const wrapperAddressLower = wrapper.erc7984Address.toLowerCase();
@@ -375,6 +388,7 @@ export default function PortfolioPage() {
             );
           })}
         </div>
+        </>
       )}
 
       {/* Empty State */}

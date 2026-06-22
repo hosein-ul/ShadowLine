@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
 import { useRegistryPairs, isMintablePair } from '@/lib/registry';
+import { classifyError } from '@/lib/errors';
 import { useToast } from '@/components/ui/Toast';
 import {
   useAccount,
@@ -135,13 +136,14 @@ export default function FaucetPage() {
         title: 'Faucet Request Submitted',
         message: 'Transaction sent to the network. Minting mock tokens...',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setIsRequestPending(false);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Faucet Request Failed',
-        message: err.message || 'The faucet mint transaction was rejected.',
+        title: classified.title,
+        message: classified.message,
       });
     }
   };

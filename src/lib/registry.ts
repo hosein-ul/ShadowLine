@@ -120,13 +120,38 @@ export function isMintablePair(pair: WrapperPair): boolean {
 }
 
 /**
+ * Blocklist: wrapper addresses that should be hidden from the UI even though
+ * they appear in the on-chain registry. Each entry documents *why* it was
+ * excluded so future maintainers can re-evaluate.
+ *
+ * The app reads the WrappersRegistry live — this is an intentional manual
+ * override, not a limitation of the dynamic read. If Zama removes or
+ * replaces these entries in the registry, this blocklist becomes a no-op.
+ */
+const BLOCKLISTED_WRAPPERS: Record<string, string> = {
+  // cbbqTGBP on Mainnet — listed in Zama's official Mainnet address docs
+  // (https://docs.zama.org/protocol/protocol-apps/addresses/mainnet/ethereum)
+  // but the name "bbqTGBP" does not correspond to any known asset, and the
+  // underlying address (0xbeeffABcd0dB09589Dd21854aa760C52aB4bf04F) uses a
+  // vanity hex pattern ("beeff"). This is very likely a Zama-internal
+  // test/placeholder entry or a documentation typo. Displaying it would
+  // confuse end-users. If Zama clarifies this entry in the future, remove
+  // it from this blocklist.
+  '0xba4cff6ed6f7cb2a58776deca4e984b498446762': 'Suspected test/placeholder entry (cbbqTGBP)',
+};
+
+function isBlocklisted(pair: WrapperPair): boolean {
+  return pair.erc7984Address.toLowerCase() in BLOCKLISTED_WRAPPERS;
+}
+
+/**
  * Read the on-chain WrappersRegistry for a given chain.
  *
  * Behaviour:
  *  - When the wallet is connected AND its chain matches `chainId`, calls
  *    `useListPairs` against the SDK's signer-bound registry and returns the
- *    live list (including pairs the hardcoded fallback does not know
- *    about — e.g. Sepolia `ctGBP`, Mainnet `cbbqTGBP`).
+ *    live list (including pairs the hardcoded fallback does not know about).
+ *    Blocklisted entries (see `BLOCKLISTED_WRAPPERS` above) are filtered out.
  *  - Otherwise (unconnected, chain mismatch, or SDK error), falls back to
  *    the local `KNOWN_WRAPPERS[chainId]` snapshot so unconnected visitors
  *    can still browse. The result is flagged `isFromCache: true` so the UI
@@ -167,13 +192,15 @@ export function useRegistryPairs(chainId: SupportedChainId): RegistryPairsResult
     const fallbackPairs = KNOWN_WRAPPERS[chainId] ?? [];
 
     if (isChainAligned && sdkResult.data?.items && sdkResult.data.items.length > 0) {
-      const mapped = sdkResult.data.items.map(mapSdkPair);
+      const mapped = sdkResult.data.items
+        .map(mapSdkPair)
+        .filter((p) => !isBlocklisted(p));
       return {
         pairs: mapped,
         isLoading: false,
         error: null,
         isFromCache: false,
-        total: sdkResult.data.total ?? mapped.length,
+        total: mapped.length,
       };
     }
 

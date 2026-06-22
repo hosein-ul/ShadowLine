@@ -8,6 +8,8 @@ import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
+import { classifyError } from '@/lib/errors';
+import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs, findPairBySymbol } from '@/lib/registry';
 import { useToast } from '@/components/ui/Toast';
@@ -313,14 +315,15 @@ function WrapPageContent() {
         refetchPublicBalance();
         refetchWrapperBalance();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setTxStep(0);
       setActiveTxHash(undefined);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Transaction Failed',
-        message: err.message || 'The transaction was rejected or failed.',
+        title: classified.title,
+        message: classified.message,
       });
     }
   };
@@ -348,6 +351,16 @@ function WrapPageContent() {
             : 'Convert encrypted ERC-7984 tokens back to public ERC-20 tokens.'}
         </p>
       </div>
+
+      {/* Pending unshield banner for the currently selected token */}
+      {selectedWrapper && (
+        <div style={{ maxWidth: '480px', margin: '0 auto var(--sp-4)' }}>
+          <PendingUnshieldBanner
+            tokenAddress={selectedWrapper.erc7984Address}
+            symbol={`c${selectedWrapper.symbol}`}
+          />
+        </div>
+      )}
 
       {/* Swap Card */}
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
