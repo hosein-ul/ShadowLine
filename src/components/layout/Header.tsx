@@ -26,6 +26,8 @@ const NAV_ITEMS = [
   { href: '/wrap', label: 'Wrap / Unwrap' },
   { href: '/portfolio', label: 'Portfolio' },
   { href: '/faucet', label: 'Faucet' },
+  { href: '/learn', label: 'Learn' },
+  { href: '/developers', label: 'Developers' },
 ];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [

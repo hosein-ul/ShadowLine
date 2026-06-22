@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export default function ErrorBoundary({
   error,
@@ -64,7 +65,7 @@ export default function ErrorBoundary({
         >
           Try again
         </button>
-        <a
+        <Link
           href="/"
           style={{
             padding: '0.5rem 1.25rem',
@@ -77,7 +78,7 @@ export default function ErrorBoundary({
           }}
         >
           Back to Registry
-        </a>
+        </Link>
       </div>
     </div>
   );

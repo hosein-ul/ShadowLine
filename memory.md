@@ -111,14 +111,16 @@ See `CLAUDE.md` for full project context. See the plan file for the master check
 ### Completed
 - Phase 1: Bug fixes (tooltip, matchZamaError, useResumeUnshield, error boundary, .env.example)
 - Phase 2.1: REST API `/api/registry`
-- Phase 4.1: GitHub Actions CI
+- Phase 2.3: Interactive tutorial `/learn` page (5-step FHE walkthrough with progress tracking)
+- Phase 2.4: Code snippet generator `/developers` page (4 operations × 3 frameworks + REST API)
+- Phase 4.1: GitHub Actions CI (now with Vitest step)
+- Phase 4.2: Vitest unit tests (30 tests for formatAmount, parseAmount, formatAddress, cn, etc.)
+- Phase 4.3: Dead code cleanup (error.tsx Link fix, verified no stale KNOWN_WRAPPERS refs)
 
 ### Next Up
-- Phase 2.3: Interactive tutorial `/learn` page
-- Phase 2.4: Code snippet generator `/developers` page
 - Phase 2.2: npm package `@zamavault/sdk`
 - Phase 3: Analytics dashboard + activity feed
-- Phase 4.2-4.4: Vitest tests, dead code cleanup, mobile test
+- Phase 4.4: Mobile responsive test (360px)
 - Phase 5: README rewrite, final polish
 
 ### Deferred (User Handles)

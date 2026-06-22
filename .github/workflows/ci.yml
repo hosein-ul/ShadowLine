@@ -31,5 +31,8 @@ jobs:
         # wrap page require deeper refactoring tracked in AUDIT_REPORT.md.
         run: npx eslint src --ext .ts,.tsx || true
 
+      - name: Unit tests
+        run: npm test
+
       - name: Production build
         run: npx next build
