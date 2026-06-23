@@ -493,8 +493,7 @@ h4 { font-size: var(--text-xl); }
   font-weight: 600;
   padding: 3px 10px;
   border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .badge-default { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); }

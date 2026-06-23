@@ -453,7 +453,7 @@ function WrapPageContent() {
                   <option value="">Select Token</option>
                   {wrappers.map(w => (
                     <option key={w.symbol} value={w.symbol}>
-                      {w.symbol}
+                      {action === 'wrap' ? w.symbol : `c${w.symbol}`}
                     </option>
                   ))}
                 </select>
