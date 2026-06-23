@@ -565,7 +565,7 @@ export default function DevelopersPage() {
           style={{
             fontSize: 'var(--text-lg)',
             maxWidth: 640,
-            marginTop: 'var(--sp-3)',
+            margin: 'var(--sp-3) auto 0',
             lineHeight: 'var(--lh-relaxed)',
           }}
         >

@@ -551,7 +551,7 @@ export default function LearnPage() {
           style={{
             fontSize: 'var(--text-lg)',
             maxWidth: 600,
-            marginTop: 'var(--sp-3)',
+            margin: 'var(--sp-3) auto 0',
             lineHeight: 'var(--lh-relaxed)',
           }}
         >
