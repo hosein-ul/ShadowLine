@@ -15,6 +15,7 @@ import { useRegistryPairs, isMintablePair, type RegistryPairsResult } from '@/li
 import { type WrapperPair } from '@/config/contracts';
 import { ERC20_ABI } from '@/lib/wrapper-abi';
 import BlurIn from '@/components/ui/BlurIn';
+import HeroSection from '@/components/hero/HeroSection';
 import { useAccount, useReadContract } from 'wagmi';
 import { useConfidentialBalance } from '@zama-fhe/react-sdk';
 import {
@@ -291,7 +292,11 @@ export default function HomePage() {
   const explorerBase = isTestnet ? 'https://eth-sepolia.blockscout.com' : 'https://eth.blockscout.com';
 
   return (
-    <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
+    <>
+    {/* ── Hero Section ── */}
+    <HeroSection />
+
+    <div id="registry-section" className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
       {/* Header */}
       <div className="page-header" style={{ position: 'relative', zIndex: 2 }}>
         <h1><BlurIn text="Confidential Wrapper Registry" duration={600} /></h1>
@@ -451,5 +456,6 @@ export default function HomePage() {
         </div>
       </Card>
     </div>
+    </>
   );
 }
