@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { href: '/faucet', label: 'Faucet' },
   { href: '/learn', label: 'Learn' },
   { href: '/developers', label: 'Dev Tools' },
+  { href: '/analytics', label: 'Analytics' },
   { href: '/docs', label: 'Docs' },
 ];
 

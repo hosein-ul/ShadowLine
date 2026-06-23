@@ -1364,6 +1364,105 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 }
 
 /* ==========================================================================
+   ANALYTICS PAGE
+   ========================================================================== */
+
+.analytics-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-8);
+}
+
+.analytics-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-8);
+}
+
+/* ── TVL bar ── */
+.analytics-tvl-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.analytics-tvl-info {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.analytics-tvl-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.analytics-tvl-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, transparent) 100%);
+  border-radius: var(--radius-full);
+  transition: width 0.6s var(--ease);
+  min-width: 4px;
+}
+
+.analytics-tvl-stats {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+/* ── Activity row ── */
+.analytics-activity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  transition: border-color var(--t-fast);
+}
+
+.analytics-activity-row:hover {
+  border-color: var(--border-hover);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .analytics-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-3);
+  }
+  .analytics-main-grid {
+    grid-template-columns: 1fr;
+  }
+  .analytics-tvl-info {
+    width: 60px;
+  }
+  .analytics-tvl-stats {
+    width: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==========================================================================
    DOCS PAGE — Developer Documentation
    ========================================================================== */
 
@@ -1927,5 +2026,110 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   .docs-table th,
   .docs-prop-row td {
     padding: var(--sp-2) var(--sp-3);
+  }
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVE — Global fixes for 360px–768px
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Header: hide nav labels, collapse to icon-only on very small screens */
+  .header-inner {
+    padding: 0 var(--sp-3);
+    gap: var(--sp-2);
+  }
+
+  .header-nav {
+    display: none; /* hidden on mobile — user scrolls or uses links */
+  }
+
+  .header-actions {
+    gap: var(--sp-2);
+  }
+
+  /* Container padding */
+  .container {
+    padding: 0 var(--sp-3);
+  }
+
+  /* Page headers */
+  .page-header {
+    padding: var(--sp-6) 0 var(--sp-4);
+  }
+
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+
+  /* Registry table: horizontal scroll */
+  .registry-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Portfolio grid: single column */
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Swap card */
+  .swap-panel {
+    padding: var(--sp-4);
+  }
+
+  /* Modal */
+  .modal-content {
+    max-width: calc(100vw - 32px);
+    margin: 0 var(--sp-4);
+  }
+
+  /* Steps (wrap flow) */
+  .steps {
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-logo span { display: none; } /* hide text, keep logo icon */
+  .header-logo svg { margin: 0; }
+
+  /* Network switcher: compact */
+  .network-switcher {
+    gap: 2px;
+  }
+
+  .network-option {
+    padding: 4px 8px !important;
+    font-size: 11px;
+  }
+
+  /* Theme palette button: hide label */
+  .theme-selector-dropdown .btn span:not(:first-child) {
+    display: none;
+  }
+
+  /* Typography */
+  h1 { font-size: var(--text-2xl); }
+
+  /* Stat cards: 1 column */
+  .analytics-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Faucet input */
+  .faucet-amount-row {
+    flex-direction: column;
+  }
+
+  /* Docs content */
+  .docs-content {
+    padding: var(--sp-4) var(--sp-3);
+  }
+
+  /* Dev page code block */
+  .dev-code-pre {
+    font-size: 11px;
+    padding: var(--sp-3);
   }
 }
