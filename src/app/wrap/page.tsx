@@ -286,8 +286,11 @@ function WrapPageContent() {
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
         refetchPublicBalance();
-        refetchWrapperBalance();
         refetchAllowance();
+        // NOTE: do NOT call refetchWrapperBalance() here — that would
+        // bypass the enabled:decryptRequested gate and auto-fire an
+        // EIP-712 permit without user consent. The user must click
+        // "Decrypt" again to see the updated confidential balance.
       } else {
         setTxStep(3); // Unshield pending
         const res = await unshield({
@@ -313,7 +316,7 @@ function WrapPageContent() {
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
         refetchPublicBalance();
-        refetchWrapperBalance();
+        // NOTE: do NOT call refetchWrapperBalance() — same reason as above.
       }
     } catch (err: unknown) {
       console.error(err);
