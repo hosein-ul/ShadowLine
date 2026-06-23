@@ -34,80 +34,14 @@ import {
 // Centralised here so copy can be revised without hunting through JSX.
 
 const TIP = {
-  erc7984: (
-    <>
-      <strong>ERC-7984 Confidential Wrapper</strong>
-      <br />
-      A smart contract that wraps a public ERC-20 token and stores balances as
-      on-chain ciphertext using Zama&apos;s <em>Fully Homomorphic Encryption (FHE)</em>.
-      Nobody — including the node operators — can read your balance without
-      your cryptographic permit.
-    </>
-  ),
-  confidentialBadge: (
-    <>
-      <strong>Confidential token (ERC-7984)</strong>
-      <br />
-      Balances and transfer amounts are encrypted on-chain via FHE. Only the
-      owner can decrypt them by signing an EIP-712 permit with their wallet.
-    </>
-  ),
-  publicBalance: (
-    <>
-      <strong>Public ERC-20 balance</strong>
-      <br />
-      Your current unencrypted balance of the underlying token. Visible to
-      anyone on-chain — shield it to make it private.
-    </>
-  ),
-  confidentialBalance: (
-    <>
-      <strong>Confidential (encrypted) balance</strong>
-      <br />
-      Your balance is stored as an encrypted ciphertext on-chain. Click{' '}
-      <em>Decrypt</em> to sign an <strong>EIP-712 permit</strong> in your
-      wallet — this creates a short-lived session key that lets the Zama
-      Gateway decrypt the value for you locally. Your private key never
-      leaves your wallet and the plaintext is never stored on-chain.
-    </>
-  ),
-  mockBadge: (
-    <>
-      <strong>Mock token (testnet only)</strong>
-      <br />
-      This underlying ERC-20 was deployed by Zama for developer testing. It
-      has a public <code>mint()</code> function (up to 1 000 000 tokens per
-      call) so you can request free test tokens from the Faucet page.
-    </>
-  ),
-  shield: (sym: string) => (
-    <>
-      <strong>Shield (Wrap)</strong>
-      <br />
-      Approve and deposit your public <strong>{sym}</strong> tokens into the
-      ERC-7984 wrapper. The wrapper mints an encrypted confidential balance
-      — your on-chain amount becomes private.
-    </>
-  ),
-  unshield: (sym: string) => (
-    <>
-      <strong>Unshield (Unwrap)</strong>
-      <br />
-      Burn your encrypted <strong>c{sym}</strong> tokens and retrieve the
-      equivalent public <strong>{sym}</strong>. The Zama Gateway processes
-      the decryption proof before releasing the underlying tokens.
-    </>
-  ),
-  permit: (
-    <>
-      <strong>EIP-712 Permit</strong>
-      <br />
-      A typed off-chain signature that authorises the Zama Gateway to decrypt
-      your encrypted balance for this session. It does <em>not</em> spend any
-      tokens or approve any contract — it is a read-only authorisation that
-      expires automatically.
-    </>
-  ),
+  erc7984: 'ERC-7984 wrapper stores your balance as on-chain ciphertext via FHE — unreadable by anyone without your cryptographic permit.',
+  confidentialBadge: 'Balances are encrypted on-chain via FHE. Only you can decrypt them by signing an EIP-712 permit.',
+  publicBalance: 'Your unencrypted ERC-20 balance, visible to anyone on-chain. Shield it to make it private.',
+  confidentialBalance: 'Encrypted balance. Click Decrypt to sign a read-only EIP-712 permit — no tokens are spent, your private key stays in your wallet.',
+  mockBadge: 'Testnet mock token deployed by Zama. Has a public mint() — get free tokens from the Faucet page.',
+  shield: (sym: string) => `Convert public ${sym} into encrypted c${sym}. Requires ERC-20 approval then the shield transaction.`,
+  unshield: (sym: string) => `Burn encrypted c${sym} and retrieve public ${sym}. Two-step: on-chain unwrap + Gateway proof finalization.`,
+  permit: 'Read-only off-chain signature (EIP-712). Authorises Zama Gateway to decrypt your balance for this session. Does not spend tokens or approve contracts.',
 };
 
 // ─── Per-row component ────────────────────────────────────────────────────────
@@ -167,11 +101,10 @@ function RegistryTokenRow({
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
               {cleanName}
               {isMock && (
-                <Tooltip content={TIP.mockBadge}>
-                  <Badge variant="default" size="sm" style={{ cursor: 'help', fontSize: 9 }}>
-                    Mock
-                  </Badge>
-                </Tooltip>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                  <Badge variant="default" size="sm" style={{ fontSize: 9 }}>Mock</Badge>
+                  <Tooltip content={TIP.mockBadge} />
+                </div>
               )}
               {isRevoked && (
                 <Badge variant="error" size="sm" style={{ gap: 3 }}>
@@ -208,15 +141,12 @@ function RegistryTokenRow({
       {/* ── ERC-7984 Wrapper ──────────────────────────────────────────────── */}
       <td>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Tooltip content={TIP.confidentialBadge}>
-            <Badge
-              variant="accent"
-              size="sm"
-              style={{ gap: 3, cursor: 'help', alignSelf: 'flex-start' }}
-            >
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+            <Badge variant="accent" size="sm" style={{ gap: 3, alignSelf: 'flex-start' }}>
               <Lock size={9} /> Confidential
             </Badge>
-          </Tooltip>
+            <Tooltip content={TIP.confidentialBadge} />
+          </div>
           <div className="table-address">
             <a
               href={`${explorerBase}/address/${wrapper.erc7984Address}`}

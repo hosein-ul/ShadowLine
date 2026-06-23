@@ -33,6 +33,7 @@ interface TokenTVL {
   symbol: string;
   tvlRaw: bigint;
   tvlCompact: string;   // "23.0M", "5.1K", "412"
+  tvlHuman: number;     // normalized float (for sorting & bar width)
   decimals: number;
   erc20Address: string;
   wrapperAddress: string;
@@ -161,15 +162,15 @@ function StatCard({
 /* ─── TVL bar ────────────────────────────────────────────────────────────────── */
 function TVLBar({
   token,
-  maxTvl,
+  maxTvlHuman,
   explorerBase,
 }: {
   token: TokenTVL;
-  maxTvl: bigint;
+  maxTvlHuman: number;
   explorerBase: string;
 }) {
-  const pct = maxTvl > 0n
-    ? Math.max(Number((token.tvlRaw * 10000n) / maxTvl) / 100, 0.5)
+  const pct = maxTvlHuman > 0
+    ? Math.max((token.tvlHuman / maxTvlHuman) * 100, 0.5)
     : 0;
 
   const volCompact = formatTVLCompact(token.shieldVolume, token.decimals);
@@ -318,7 +319,7 @@ function RatioBar({ shields, unshields }: { shields: number; unshields: number }
 
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 
-const BLOCK_LOOKBACK = 5000n; // ~17 hours on Sepolia (12s blocks)
+const BLOCK_LOOKBACK = 7200n; // 24 hours on Sepolia/Mainnet (12s blocks × 7200 = 86400s)
 const BLOCK_TIME_MS = 12_000;  // ~12 seconds per block
 
 export default function AnalyticsPage() {
@@ -385,10 +386,17 @@ export default function AnalyticsPage() {
                 (sum, log) => sum + ((log.args?.value as bigint) ?? 0n), 0n,
               );
 
+              // Compute human-readable TVL (float) for normalized sorting & bar width.
+              // Using raw bigint directly for sort is WRONG because decimals differ:
+              // 22.98M ZAMA (18 dec) raw >> 22.89M USDC (6 dec) raw, despite similar value.
+              const divisor = 10n ** BigInt(pair.decimals);
+              const tvlHuman = Number(tvlRaw / divisor) + Number(tvlRaw % divisor) / Math.pow(10, pair.decimals);
+
               const tokenTvl: TokenTVL = {
                 symbol: pair.symbol,
                 tvlRaw,
                 tvlCompact: formatTVLCompact(tvlRaw, pair.decimals),
+                tvlHuman,
                 decimals: pair.decimals,
                 erc20Address: pair.erc20Address,
                 wrapperAddress: pair.erc7984Address,
@@ -444,7 +452,8 @@ export default function AnalyticsPage() {
         .sort((a, b) => Number(b.blockNumber - a.blockNumber))
         .slice(0, 25);
 
-      setTvlData(allTvl.sort((a, b) => (b.tvlRaw > a.tvlRaw ? 1 : -1)));
+      // Sort by human-readable value (normalized by decimals), not raw bigint.
+      setTvlData(allTvl.sort((a, b) => b.tvlHuman - a.tvlHuman));
       setActivity(allEvents);
       setLastUpdated(new Date());
     } catch (err) {
@@ -465,7 +474,7 @@ export default function AnalyticsPage() {
   const uniqueShielders = new Set(
     activity.filter((e) => e.type === 'shield').map((e) => e.from.toLowerCase()),
   ).size;
-  const maxTvl = tvlData.reduce((m, t) => (t.tvlRaw > m ? t.tvlRaw : m), 0n);
+  const maxTvlHuman = tvlData.reduce((m, t) => (t.tvlHuman > m ? t.tvlHuman : m), 0);
   const activePairs = tvlData.filter((t) => t.tvlRaw > 0n).length;
 
   // Most active token by tx count
@@ -506,7 +515,7 @@ export default function AnalyticsPage() {
           {lastUpdated
             ? `Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading…'}
-          &nbsp;·&nbsp;Last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks (~17h)
+          &nbsp;·&nbsp;Last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks (~24h)
           &nbsp;·&nbsp;Showing up to 25 recent events
         </div>
         <Button
@@ -631,7 +640,7 @@ export default function AnalyticsPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
               {tvlData.map((t) => (
-                <TVLBar key={t.symbol} token={t} maxTvl={maxTvl} explorerBase={explorerBase} />
+                <TVLBar key={t.symbol} token={t} maxTvlHuman={maxTvlHuman} explorerBase={explorerBase} />
               ))}
             </div>
           )}
@@ -664,7 +673,7 @@ export default function AnalyticsPage() {
             )}
           </h3>
           <p className="text-xs text-muted" style={{ marginBottom: 'var(--sp-5)' }}>
-            Latest shield &amp; unshield events across all tokens · last ~17h · up to 25 shown
+            Latest shield &amp; unshield events across all tokens · last ~24h · up to 25 shown
           </p>
 
           {isLoading && activity.length === 0 ? (
