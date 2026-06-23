@@ -253,7 +253,9 @@ function WrapPageContent() {
     if (!selectedWrapper || !address) return;
     try {
       if (action === 'wrap') {
-        setTxStep(1); // Approval confirmation pending
+        // If allowance is already sufficient, SDK skips approval —
+        // jump straight to step 3 (Shield pending) for consistent UI.
+        setTxStep(needsApproval ? 1 : 3);
         const res = await shield({
           amount: parsedInputAmount,
           onApprovalSubmitted: (txHash) => {
@@ -297,12 +299,28 @@ function WrapPageContent() {
         const res = await unshield({
           amount: parsedInputAmount,
           onUnwrapSubmitted: (txHash) => {
-            setTxStep(4); // Unshield mining
+            setTxStep(4); // Unwrap on-chain, waiting for proof
             setActiveTxHash(txHash);
             addToast({
               variant: 'info',
-              title: 'Unshielding Submitted',
-              message: 'Unshield transaction sent. Waiting for confirmation...',
+              title: 'Unwrap Submitted',
+              message: 'On-chain unwrap request sent. Waiting for Gateway proof...',
+            });
+          },
+          onFinalizing: () => {
+            // Gateway is generating the decryption proof
+            addToast({
+              variant: 'info',
+              title: 'Finalizing',
+              message: 'Zama Gateway is generating the decryption proof. This may take 15–40 seconds.',
+            });
+          },
+          onFinalizeSubmitted: (txHash) => {
+            setActiveTxHash(txHash);
+            addToast({
+              variant: 'info',
+              title: 'Finalize Submitted',
+              message: 'Finalization transaction sent. Almost done...',
             });
           },
         });
@@ -564,7 +582,7 @@ function WrapPageContent() {
           {txStep > 0 && (
             <div style={{ marginTop: 'var(--sp-5)', padding: '0 var(--sp-2)' }}>
               <div className="steps" style={{ justifyContent: 'center' }}>
-                {action === 'wrap' && (
+                {action === 'wrap' && needsApproval && (
                   <>
                     <div className={`step ${txStep >= 2 ? 'completed' : txStep === 1 ? 'active' : ''}`}>
                       <div className="step-dot">{txStep >= 2 ? <Check size={12} /> : '1'}</div>
@@ -574,12 +592,25 @@ function WrapPageContent() {
                   </>
                 )}
                 <div className={`step ${txStep >= 4 ? 'completed' : txStep === 3 ? 'active' : ''}`}>
-                  <div className="step-dot">{txStep >= 4 ? <Check size={12} /> : action === 'wrap' ? '2' : '1'}</div>
-                  <span className="text-xs">{action === 'wrap' ? 'Shield' : 'Unshield'}</span>
+                  <div className="step-dot">
+                    {txStep >= 4 ? <Check size={12} /> : (action === 'wrap' && needsApproval) ? '2' : '1'}
+                  </div>
+                  <span className="text-xs">{action === 'wrap' ? 'Shield' : 'Unwrap'}</span>
                 </div>
                 <div className="step-line" />
+                {action === 'unwrap' && (
+                  <>
+                    <div className={`step ${txStep === 5 ? 'completed' : txStep >= 4 ? 'active' : ''}`}>
+                      <div className="step-dot">{txStep === 5 ? <Check size={12} /> : '2'}</div>
+                      <span className="text-xs">Finalize</span>
+                    </div>
+                    <div className="step-line" />
+                  </>
+                )}
                 <div className={`step ${txStep === 5 ? 'completed' : ''}`}>
-                  <div className="step-dot">{txStep === 5 ? <Check size={12} /> : action === 'wrap' ? '3' : '2'}</div>
+                  <div className="step-dot">
+                    {txStep === 5 ? <Check size={12} /> : action === 'unwrap' ? '3' : (needsApproval ? '3' : '2')}
+                  </div>
                   <span className="text-xs">Done</span>
                 </div>
               </div>
