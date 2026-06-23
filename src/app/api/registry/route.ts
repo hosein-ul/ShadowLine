@@ -12,7 +12,7 @@ import { REGISTRY_ADDRESSES, KNOWN_WRAPPERS } from '@/config/contracts';
  * Falls back to the hardcoded snapshot when the on-chain read fails.
  *
  * Usage:
- *   fetch("https://zamavault.xyz/api/registry?chain=sepolia")
+ *   fetch("https://YOUR_DEPLOYMENT_URL/api/registry?chain=sepolia")
  *     .then(r => r.json())
  *     .then(data => console.log(data.pairs))
  */

@@ -358,7 +358,7 @@ export default function HomePage() {
     );
   }, [visibleWrappers, searchQuery]);
 
-  const explorerBase = isTestnet ? 'https://sepolia.etherscan.io' : 'https://etherscan.io';
+  const explorerBase = isTestnet ? 'https://eth-sepolia.blockscout.com' : 'https://eth.blockscout.com';
 
   return (
     <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
