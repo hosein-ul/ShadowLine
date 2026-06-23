@@ -11,8 +11,7 @@ import TokenIcon from '@/components/ui/TokenIcon';
 import BlurIn from '@/components/ui/BlurIn';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs } from '@/lib/registry';
-import { formatAmount, formatAddress } from '@/lib/utils';
-import { CHAIN_CONFIG } from '@/config/chains';
+import { formatAddress } from '@/lib/utils';
 import {
   BarChart2,
   TrendingUp,
@@ -24,6 +23,8 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownLeft,
+  Scale,
+  Zap,
 } from 'lucide-react';
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
@@ -31,12 +32,14 @@ import {
 interface TokenTVL {
   symbol: string;
   tvlRaw: bigint;
-  tvlFormatted: string;
+  tvlCompact: string;   // "23.0M", "5.1K", "412"
   decimals: number;
   erc20Address: string;
   wrapperAddress: string;
   shieldCount: number;
   unshieldCount: number;
+  shieldVolume: bigint;   // total amount shielded (underlying decimals)
+  unshieldVolume: bigint; // total amount unshielded
 }
 
 interface ActivityEvent {
@@ -48,6 +51,7 @@ interface ActivityEvent {
   to: string;
   txHash: string;
   blockNumber: bigint;
+  timeAgo: string; // pre-computed
 }
 
 const TRANSFER_ABI = parseAbiItem(
@@ -63,6 +67,44 @@ const ERC20_BALANCE_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
   },
 ] as const;
+
+/* ─── Helpers ─────────────────────────────────────────────────────────────────── */
+
+/** Format a token amount into compact notation: "23.0M", "5.1K", "412.35" */
+function formatTVLCompact(raw: bigint, decimals: number): string {
+  if (raw === 0n) return '0';
+  const divisor = 10n ** BigInt(decimals);
+  const whole = Number(raw / divisor);
+  const frac = Number(raw % divisor) / Math.pow(10, decimals);
+  const value = whole + frac;
+
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
+  return value.toFixed(2).replace(/\.00$/, '');
+}
+
+/**
+ * Estimate how long ago an event happened without extra RPC calls.
+ * Uses: fetchTimestamp - (latestBlock - eventBlock) × blockTimeMs
+ */
+function estimateTimeAgo(
+  eventBlock: bigint,
+  latestBlock: bigint,
+  fetchTimestamp: number,
+  blockTimeMs = 12_000,
+): string {
+  const blocksDiff = Number(latestBlock - eventBlock);
+  const msAgo = Date.now() - (fetchTimestamp - blocksDiff * blockTimeMs);
+  const sec = Math.max(0, Math.floor(msAgo / 1000));
+
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
 
 /* ─── Stat card ───────────────────────────────────────────────────────────────── */
 function StatCard({
@@ -127,8 +169,10 @@ function TVLBar({
   explorerBase: string;
 }) {
   const pct = maxTvl > 0n
-    ? Number((token.tvlRaw * 10000n) / maxTvl) / 100
+    ? Math.max(Number((token.tvlRaw * 10000n) / maxTvl) / 100, 0.5)
     : 0;
+
+  const volCompact = formatTVLCompact(token.shieldVolume, token.decimals);
 
   return (
     <div className="analytics-tvl-row">
@@ -141,18 +185,21 @@ function TVLBar({
       </div>
 
       <div className="analytics-tvl-bar-wrap">
-        <div
-          className="analytics-tvl-bar-fill"
-          style={{ width: `${Math.max(pct, 0.5)}%` }}
-        />
+        <div className="analytics-tvl-bar-fill" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="analytics-tvl-stats">
         <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', textAlign: 'right' }}>
-          {token.tvlFormatted}
+          {token.tvlCompact}
         </div>
         <div className="text-xs text-muted" style={{ textAlign: 'right' }}>
-          {token.shieldCount}↑ {token.unshieldCount}↓
+          <span style={{ color: 'var(--success)' }}>{token.shieldCount}↑</span>{' '}
+          <span style={{ color: 'var(--warning)' }}>{token.unshieldCount}↓</span>
+          {token.shieldVolume > 0n && (
+            <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>
+              · vol {volCompact}
+            </span>
+          )}
         </div>
       </div>
 
@@ -180,7 +227,9 @@ function ActivityRow({
   const isShield = event.type === 'shield';
   const color = isShield ? 'var(--success)' : 'var(--warning)';
   const Icon = isShield ? ArrowUpRight : ArrowDownLeft;
-  const amount = formatUnits(event.amount, event.decimals);
+  const amountStr = Number(formatUnits(event.amount, event.decimals)).toLocaleString(undefined, {
+    maximumFractionDigits: 4,
+  });
 
   return (
     <div className="analytics-activity-row">
@@ -206,12 +255,17 @@ function ActivityRow({
             {isShield ? 'Shield' : 'Unshield'}
           </span>
           <Badge variant={isShield ? 'success' : 'warning'} size="sm">
-            {amount} {event.symbol}
+            {amountStr} {event.symbol}
           </Badge>
         </div>
-        <div className="text-xs text-muted" style={{ marginTop: 2 }}>
-          {isShield ? 'from' : 'to'}{' '}
-          <code style={{ fontSize: 11 }}>{formatAddress(isShield ? event.from : event.to)}</code>
+        <div className="text-xs text-muted" style={{ marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span>
+            {isShield ? 'from' : 'to'}{' '}
+            <code style={{ fontSize: 11 }}>{formatAddress(isShield ? event.from : event.to)}</code>
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--text-muted)' }}>
+            <Clock size={10} /> {event.timeAgo}
+          </span>
         </div>
       </div>
 
@@ -221,6 +275,7 @@ function ActivityRow({
         rel="noopener noreferrer"
         className="text-xs"
         style={{ color: 'var(--accent)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+        title="View on Blockscout"
       >
         Tx <ExternalLink size={11} />
       </a>
@@ -228,9 +283,43 @@ function ActivityRow({
   );
 }
 
+/* ─── Wrap/Unwrap ratio bar ──────────────────────────────────────────────────── */
+function RatioBar({ shields, unshields }: { shields: number; unshields: number }) {
+  const total = shields + unshields;
+  if (total === 0) return <div className="text-xs text-muted">No events yet</div>;
+  const shieldPct = Math.round((shields / total) * 100);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span className="text-xs" style={{ color: 'var(--success)', fontWeight: 600 }}>
+          Shields {shieldPct}%
+        </span>
+        <span className="text-xs" style={{ color: 'var(--warning)', fontWeight: 600 }}>
+          {100 - shieldPct}% Unshields
+        </span>
+      </div>
+      <div
+        style={{
+          height: 10,
+          borderRadius: 'var(--radius-full)',
+          overflow: 'hidden',
+          background: `linear-gradient(to right, var(--warning) 0%, var(--warning) ${100 - shieldPct}%, var(--success) ${100 - shieldPct}%, var(--success) 100%)`,
+          display: 'flex',
+        }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        <span className="text-xs text-muted">{unshields} txs</span>
+        <span className="text-xs text-muted">{shields} txs</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 
 const BLOCK_LOOKBACK = 5000n; // ~17 hours on Sepolia (12s blocks)
+const BLOCK_TIME_MS = 12_000;  // ~12 seconds per block
 
 export default function AnalyticsPage() {
   const { activeChainId, isTestnet } = useActiveNetwork();
@@ -253,17 +342,17 @@ export default function AnalyticsPage() {
 
     try {
       const latestBlock = await client.getBlockNumber();
+      const fetchTimestamp = Date.now();
       const fromBlock = latestBlock > BLOCK_LOOKBACK
         ? latestBlock - BLOCK_LOOKBACK
         : 0n;
 
-      // Fetch all data in parallel per token
       const tokenResults = await Promise.all(
         pairs
           .filter((p) => p.isValid !== false)
           .map(async (pair) => {
             try {
-              // TVL: underlying ERC-20 balance held by the wrapper
+              // TVL
               const tvlRaw = await client.readContract({
                 address: pair.erc20Address,
                 abi: ERC20_BALANCE_ABI,
@@ -271,7 +360,7 @@ export default function AnalyticsPage() {
                 args: [pair.erc7984Address],
               }) as bigint;
 
-              // Shield events: Transfer(user → wrapper)
+              // Shield events
               const shieldLogs = await client.getLogs({
                 address: pair.erc20Address,
                 event: TRANSFER_ABI,
@@ -280,7 +369,7 @@ export default function AnalyticsPage() {
                 toBlock: latestBlock,
               });
 
-              // Unshield events: Transfer(wrapper → user)
+              // Unshield events
               const unshieldLogs = await client.getLogs({
                 address: pair.erc20Address,
                 event: TRANSFER_ABI,
@@ -289,43 +378,59 @@ export default function AnalyticsPage() {
                 toBlock: latestBlock,
               });
 
+              const shieldVolume = shieldLogs.reduce(
+                (sum, log) => sum + ((log.args?.value as bigint) ?? 0n), 0n,
+              );
+              const unshieldVolume = unshieldLogs.reduce(
+                (sum, log) => sum + ((log.args?.value as bigint) ?? 0n), 0n,
+              );
+
               const tokenTvl: TokenTVL = {
                 symbol: pair.symbol,
                 tvlRaw,
-                tvlFormatted: formatAmount(tvlRaw, pair.decimals),
+                tvlCompact: formatTVLCompact(tvlRaw, pair.decimals),
                 decimals: pair.decimals,
                 erc20Address: pair.erc20Address,
                 wrapperAddress: pair.erc7984Address,
                 shieldCount: shieldLogs.length,
                 unshieldCount: unshieldLogs.length,
+                shieldVolume,
+                unshieldVolume,
               };
 
-              // Build activity events
-              const shieldEvents: ActivityEvent[] = shieldLogs.slice(-10).map((log) => ({
-                type: 'shield' as const,
-                symbol: pair.symbol,
-                amount: (log.args?.value as bigint) ?? 0n,
-                decimals: pair.decimals,
-                from: (log.args?.from as string) ?? '',
-                to: (log.args?.to as string) ?? '',
-                txHash: log.transactionHash ?? '',
-                blockNumber: log.blockNumber ?? 0n,
-              }));
+              // Build activity events (latest 8 per token)
+              const makeEvents = (
+                logs: typeof shieldLogs,
+                type: 'shield' | 'unshield',
+              ): ActivityEvent[] =>
+                [...logs]
+                  .sort((a, b) => Number((b.blockNumber ?? 0n) - (a.blockNumber ?? 0n)))
+                  .slice(0, 8)
+                  .map((log) => ({
+                    type,
+                    symbol: pair.symbol,
+                    amount: (log.args?.value as bigint) ?? 0n,
+                    decimals: pair.decimals,
+                    from: (log.args?.from as string) ?? '',
+                    to: (log.args?.to as string) ?? '',
+                    txHash: log.transactionHash ?? '',
+                    blockNumber: log.blockNumber ?? 0n,
+                    timeAgo: estimateTimeAgo(
+                      log.blockNumber ?? latestBlock,
+                      latestBlock,
+                      fetchTimestamp,
+                      BLOCK_TIME_MS,
+                    ),
+                  }));
 
-              const unshieldEvents: ActivityEvent[] = unshieldLogs.slice(-10).map((log) => ({
-                type: 'unshield' as const,
-                symbol: pair.symbol,
-                amount: (log.args?.value as bigint) ?? 0n,
-                decimals: pair.decimals,
-                from: (log.args?.from as string) ?? '',
-                to: (log.args?.to as string) ?? '',
-                txHash: log.transactionHash ?? '',
-                blockNumber: log.blockNumber ?? 0n,
-              }));
-
-              return { tokenTvl, events: [...shieldEvents, ...unshieldEvents] };
+              return {
+                tokenTvl,
+                events: [
+                  ...makeEvents(shieldLogs, 'shield'),
+                  ...makeEvents(unshieldLogs, 'unshield'),
+                ],
+              };
             } catch {
-              // If one token fails (e.g. no getLogs support), skip gracefully
               return null;
             }
           }),
@@ -337,7 +442,7 @@ export default function AnalyticsPage() {
         .flatMap((r) => r.events)
         .filter((e) => e.txHash && e.amount > 0n)
         .sort((a, b) => Number(b.blockNumber - a.blockNumber))
-        .slice(0, 30);
+        .slice(0, 25);
 
       setTvlData(allTvl.sort((a, b) => (b.tvlRaw > a.tvlRaw ? 1 : -1)));
       setActivity(allEvents);
@@ -363,6 +468,11 @@ export default function AnalyticsPage() {
   const maxTvl = tvlData.reduce((m, t) => (t.tvlRaw > m ? t.tvlRaw : m), 0n);
   const activePairs = tvlData.filter((t) => t.tvlRaw > 0n).length;
 
+  // Most active token by tx count
+  const mostActive = tvlData.length > 0
+    ? [...tvlData].sort((a, b) => (b.shieldCount + b.unshieldCount) - (a.shieldCount + a.unshieldCount))[0]
+    : null;
+
   return (
     <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
       {/* ── Header ── */}
@@ -376,7 +486,7 @@ export default function AnalyticsPage() {
         </h1>
         <p style={{ maxWidth: 520, margin: 'var(--sp-2) auto 0' }}>
           On-chain metrics for all registered ERC-7984 confidential wrappers.
-          Data sourced directly from Ethereum Transfer events — no indexer required.
+          Sourced directly from Transfer events — no indexer required.
         </p>
       </div>
 
@@ -397,6 +507,7 @@ export default function AnalyticsPage() {
             ? `Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading…'}
           &nbsp;·&nbsp;Last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks (~17h)
+          &nbsp;·&nbsp;Showing up to 25 recent events
         </div>
         <Button
           variant="secondary"
@@ -431,14 +542,14 @@ export default function AnalyticsPage() {
         <StatCard
           icon={<Shield size={18} />}
           label="Shields (last 17h)"
-          value={isLoading && tvlData.length === 0 ? '…' : totalShields.toString()}
+          value={isLoading && tvlData.length === 0 ? '…' : totalShields.toLocaleString()}
           color="var(--success)"
           loading={isLoading && tvlData.length === 0}
         />
         <StatCard
           icon={<Unlock size={18} />}
           label="Unshields (last 17h)"
-          value={isLoading && tvlData.length === 0 ? '…' : totalUnshields.toString()}
+          value={isLoading && tvlData.length === 0 ? '…' : totalUnshields.toLocaleString()}
           color="var(--warning)"
           loading={isLoading && tvlData.length === 0}
         />
@@ -446,11 +557,50 @@ export default function AnalyticsPage() {
           icon={<Users size={18} />}
           label="Unique Shielders"
           value={isLoading && tvlData.length === 0 ? '…' : uniqueShielders.toString()}
-          sub="distinct addresses"
+          sub="distinct addresses (period)"
           color="#a78bfa"
           loading={isLoading && tvlData.length === 0}
         />
       </div>
+
+      {/* ── Extra insight row ── */}
+      {!isLoading && tvlData.length > 0 && (
+        <div className="analytics-insights-grid">
+          {/* Wrap/Unshield ratio */}
+          <Card variant="default" padding="md">
+            <h4 style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Scale size={14} style={{ color: 'var(--accent)' }} />
+              Shield vs Unshield Ratio
+            </h4>
+            <RatioBar shields={totalShields} unshields={totalUnshields} />
+          </Card>
+
+          {/* Most active token */}
+          <Card variant="default" padding="md">
+            <h4 style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Zap size={14} style={{ color: 'var(--warning)' }} />
+              Most Active Token
+            </h4>
+            {mostActive ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                <TokenIcon symbol={mostActive.symbol} size={32} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>{mostActive.symbol}</div>
+                  <div className="text-xs text-muted">
+                    {(mostActive.shieldCount + mostActive.unshieldCount).toLocaleString()} txs ·{' '}
+                    TVL {mostActive.tvlCompact}
+                  </div>
+                </div>
+                <Badge variant="accent" style={{ marginLeft: 'auto' }}>
+                  #{tvlData.indexOf(mostActive) + 1} TVL rank
+                </Badge>
+              </div>
+            ) : (
+              <span className="text-muted text-sm">No data</span>
+            )}
+          </Card>
+        </div>
+      )}
 
       {/* ── Main grid: TVL + Activity ── */}
       <div className="analytics-main-grid">
@@ -472,13 +622,11 @@ export default function AnalyticsPage() {
 
           {isLoading && tvlData.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} height={48} />
-              ))}
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={48} />)}
             </div>
           ) : tvlData.length === 0 ? (
             <p className="text-sm text-muted" style={{ textAlign: 'center', padding: 'var(--sp-8) 0' }}>
-              No data yet — connect wallet to load registry pairs.
+              No data yet — connect wallet or wait for registry to load.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
@@ -489,8 +637,9 @@ export default function AnalyticsPage() {
           )}
 
           <p className="text-xs text-muted" style={{ marginTop: 'var(--sp-5)', paddingTop: 'var(--sp-4)', borderTop: '1px solid var(--border)' }}>
-            TVL = underlying ERC-20 balance held by each wrapper contract.
-            Arrows show shield↑ / unshield↓ counts for the period.
+            TVL = underlying ERC-20 held by wrapper. Bar = relative share.
+            <span style={{ color: 'var(--success)' }}> ↑</span> shield count ·{' '}
+            <span style={{ color: 'var(--warning)' }}>↓</span> unshield count · vol = period volume
           </p>
         </Card>
 
@@ -500,7 +649,7 @@ export default function AnalyticsPage() {
             style={{
               fontWeight: 700,
               fontSize: 'var(--text-lg)',
-              marginBottom: 'var(--sp-5)',
+              marginBottom: 'var(--sp-2)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
@@ -514,16 +663,17 @@ export default function AnalyticsPage() {
               </Badge>
             )}
           </h3>
+          <p className="text-xs text-muted" style={{ marginBottom: 'var(--sp-5)' }}>
+            Latest shield &amp; unshield events across all tokens · last ~17h · up to 25 shown
+          </p>
 
           {isLoading && activity.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-              {[1, 2, 3, 5].map((i) => (
-                <Skeleton key={i} height={56} />
-              ))}
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={56} />)}
             </div>
           ) : activity.length === 0 ? (
             <p className="text-sm text-muted" style={{ textAlign: 'center', padding: 'var(--sp-8) 0' }}>
-              No shield or unshield events found in the last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks.
+              No shield/unshield events in the last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
