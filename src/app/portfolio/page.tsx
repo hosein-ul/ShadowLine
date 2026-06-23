@@ -6,9 +6,12 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
+import { type WrapperPair } from '@/config/contracts';
 import { formatAmount, formatAddress } from '@/lib/utils';
+import { classifyError } from '@/lib/errors';
+import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs } from '@/lib/registry';
 import { useAccount, useConnect } from 'wagmi';
 import { useConfidentialBalances, useRevokeSession } from '@zama-fhe/react-sdk';
 import { useToast } from '@/components/ui/Toast';
@@ -152,7 +155,12 @@ export default function PortfolioPage() {
   const { connect, connectors } = useConnect();
   const { addToast } = useToast();
 
-  const wrappers = useMemo(() => KNOWN_WRAPPERS[activeChainId] ?? [], [activeChainId]);
+  // Live registry read with hardcoded fallback. We deliberately keep
+  // revoked pairs OUT of the portfolio: a revoked wrapper cannot accept new
+  // shields, but a user may still hold a non-zero confidential balance in
+  // one and need to decrypt + unshield it. We include all pairs and let
+  // the per-card UI reflect the revoked state.
+  const { pairs: wrappers } = useRegistryPairs(activeChainId);
 
   const [requestedAddresses, setRequestedAddresses] = useState<`0x${string}`[]>([]);
   const [resolvedBalances, setResolvedBalances] = useState<Record<string, bigint>>({});
@@ -266,12 +274,13 @@ export default function PortfolioPage() {
         message: 'All cached FHE permits have been cleared. Future decryptions will prompt for wallet signatures.',
       });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error('Error revoking session:', err);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Reset Failed',
-        message: err.message || 'Failed to revoke decryption session.',
+        title: classified.title,
+        message: classified.message,
       });
     },
   });
@@ -346,7 +355,17 @@ export default function PortfolioPage() {
           </Button>
         </div>
       ) : (
-        /* Token Positions Grid */
+        <>
+        {/* Pending unshield banners — one per wrapper token */}
+        {wrappers.map((w) => (
+          <PendingUnshieldBanner
+            key={`pending-${w.erc7984Address}`}
+            tokenAddress={w.erc7984Address}
+            symbol={`c${w.symbol}`}
+          />
+        ))}
+
+        {/* Token Positions Grid */}
         <div className="grid grid-2 gap-4">
           {wrappers.map((wrapper) => {
             const wrapperAddressLower = wrapper.erc7984Address.toLowerCase();
@@ -369,6 +388,7 @@ export default function PortfolioPage() {
             );
           })}
         </div>
+        </>
       )}
 
       {/* Empty State */}

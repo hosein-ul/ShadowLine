@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS } from '@/config/contracts';
-import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs, isMintablePair } from '@/lib/registry';
+import { classifyError } from '@/lib/errors';
 import { useToast } from '@/components/ui/Toast';
 import {
   useAccount,
@@ -56,7 +56,17 @@ export default function FaucetPage() {
   const { switchChain } = useSwitchChain();
   const { addToast } = useToast();
 
-  const wrappers = KNOWN_WRAPPERS[sepolia.id] ?? [];
+  // Faucet is Sepolia-only by design. Read pairs from the on-chain registry
+  // (or the hardcoded fallback when no wallet is connected to Sepolia),
+  // then keep only the pairs whose underlying ERC-20 is a mock — only mocks
+  // expose a public `mint(address,uint256)`. Restricted pairs (e.g. the
+  // real `ctGBP` at `0x167D…A208` on Sepolia) are filtered out here so the
+  // user is never offered an action that will revert on-chain.
+  const { pairs: allPairs } = useRegistryPairs(sepolia.id);
+  const wrappers = useMemo(
+    () => allPairs.filter((p) => p.isValid !== false && isMintablePair(p)),
+    [allPairs],
+  );
   const selectedWrapper = wrappers.find(w => w.symbol === selectedToken);
 
   // Wagmi contract writing hook
@@ -126,13 +136,14 @@ export default function FaucetPage() {
         title: 'Faucet Request Submitted',
         message: 'Transaction sent to the network. Minting mock tokens...',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setIsRequestPending(false);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Faucet Request Failed',
-        message: err.message || 'The faucet mint transaction was rejected.',
+        title: classified.title,
+        message: classified.message,
       });
     }
   };

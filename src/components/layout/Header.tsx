@@ -23,9 +23,12 @@ import {
 
 const NAV_ITEMS = [
   { href: '/', label: 'Registry' },
-  { href: '/wrap', label: 'Wrap / Unwrap' },
+  { href: '/wrap', label: 'Wrap' },
   { href: '/portfolio', label: 'Portfolio' },
   { href: '/faucet', label: 'Faucet' },
+  { href: '/learn', label: 'Learn' },
+  { href: '/developers', label: 'Dev Tools' },
+  { href: '/docs', label: 'Docs' },
 ];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [

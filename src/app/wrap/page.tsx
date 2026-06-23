@@ -7,18 +7,20 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import { KNOWN_WRAPPERS } from '@/config/contracts';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
+import { classifyError } from '@/lib/errors';
+import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
+import { useRegistryPairs, findPairBySymbol } from '@/lib/registry';
 import { useToast } from '@/components/ui/Toast';
 import {
   useAccount,
   useReadContract,
   useConnect,
+  useSwitchChain,
 } from 'wagmi';
 import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
 import { ERC20_ABI } from '@/lib/wrapper-abi';
-import { sepolia } from 'wagmi/chains';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
 import confetti from 'canvas-confetti';
@@ -28,11 +30,97 @@ import {
   Shield,
   ArrowUpDown,
   Lock,
+  Unlock,
   Check,
   Info,
   Wallet,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
+
+/**
+ * Renders the confidential balance inline in the "Balance:" label.
+ * — Not yet requested → shows a real "Decrypt" button (never auto-fires)
+ * — Awaiting permit  → shows a spinner text
+ * — Error            → shows an error hint + retry button
+ * — Decrypted        → shows the formatted balance with lock icon
+ */
+function ConfidentialBalanceInline({
+  isConnected,
+  decryptedBalance,
+  isDecrypting,
+  error,
+  wrapperDecimals,
+  onDecrypt,
+}: {
+  isConnected: boolean;
+  decryptedBalance: bigint | undefined | null;
+  isDecrypting: boolean;
+  error: Error | null | undefined;
+  wrapperDecimals: number;
+  onDecrypt: () => void;
+}) {
+  if (!isConnected) return <span>0.00</span>;
+
+  if (decryptedBalance !== undefined && decryptedBalance !== null) {
+    return (
+      <span className="flex items-center gap-1">
+        {formatAmount(decryptedBalance, wrapperDecimals)}
+        <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
+          <Lock size={12} />
+        </span>
+      </span>
+    );
+  }
+
+  if (isDecrypting) {
+    return <span className="text-muted">Awaiting signature...</span>;
+  }
+
+  if (error) {
+    return (
+      <button
+        type="button"
+        onClick={onDecrypt}
+        className="flex items-center gap-1"
+        style={{
+          color: 'var(--color-danger, #ef4444)',
+          cursor: 'pointer',
+          fontWeight: 600,
+          fontSize: '11px',
+          border: 'none',
+          background: 'none',
+          padding: 0,
+        }}
+        title={error.message}
+      >
+        <AlertCircle size={11} /> Retry decrypt
+      </button>
+    );
+  }
+
+  // Default: explicit decrypt button — never auto-fires
+  return (
+    <button
+      type="button"
+      onClick={onDecrypt}
+      className="flex items-center gap-1"
+      style={{
+        color: 'var(--accent)',
+        cursor: 'pointer',
+        fontWeight: 600,
+        fontSize: '11px',
+        border: '1px solid var(--border-accent, var(--accent))',
+        background: 'var(--accent-subtle, rgba(255,210,8,0.08))',
+        padding: '2px 8px',
+        borderRadius: 'var(--radius-sm)',
+      }}
+      title="Click to sign an EIP-712 permit and view your FHE balance"
+    >
+      <Unlock size={11} /> Decrypt
+    </button>
+  );
+}
 
 function WrapPageContent() {
   const searchParams = useSearchParams();
@@ -53,10 +141,25 @@ function WrapPageContent() {
   // Wallet Connection Hooks
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
+  const { switchChain } = useSwitchChain();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  // Gate confidential-balance decryption behind an explicit user action.
+  // The EIP-712 permit must NEVER fire automatically — it must only trigger
+  // when the user clicks "Decrypt to view". This flag is reset when the
+  // selected token changes so the user is always in control.
+  const [decryptRequested, setDecryptRequested] = useState(false);
 
-  const wrappers = KNOWN_WRAPPERS[activeChainId] ?? [];
-  const selectedWrapper = wrappers.find(w => w.symbol === selectedToken);
+  // Dynamic registry: list of wrapper pairs for the active chain, including
+  // any pair added on-chain after this client was built.
+  const { pairs: allPairs } = useRegistryPairs(activeChainId);
+  // Only let users wrap/unwrap pairs that the registry still considers
+  // valid; revoked pairs are kept in `allPairs` so the registry table can
+  // surface them, but they have no business in the swap selector.
+  const wrappers = useMemo(
+    () => allPairs.filter((p) => p.isValid !== false),
+    [allPairs],
+  );
+  const selectedWrapper = findPairBySymbol(wrappers, selectedToken);
 
   // Real contract balance reads (Public underlying)
   const { data: rawPublicBalance, refetch: refetchPublicBalance, error: publicBalanceError } = useReadContract({
@@ -77,6 +180,9 @@ function WrapPageContent() {
   }, [publicBalanceError]);
 
   // Real contract balance reads (Confidential FHE)
+  // IMPORTANT: `enabled` depends on `decryptRequested` — the permit signature
+  // prompt must ONLY appear after the user explicitly clicks "Decrypt to view".
+  // Never auto-fire a wallet signature on token selection or page load.
   const {
     data: decryptedWrapperBalance,
     refetch: refetchWrapperBalance,
@@ -84,7 +190,7 @@ function WrapPageContent() {
     error: decryptWrapperError,
   } = useConfidentialBalance(
     { tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000' },
-    { enabled: !!address && !!selectedWrapper?.erc7984Address }
+    { enabled: decryptRequested && !!address && !!selectedWrapper?.erc7984Address }
   );
 
   // Read allowance
@@ -98,14 +204,22 @@ function WrapPageContent() {
     },
   });
 
-  // Keep balances in sync when address or wrapper changes
+  // Keep PUBLIC balances in sync when address or wrapper changes.
+  // Do NOT refetch the confidential balance here — that requires a permit
+  // signature and must only happen when the user explicitly clicks
+  // "Decrypt to view".
   useEffect(() => {
     if (address && selectedWrapper) {
       refetchPublicBalance();
-      refetchWrapperBalance();
       refetchAllowance();
     }
-  }, [address, selectedWrapper, refetchPublicBalance, refetchWrapperBalance, refetchAllowance]);
+  }, [address, selectedWrapper, refetchPublicBalance, refetchAllowance]);
+
+  // Reset decrypt gate when the selected token changes so the user isn't
+  // surprised by a stale permit request for a different token.
+  useEffect(() => {
+    setDecryptRequested(false);
+  }, [selectedToken]);
 
   // Zama official Shield/Unshield hooks
   const { mutateAsync: shield } = useShield({
@@ -201,14 +315,15 @@ function WrapPageContent() {
         refetchPublicBalance();
         refetchWrapperBalance();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setTxStep(0);
       setActiveTxHash(undefined);
+      const classified = classifyError(err);
       addToast({
         variant: 'error',
-        title: 'Transaction Failed',
-        message: err.message || 'The transaction was rejected or failed.',
+        title: classified.title,
+        message: classified.message,
       });
     }
   };
@@ -237,6 +352,16 @@ function WrapPageContent() {
         </p>
       </div>
 
+      {/* Pending unshield banner for the currently selected token */}
+      {selectedWrapper && (
+        <div style={{ maxWidth: '480px', margin: '0 auto var(--sp-4)' }}>
+          <PendingUnshieldBanner
+            tokenAddress={selectedWrapper.erc7984Address}
+            symbol={`c${selectedWrapper.symbol}`}
+          />
+        </div>
+      )}
+
       {/* Swap Card */}
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
         <Card variant="accent" padding="lg" className="animate-slide-up">
@@ -248,39 +373,17 @@ function WrapPageContent() {
               </span>
               <span className="text-xs text-muted flex items-center gap-1">
                 Balance:{' '}
-                {isConnected ? (
-                  action === 'wrap' ? (
-                    formatAmount(hasPublicBalance, underlyingDecimals)
-                  ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
-                    <span className="flex items-center gap-1">
-                      {formatAmount(hasWrapperBalance, wrapperDecimals)}
-                      <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-                        <Lock size={12} />
-                      </span>
-                    </span>
-                  ) : isDecryptingWrapper ? (
-                    <span>Awaiting Permit...</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => refetchWrapperBalance()}
-                      style={{
-                        color: 'var(--accent)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '11px',
-                        border: 'none',
-                        background: 'none',
-                        padding: 0
-                      }}
-                      title="Click to sign EIP-712 permit and view FHE balance"
-                    >
-                      Decrypt to view
-                    </button>
-                  )
+                {action === 'wrap' ? (
+                  isConnected ? formatAmount(hasPublicBalance, underlyingDecimals) : '0.00'
                 ) : (
-                  '0.00'
+                  <ConfidentialBalanceInline
+                    isConnected={isConnected}
+                    decryptedBalance={decryptedWrapperBalance}
+                    isDecrypting={isDecryptingWrapper}
+                    error={decryptWrapperError}
+                    wrapperDecimals={wrapperDecimals}
+                    onDecrypt={() => { setDecryptRequested(true); refetchWrapperBalance(); }}
+                  />
                 )}
               </span>
             </div>
@@ -318,6 +421,10 @@ function WrapPageContent() {
                     setSelectedToken(e.target.value);
                     setTxStep(0);
                     setAmount('');
+                    // Reset synchronously here — NOT in a useEffect — to
+                    // prevent a one-frame window where the old
+                    // decryptRequested=true fires a permit for the new token.
+                    setDecryptRequested(false);
                   }}
                 >
                   <option value="">Select Token</option>
@@ -399,39 +506,17 @@ function WrapPageContent() {
               </span>
               <span className="text-xs text-muted flex items-center gap-1">
                 Balance:{' '}
-                {isConnected ? (
-                  action === 'unwrap' ? (
-                    formatAmount(hasPublicBalance, underlyingDecimals)
-                  ) : decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? (
-                    <span className="flex items-center gap-1">
-                      {formatAmount(hasWrapperBalance, wrapperDecimals)}
-                      <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center' }}>
-                        <Lock size={12} />
-                      </span>
-                    </span>
-                  ) : isDecryptingWrapper ? (
-                    <span>Awaiting Permit...</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => refetchWrapperBalance()}
-                      style={{
-                        color: 'var(--accent)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '11px',
-                        border: 'none',
-                        background: 'none',
-                        padding: 0
-                      }}
-                      title="Click to sign EIP-712 permit and view FHE balance"
-                    >
-                      Decrypt to view
-                    </button>
-                  )
+                {action === 'unwrap' ? (
+                  isConnected ? formatAmount(hasPublicBalance, underlyingDecimals) : '0.00'
                 ) : (
-                  '0.00'
+                  <ConfidentialBalanceInline
+                    isConnected={isConnected}
+                    decryptedBalance={decryptedWrapperBalance}
+                    isDecrypting={isDecryptingWrapper}
+                    error={decryptWrapperError}
+                    wrapperDecimals={wrapperDecimals}
+                    onDecrypt={() => { setDecryptRequested(true); refetchWrapperBalance(); }}
+                  />
                 )}
               </span>
             </div>
@@ -573,8 +658,13 @@ function WrapPageContent() {
                 Connect Wallet
               </Button>
             ) : isChainMismatch ? (
-              <Button variant="danger" fullWidth size="lg" disabled>
-                Wrong Network Connection
+              <Button
+                variant="danger"
+                fullWidth
+                size="lg"
+                onClick={() => switchChain({ chainId: activeChainId })}
+              >
+                Switch to {activeChainId === 11155111 ? 'Sepolia' : 'Mainnet'}
               </Button>
             ) : txStep === 5 ? (
               <Button
