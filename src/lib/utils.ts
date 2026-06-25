@@ -1,3 +1,5 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { getExplorerUrl } from '@/config/chains';
 
 /**
@@ -55,11 +57,19 @@ export function getExplorerAddressUrl(chainId: number, address: string): string 
 }
 
 /**
- * Join class names, filtering out falsy values.
- * Usage: cn('base', isActive && 'active', variant === 'primary' && 'btn-primary')
+ * Class-name combiner. Accepts strings, objects, arrays, and falsy values
+ * (the clsx/shadcn input shape) and runs the result through `twMerge` so
+ * conflicting Tailwind utilities collapse correctly on the landing page.
+ *
+ * Backward compatible — old callers passing only strings keep working.
+ *
+ * Usage:
+ *   cn('base', isActive && 'active')
+ *   cn('base', { 'is-open': open, hidden: !visible })
+ *   cn('px-2 py-1', 'px-4')  // → 'py-1 px-4' (twMerge resolves conflict)
  */
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
+export function cn(...classes: ClassValue[]): string {
+  return twMerge(clsx(classes));
 }
 
 /**

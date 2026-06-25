@@ -148,7 +148,7 @@ function TokenPositionCard({
               variant="secondary"
               fullWidth
               size="sm"
-              onClick={() => (window.location.href = `/wrap?token=${wrapper.symbol}&action=unwrap`)}
+              onClick={() => (window.location.href = `/app/wrap?token=${wrapper.symbol}&action=unwrap`)}
             >
               Unshield
             </Button>
@@ -259,7 +259,7 @@ function WalletActivityFeed({
           <Button variant="ghost" size="sm" onClick={fetchActivity} isLoading={loading} style={{ gap: 6 }}>
             <RefreshCw size={12} /> Refresh
           </Button>
-          <Link href="/analytics">
+          <Link href="/app/analytics">
             <Button variant="secondary" size="sm" style={{ gap: 6 }}>
               <BarChart2 size={12} /> Protocol Analytics
             </Button>

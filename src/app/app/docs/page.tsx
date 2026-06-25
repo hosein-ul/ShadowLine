@@ -1132,7 +1132,7 @@ try {
             <Link href="/api/registry?chain=sepolia" className="docs-ext-link">
               <ExternalLink size={13} /> REST API (Sepolia)
             </Link>
-            <Link href="/learn" className="docs-ext-link">
+            <Link href="/app/learn" className="docs-ext-link">
               <BookOpen size={13} /> Interactive Tutorial
             </Link>
           </div>

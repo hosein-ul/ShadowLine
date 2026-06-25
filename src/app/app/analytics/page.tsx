@@ -319,8 +319,16 @@ function RatioBar({ shields, unshields }: { shields: number; unshields: number }
 
 /* ─── Main page ──────────────────────────────────────────────────────────────── */
 
-const BLOCK_LOOKBACK = 7200n; // 24 hours on Sepolia/Mainnet (12s blocks × 7200 = 86400s)
 const BLOCK_TIME_MS = 12_000;  // ~12 seconds per block
+
+function getBlocksSinceMidnightUTC(): bigint {
+  const now = Date.now();
+  const midnightUTC = new Date();
+  midnightUTC.setUTCHours(0, 0, 0, 0);
+  const msSinceMidnight = now - midnightUTC.getTime();
+  const blocks = Math.ceil(msSinceMidnight / BLOCK_TIME_MS);
+  return BigInt(Math.max(blocks, 1));
+}
 
 export default function AnalyticsPage() {
   const { activeChainId, isTestnet } = useActiveNetwork();
@@ -344,8 +352,9 @@ export default function AnalyticsPage() {
     try {
       const latestBlock = await client.getBlockNumber();
       const fetchTimestamp = Date.now();
-      const fromBlock = latestBlock > BLOCK_LOOKBACK
-        ? latestBlock - BLOCK_LOOKBACK
+      const blockLookback = getBlocksSinceMidnightUTC();
+      const fromBlock = latestBlock > blockLookback
+        ? latestBlock - blockLookback
         : 0n;
 
       const tokenResults = await Promise.all(
@@ -515,7 +524,7 @@ export default function AnalyticsPage() {
           {lastUpdated
             ? `Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading…'}
-          &nbsp;·&nbsp;Last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks (~24h)
+          &nbsp;·&nbsp;Since 00:00 UTC today
           &nbsp;·&nbsp;Showing up to 25 recent events
         </div>
         <Button
@@ -550,14 +559,14 @@ export default function AnalyticsPage() {
         />
         <StatCard
           icon={<Shield size={18} />}
-          label="Shields (last 17h)"
+          label="Shields (last 24h)"
           value={isLoading && tvlData.length === 0 ? '…' : totalShields.toLocaleString()}
           color="var(--success)"
           loading={isLoading && tvlData.length === 0}
         />
         <StatCard
           icon={<Unlock size={18} />}
-          label="Unshields (last 17h)"
+          label="Unshields (last 24h)"
           value={isLoading && tvlData.length === 0 ? '…' : totalUnshields.toLocaleString()}
           color="var(--warning)"
           loading={isLoading && tvlData.length === 0}
@@ -597,11 +606,11 @@ export default function AnalyticsPage() {
                   <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>{mostActive.symbol}</div>
                   <div className="text-xs text-muted">
                     {(mostActive.shieldCount + mostActive.unshieldCount).toLocaleString()} txs ·{' '}
-                    TVL {mostActive.tvlCompact}
+                    TVS {mostActive.tvlCompact}
                   </div>
                 </div>
                 <Badge variant="accent" style={{ marginLeft: 'auto' }}>
-                  #{tvlData.indexOf(mostActive) + 1} TVL rank
+                  #{tvlData.indexOf(mostActive) + 1} TVS rank
                 </Badge>
               </div>
             ) : (
@@ -626,7 +635,7 @@ export default function AnalyticsPage() {
             }}
           >
             <BarChart2 size={18} style={{ color: 'var(--accent)' }} />
-            TVL by Token
+            TVS by Token
           </h3>
 
           {isLoading && tvlData.length === 0 ? (
@@ -646,7 +655,7 @@ export default function AnalyticsPage() {
           )}
 
           <p className="text-xs text-muted" style={{ marginTop: 'var(--sp-5)', paddingTop: 'var(--sp-4)', borderTop: '1px solid var(--border)' }}>
-            TVL = underlying ERC-20 held by wrapper. Bar = relative share.
+            TVS (Total Value Shielded) = underlying ERC-20 held by wrapper. Bar = relative share.
             <span style={{ color: 'var(--success)' }}> ↑</span> shield count ·{' '}
             <span style={{ color: 'var(--warning)' }}>↓</span> unshield count · vol = period volume
           </p>
@@ -673,7 +682,7 @@ export default function AnalyticsPage() {
             )}
           </h3>
           <p className="text-xs text-muted" style={{ marginBottom: 'var(--sp-5)' }}>
-            Latest shield &amp; unshield events across all tokens · last ~24h · up to 25 shown
+            Latest shield &amp; unshield events across all tokens · since 00:00 UTC · up to 25 shown
           </p>
 
           {isLoading && activity.length === 0 ? (
@@ -682,7 +691,7 @@ export default function AnalyticsPage() {
             </div>
           ) : activity.length === 0 ? (
             <p className="text-sm text-muted" style={{ textAlign: 'center', padding: 'var(--sp-8) 0' }}>
-              No shield/unshield events in the last {Number(BLOCK_LOOKBACK).toLocaleString()} blocks.
+              No shield/unshield events since 00:00 UTC today.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
