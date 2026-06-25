@@ -321,13 +321,15 @@ function RatioBar({ shields, unshields }: { shields: number; unshields: number }
 
 const BLOCK_TIME_MS = 12_000;  // ~12 seconds per block
 
-function getBlocksSinceMidnightUTC(): bigint {
+function getBlocksSinceUtcMidnight(): bigint {
   const now = Date.now();
   const midnightUTC = new Date();
   midnightUTC.setUTCHours(0, 0, 0, 0);
   const msSinceMidnight = now - midnightUTC.getTime();
-  const blocks = Math.ceil(msSinceMidnight / BLOCK_TIME_MS);
-  return BigInt(Math.max(blocks, 1));
+  const blocksSinceMidnight = Math.ceil(msSinceMidnight / BLOCK_TIME_MS);
+  // Enforce a minimum of 7200 blocks (~24h) so the page always has meaningful
+  // data even at 00:01 UTC when only a handful of blocks have elapsed.
+  return BigInt(Math.max(blocksSinceMidnight, 7200));
 }
 
 export default function AnalyticsPage() {
@@ -352,7 +354,7 @@ export default function AnalyticsPage() {
     try {
       const latestBlock = await client.getBlockNumber();
       const fetchTimestamp = Date.now();
-      const blockLookback = getBlocksSinceMidnightUTC();
+      const blockLookback = getBlocksSinceUtcMidnight();
       const fromBlock = latestBlock > blockLookback
         ? latestBlock - blockLookback
         : 0n;
