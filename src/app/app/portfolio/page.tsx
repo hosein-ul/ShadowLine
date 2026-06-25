@@ -193,7 +193,12 @@ function WalletActivityFeed({
     setLoading(true);
     try {
       const latestBlock = await client.getBlockNumber();
-      const fromBlock = latestBlock > 10000n ? latestBlock - 10000n : 0n;
+      // Use fromBlock: 0n (genesis) so the feed shows the wallet's complete
+      // history. Most RPC providers handle address-filtered getLogs from block 0
+      // efficiently because the address index keeps the result set small.
+      // If the provider rejects with a "block range too large" error we fall
+      // back to the last 500,000 blocks (~69 days on 12s chains) in the catch.
+      const fromBlock = 0n;
 
       const allEvents: WalletEvent[] = [];
       await Promise.all(
@@ -241,8 +246,34 @@ function WalletActivityFeed({
         }),
       );
       allEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-      setEvents(allEvents.slice(0, 20));
-    } catch { /* ignore */ }
+      setEvents(allEvents.slice(0, 100));
+    } catch (err: unknown) {
+      // Some public RPC nodes reject unlimited block ranges even with an
+      // address filter. Fall back to last 500 000 blocks (~69 days).
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRangeError = /block range|range too large|too many results/i.test(msg);
+      if (isRangeError) {
+        try {
+          const latestBlock = await client!.getBlockNumber();
+          const fallbackFrom = latestBlock > 500_000n ? latestBlock - 500_000n : 0n;
+          const fallbackEvents: WalletEvent[] = [];
+          await Promise.all(
+            wrappers.filter((p) => p.isValid !== false).map(async (pair) => {
+              try {
+                const [shields, unshields] = await Promise.all([
+                  client!.getLogs({ address: pair.erc20Address, event: TRANSFER_ABI, args: { from: address, to: pair.erc7984Address }, fromBlock: fallbackFrom, toBlock: latestBlock }),
+                  client!.getLogs({ address: pair.erc20Address, event: TRANSFER_ABI, args: { from: pair.erc7984Address, to: address }, fromBlock: fallbackFrom, toBlock: latestBlock }),
+                ]);
+                for (const log of shields) fallbackEvents.push({ type: 'shield', symbol: pair.symbol, amount: (log.args?.value as bigint) ?? 0n, decimals: pair.decimals, counterpart: pair.erc7984Address, txHash: log.transactionHash ?? '', blockNumber: log.blockNumber ?? 0n });
+                for (const log of unshields) fallbackEvents.push({ type: 'unshield', symbol: pair.symbol, amount: (log.args?.value as bigint) ?? 0n, decimals: pair.decimals, counterpart: pair.erc7984Address, txHash: log.transactionHash ?? '', blockNumber: log.blockNumber ?? 0n });
+              } catch { /* skip */ }
+            }),
+          );
+          fallbackEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
+          setEvents(fallbackEvents);
+        } catch { /* ignore */ }
+      }
+    }
     finally { setLoading(false); }
   }, [client, wrappers, address]);
 
@@ -273,7 +304,7 @@ function WalletActivityFeed({
         </div>
       ) : events.length === 0 ? (
         <p className="text-sm text-muted" style={{ padding: 'var(--sp-6) 0', textAlign: 'center' }}>
-          No shield or unshield events found in the last ~34 hours for this wallet.
+          No shield or unshield events found for this wallet.
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>

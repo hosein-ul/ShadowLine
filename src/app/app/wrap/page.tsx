@@ -376,13 +376,16 @@ function WrapPageContent() {
         </p>
       </div>
 
-      {/* Pending unshield banner for the currently selected token */}
-      {selectedWrapper && (
-        <div style={{ maxWidth: '540px', margin: '0 auto var(--sp-4)' }}>
-          <PendingUnshieldBanner
-            tokenAddress={selectedWrapper.erc7984Address}
-            symbol={`c${selectedWrapper.symbol}`}
-          />
+      {/* Pending unshield banners — one per wrapper; each self-hides if nothing is pending */}
+      {isConnected && (
+        <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+          {wrappers.map((w) => (
+            <PendingUnshieldBanner
+              key={w.erc7984Address}
+              tokenAddress={w.erc7984Address}
+              symbol={`c${w.symbol}`}
+            />
+          ))}
         </div>
       )}
 
