@@ -1,112 +1,258 @@
-# 🛡️ ZamaVault — Confidential Asset Vault
+# ZamaVault
 
-ZamaVault is a production-grade Web3 application built on top of the **Zama Protocol** and **ERC-7984 Confidential Token Standard**. It provides a premium, highly responsive interface for shielding public ERC-20 tokens into encrypted, privacy-preserving ERC-7984 confidential tokens and unshielding them back to public balances.
+> The canonical web interface for the Zama Confidential Wrappers Registry — discover every ERC-20 ↔ ERC-7984 pair, shield in seconds, decrypt on demand.
 
-Using Fully Homomorphic Encryption (FHE), ZamaVault ensures that your token balances and transaction amounts remain completely encrypted on-chain, while allowing you to securely decrypt and inspect your balances locally using cryptographic permits.
-
----
-
-## ✨ Features
-
-*   **🔒 Shielding (Wrap)**: Convert public ERC-20 tokens into encrypted ERC-7984 confidential wrappers. On-chain balances and transfer amounts are completely obfuscated.
-*   **🔓 Unshielding (Unwrap)**: Convert encrypted ERC-7984 confidential wrappers back into public ERC-20 tokens.
-*   **💼 Confidential Portfolio**: View all confidential assets in one place. Balances remain encrypted on-chain, but can be decrypted on the client side using **EIP-712 permit signatures**.
-*   **📊 Wrapper Registry Explorer**: Reads Zama's on-chain `WrappersRegistry` directly (via `useListPairs` from `@zama-fhe/react-sdk`) and lists every registered ERC-20 ↔ ERC-7984 pair on the active network — including pairs added after this client was built. Falls back to a hardcoded snapshot when no wallet is connected so anonymous visitors can still browse. Revoked pairs (`isValid === false`) are flagged with a "Revoked" badge and hidden from the wrap/unwrap selector.
-*   **🚰 Test Faucet**: A built-in developer faucet with a **5-second cooldown** to acquire test tokens (USDC, USDT, WETH, ZAMA, etc.) on the Sepolia network.
-*   **🎨 Nordic Clean Aesthetic**: A default premium dark-themed design system featuring smooth micro-animations, glassmorphism card layouts, custom typography, and official brand logos.
-*   **🎉 Transaction Feedback & Delighters**: Custom transaction tracking with direct links to block explorers and interactive confetti blasts on successful wrap/unwrap actions.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev/)
+[![Wagmi](https://img.shields.io/badge/Wagmi-3-1c1b1f?logo=ethereum)](https://wagmi.sh/)
+[![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
-## 🏗️ Technical Architecture & Stack
+## What it is
 
-ZamaVault is designed as a secure, decentralized client-side application that interfaces with the Ethereum blockchain:
+ZamaVault is a Next.js dApp that turns the on-chain `WrappersRegistry` into a product. Every registered ERC-20 ↔ ERC-7984 confidential wrapper pair on **Sepolia** and **Ethereum mainnet** is discovered live; users can shield (wrap) public tokens into encrypted balances, transfer them privately, decrypt with a single EIP-712 signature, and unshield back to public ERC-20 — all from one consistent interface.
 
-*   **Frontend Framework**: [Next.js](https://nextjs.org/) (App Router, static compilation, Turbopack enabled).
-*   **FHE Integration**: Official Zama React SDK (`@zama-fhe/react-sdk`) for managing FHE permits, querying encrypted balances, shielding (`useShield`), and unshielding (`useUnshield`).
-*   **Web3 & Provider Layer**: [Wagmi](https://wagmi.sh/) and [Viem](https://viem.sh/) configured with high-performance, stable RPC endpoints (using Alchemy for Sepolia and Mainnet).
-*   **Design & Styling**: Pure Vanilla CSS system (`globals.css`) using custom CSS Custom Properties for maximum flexibility and performance. Fully responsive for mobile, tablet, and desktop screens.
-*   **Icons**: [Lucide React](https://lucide.dev/).
-*   **Transaction Delighters**: [canvas-confetti](https://www.npmjs.com/package/canvas-confetti) for victory animations.
+Built around the official `@zama-fhe/react-sdk` and `WrappersRegistry` contract, it serves both end-users (Portfolio, Wrap, Faucet, Learn) and developers (REST API, snippet generator, on-chain Analytics).
 
 ---
 
-## 🔑 FHE & Confidential Flows
+## Pages & routes
 
-### 1. Permit-Based Decryption
-On-chain confidential balances are stored as encrypted ciphertext handles. To display these balances to the user, ZamaVault utilizes the Zama React SDK's `useConfidentialBalance` hook:
-1. The user requests decryption of an asset balance.
-2. The application prompts the user to sign an **EIP-712 permit** using their Web3 wallet.
-3. This signature registers an ephemeral public key for decryption.
-4. The Zama SDK sends the permit signature and ciphertext to Zama's Gateway/Coprocessor.
-5. The Coprocessor validates the signature, decrypts the balance handle, and returns the plaintext balance.
-6. The plaintext balance is rendered locally; **private keys never leave the wallet and plaintext balances are never stored on-chain**.
+| Route                  | Purpose                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `/`                    | Marketing landing page with scroll-narrative onboarding                                |
+| `/app`                 | Live wrapper registry table with per-row public + confidential balance reads           |
+| `/app/wrap`            | Shield (wrap) and unshield (unwrap) swap interface for any registered pair             |
+| `/app/portfolio`       | Confidential portfolio with batch EIP-712 decrypt, re-shield, and unshield             |
+| `/app/analytics`       | TVS (Total Value Shielded) by token + 24h shield/unshield activity, since 00:00 UTC    |
+| `/app/faucet`          | Sepolia mock token mint (USDC, USDT, WETH, BRON, ZAMA, tGBP, XAUt)                     |
+| `/app/learn`           | 5-step interactive tutorial covering FHE → faucet → shield → decrypt → unshield        |
+| `/app/developers`      | Copy-paste code snippets (React hook / viem / ethers)                                  |
+| `/app/docs`            | In-app reference for the SDK calls ZamaVault uses                                      |
+| `/api/registry`        | Public REST endpoint returning every wrapper pair on a given chain                     |
 
-### 2. Shielding (Wrap) Flow
-1. **Approval**: The user approves the ERC-7984 Wrapper contract to spend the underlying public ERC-20 tokens.
-2. **Shielding**: The user submits the shield transaction. The SDK calls `deposit(amount)` on the wrapper contract, which wraps the public ERC-20 and mints encrypted ERC-7984 wrappers to the user's address.
-
-### 3. Unshielding (Unwrap) Flow
-1. **Withdrawal**: The user submits the unshield transaction.
-2. **Gateway Processing**: The SDK calls `withdraw(amount)` on the wrapper. This burns the encrypted wrappers and triggers Zama's Gateway/Coprocessor flow to securely process the unshielding.
-3. **Finalization**: Once processed, the underlying public ERC-20 tokens are returned to the user's public wallet address.
+The landing (`/`) and the application (`/app/*`) are deliberately isolated — they use independent stylesheets, fonts, and providers (see [Architecture](#architecture)).
 
 ---
 
-## 🚀 Getting Started
+## Architecture
+
+```
+src/
+├── app/
+│   ├── layout.tsx             ← root: <html>, fonts, theme bootstrap (no CSS)
+│   ├── landing.css            ← Tailwind v4, scoped to landing only
+│   ├── page.tsx               ← landing route (cream/gold design)
+│   ├── error.tsx              ← global error boundary
+│   ├── ClientLayout.tsx       ← providers + theme/network context (app only)
+│   ├── globals.css            ← app design system (vanilla CSS, scoped to /app)
+│   ├── app/
+│   │   ├── layout.tsx         ← imports globals.css + ClientLayout
+│   │   ├── page.tsx           ← /app — registry table
+│   │   ├── wrap/page.tsx
+│   │   ├── portfolio/page.tsx
+│   │   ├── analytics/page.tsx
+│   │   ├── faucet/page.tsx
+│   │   ├── learn/page.tsx
+│   │   ├── developers/page.tsx
+│   │   └── docs/page.tsx
+│   └── api/registry/route.ts  ← public REST endpoint
+├── components/
+│   ├── landing/               ← landing sections (hero, features, etc.)
+│   ├── magic/                 ← Magic UI primitives (TextAnimate, MagicCard…)
+│   ├── ui/                    ← in-app design system (Card, Button, Badge…)
+│   ├── layout/                ← in-app Header, Footer
+│   └── PendingUnshieldBanner.tsx
+├── config/
+│   ├── chains.ts              ← Sepolia + Mainnet definitions
+│   ├── contracts.ts           ← WrappersRegistry addresses, KNOWN_WRAPPERS fallback
+│   └── tokens.ts              ← logo + colour metadata keyed by symbol
+├── lib/
+│   ├── registry.ts            ← useRegistryPairs hook + blocklist + helpers
+│   ├── errors.ts              ← classifyError() using matchZamaError
+│   ├── utils.ts               ← formatAmount, parseAmount (decimal scaling)
+│   └── wrapper-abi.ts         ← WRAPPER_ABI, ERC20_ABI
+└── providers/
+    └── Providers.tsx          ← Wagmi + ZamaProvider + TanStack Query
+```
+
+### Two design systems, hermetically separated
+
+The landing (`/`) and the application (`/app/*`) need to look completely different — the landing is editorial gold-on-cream, the app is a dense data UI. They live in the same Next.js project but never share CSS:
+
+- `src/app/layout.tsx` (the root) imports **no** CSS. It only sets `<html lang>`, the font variables (Fraunces + Plus Jakarta Sans), and the theme bootstrap script.
+- `src/app/page.tsx` (landing) imports **`landing.css`** — Tailwind v4 with `@import 'tailwindcss'` and a `@theme` block of gold/cream/ink tokens.
+- `src/app/app/layout.tsx` imports **`globals.css`** — the vanilla-CSS app design system with `--bg-base`, `--accent`, `--sp-*` tokens — and wraps everything in `ClientLayout` (providers + Header + Footer).
+
+Because Next.js route-subtree layouts only apply CSS within their own subtree, Tailwind's preflight never leaks into `/app`, and the app's design tokens never leak into `/`.
+
+---
+
+## FHE & flows
+
+### Permit-based decryption
+
+Confidential balances are stored on-chain as `euint64` ciphertext handles. To display the plaintext to the user, ZamaVault uses Zama's `useConfidentialBalance` hook, gated behind an **explicit user click** — the EIP-712 permit signature must never auto-fire on render. The flow:
+
+1. User clicks **Decrypt** next to any encrypted balance.
+2. Wallet shows a typed-data signature request (EIP-712, not a transaction — zero gas).
+3. The signature scopes an ephemeral session key to that wallet + contract.
+4. SDK sends ciphertext + permit to the Zama Gateway/Coprocessor.
+5. Coprocessor verifies the signature, decrypts, returns plaintext to the browser.
+6. The plaintext is rendered client-side; private keys never leave the wallet and plaintext is never stored on-chain.
+
+### Shield (wrap) — one or two transactions
+
+`WrappedToken.shield(amount)` routes through one of two paths depending on the underlying ERC-20:
+
+| Path                | Triggered when                                | Wallet prompts | Tokens (mainnet)     |
+| ------------------- | --------------------------------------------- | -------------- | -------------------- |
+| `transferAndCall`   | Underlying implements **ERC-1363**            | 1              | cTGBP, cZAMA         |
+| `approve` + `wrap`  | Underlying does **not** implement ERC-1363    | 2              | cUSDC, cUSDT, cWETH, cBRON |
+
+The SDK detects ERC-1363 support automatically via `supportsInterface` — callers don't choose a path. On the two-tx path, ZamaVault checks the existing ERC-20 allowance and passes `approvalStrategy: 'skip'` when it's already sufficient, so users aren't prompted for a fresh `approve(0)` + `approve(amount)` every time.
+
+### Unshield (unwrap) — two phases
+
+Unshielding is **not** a single transaction:
+
+1. **Unwrap request** — user submits an on-chain transaction burning the encrypted wrapper amount.
+2. **Gateway finalize** — the Zama Gateway generates a decryption proof (~15–40 s), then submits a finalize transaction that releases the underlying ERC-20.
+
+If the user closes the browser between (1) and (2), ZamaVault's `PendingUnshieldBanner` detects the unfinalized request on next visit and offers a one-click Resume.
+
+### Decimal scaling
+
+All wrapper tokens use **6 decimals** regardless of the underlying token's precision. This is because FHE operates on `euint64` (a 64-bit unsigned integer), which would overflow at 18-decimal values. The wrapper contract scales amounts during shield and unshield. `formatAmount`/`parseAmount` in `src/lib/utils.ts` must be kept in sync with this constraint — see the inline comments.
+
+---
+
+## Tech stack
+
+| Layer             | Library / version                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Framework         | [Next.js 16](https://nextjs.org/) (App Router, Turbopack, static prerender)                                      |
+| UI runtime        | [React 19](https://react.dev/)                                                                                   |
+| Web3              | [Wagmi 3](https://wagmi.sh/) + [Viem 2](https://viem.sh/)                                                        |
+| FHE               | [`@zama-fhe/react-sdk` 3](https://docs.zama.org/protocol/sdk/overview)                                           |
+| Data fetching     | [TanStack Query 5](https://tanstack.com/query)                                                                   |
+| Animation         | [motion (Framer Motion) 12](https://motion.dev/) for landing primitives                                          |
+| 3D / canvas       | [three.js](https://threejs.org/) + [@react-three/fiber](https://r3f.docs.pmnd.rs/)                               |
+| Landing styling   | [Tailwind v4](https://tailwindcss.com/) (scoped to `/`)                                                          |
+| App styling       | Vanilla CSS custom properties (scoped to `/app/*`)                                                               |
+| Icons             | [lucide-react](https://lucide.dev/) + [react-icons](https://react-icons.github.io/react-icons/)                  |
+| Magic UI          | [magicui.design](https://magicui.design/) — TextAnimate, MagicCard, BorderBeam, NumberTicker, Marquee, BlurFade  |
+| Confetti          | [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)                                                 |
+| Language          | TypeScript 5 (strict mode)                                                                                       |
+
+---
+
+## Quick start
 
 ### Prerequisites
-Make sure you have [Node.js (v18+)](https://nodejs.org/) and a package manager (`npm`, `pnpm`, or `yarn`) installed.
+- Node.js v18 or newer
+- npm / pnpm / yarn
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/hosein-ul/zamavault.git
-   cd zamavault
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
+### Install
 
-### Configuration
-ZamaVault is pre-configured to use stable Alchemy RPC endpoints. If you want to use your own RPC endpoints, create a `.env.local` file in the root directory:
+```bash
+git clone https://github.com/hosein-ul/zamavault.git
+cd zamavault
+npm install
+```
+
+### Run
+
+```bash
+npm run dev          # Dev server on http://localhost:3000
+npm run build        # Production build
+npm run start        # Serve production build
+npm run lint         # ESLint
+npx tsc --noEmit     # TypeScript check (no output files)
+```
+
+### Environment (all optional)
+
+ZamaVault works with no configuration — it falls back to public RPC endpoints. To use your own, create `.env.local`:
+
 ```env
-NEXT_PUBLIC_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-NEXT_PUBLIC_MAINNET_RPC=https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-```
-
-### Running Locally
-To launch the local development server:
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Building for Production
-To generate a fully optimized static and server-rendered production build:
-```bash
-npm run build
-npm run start
+NEXT_PUBLIC_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+NEXT_PUBLIC_MAINNET_RPC=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
 ```
 
 ---
 
-## 🎨 Theme & Design System
+## REST API
 
-ZamaVault supports multiple visual design themes which can be customized via the Header theme-selector. The default theme is **Nordic Clean**:
+`GET /api/registry?chain=sepolia|mainnet`
 
-*   **Nordic Clean**: A sleek, clean layout with high-contrast elements, neutral dark backgrounds, subtle gray borders, and Zama yellow/mint-accent highlights.
-*   **Cyber**: A futuristic cyberpunk theme with neon purple borders, green glowing accents, and dark grid backdrops.
-*   **Nebula**: A cosmic dark theme using deep indigo/purple gradients and space-like aesthetics.
-*   **Emerald**: A clean dark theme featuring vibrant emerald green highlights and green-bordered containers.
+Returns every registered wrapper pair on the given chain, with ERC-20 metadata enriched on the server. CORS-enabled, cached at the edge for 60 s.
 
-All layouts, cards, buttons, badges, tables, and inputs are built using semantic variables declared in `src/app/globals.css`.
+### Example
+
+```bash
+curl https://your-deployment.vercel.app/api/registry?chain=sepolia
+```
+
+### Response
+
+```json
+{
+  "pairs": [
+    {
+      "tokenAddress": "0x...",
+      "confidentialTokenAddress": "0x...",
+      "symbol": "USDC",
+      "confidentialSymbol": "cUSDC",
+      "name": "USD Coin",
+      "decimals": 6,
+      "wrapperDecimals": 6
+    }
+  ],
+  "total": 8,
+  "chain": "sepolia",
+  "registryAddress": "0x...",
+  "timestamp": 1735000000000,
+  "source": "on-chain"
+}
+```
+
+If the on-chain read fails (RPC issue), the endpoint falls back to a hardcoded snapshot and sets `source: "cached-snapshot"` with a `warning` field.
 
 ---
 
-## 📄 License
+## Registry & blocklist
 
-This project is licensed under the MIT License.
+ZamaVault reads the on-chain `WrappersRegistry` via `useListPairs` whenever a wallet is connected to a supported chain. When disconnected (or the chain doesn't match), it falls back to `KNOWN_WRAPPERS` in `src/config/contracts.ts` — a hand-curated snapshot — so anonymous visitors can still browse.
+
+Revoked pairs (`isValid === false`) are tagged with a red "Revoked" badge in the registry table and excluded from the wrap/unwrap selector.
+
+A small `BLOCKLISTED_WRAPPERS` set in `src/lib/registry.ts` hides one suspicious mainnet entry (`cbbqTGBP` at `0xBA4c…6762`) — vanity-prefix wrapper for an unknown underlying token; documented in code with the rationale.
+
+---
+
+## Project conventions
+
+- **No auto-fire signatures.** Every `useConfidentialBalance` is gated behind a `decryptRequested` boolean set only by an explicit user click. The state pattern in `src/app/app/wrap/page.tsx` is the reference — do not weaken it.
+- **No secrets in the repo.** `.env*` files are gitignored. `.env.example` documents the optional vars.
+- **Strict mode TS.** All new code must type-check with `npx tsc --noEmit`.
+- **Two design systems, never mix.** If a CSS rule touches the landing, it belongs in `landing.css`; if it touches the app, in `globals.css`.
+
+---
+
+## Roadmap
+
+- [ ] Polygon, Base, Arbitrum support (once Zama deploys WrappersRegistry there)
+- [ ] Confidential transfer UI (send encrypted balance to another address)
+- [ ] Multi-account permit caching in browser storage
+- [ ] WalletConnect v2 + Safe support
+- [ ] Subgraph-backed historical analytics
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

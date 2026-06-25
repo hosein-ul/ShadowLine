@@ -253,9 +253,12 @@ function WrapPageContent() {
     if (!selectedWrapper || !address) return;
     try {
       if (action === 'wrap') {
-        setTxStep(1); // Approval confirmation pending
+        // If allowance is already sufficient, SDK skips approval —
+        // jump straight to step 3 (Shield pending) for consistent UI.
+        setTxStep(needsApproval ? 1 : 3);
         const res = await shield({
           amount: parsedInputAmount,
+          approvalStrategy: needsApproval ? 'exact' : 'skip',
           onApprovalSubmitted: (txHash) => {
             setTxStep(2); // Approve mining
             setActiveTxHash(txHash);
@@ -285,20 +288,40 @@ function WrapPageContent() {
         });
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
+        // Reset decrypt gate — the confidential balance has changed after
+        // shielding, so any cached value is stale. The user must click
+        // "Decrypt" again. Also prevents TanStack Query's refetchOnWindowFocus
+        // from auto-firing a new permit while decryptRequested is still true.
+        setDecryptRequested(false);
         refetchPublicBalance();
-        refetchWrapperBalance();
         refetchAllowance();
       } else {
         setTxStep(3); // Unshield pending
         const res = await unshield({
           amount: parsedInputAmount,
           onUnwrapSubmitted: (txHash) => {
-            setTxStep(4); // Unshield mining
+            setTxStep(4); // Unwrap on-chain, waiting for proof
             setActiveTxHash(txHash);
             addToast({
               variant: 'info',
-              title: 'Unshielding Submitted',
-              message: 'Unshield transaction sent. Waiting for confirmation...',
+              title: 'Unwrap Submitted',
+              message: 'On-chain unwrap request sent. Waiting for Gateway proof...',
+            });
+          },
+          onFinalizing: () => {
+            // Gateway is generating the decryption proof
+            addToast({
+              variant: 'info',
+              title: 'Finalizing',
+              message: 'Zama Gateway is generating the decryption proof. This may take 15–40 seconds.',
+            });
+          },
+          onFinalizeSubmitted: (txHash) => {
+            setActiveTxHash(txHash);
+            addToast({
+              variant: 'info',
+              title: 'Finalize Submitted',
+              message: 'Finalization transaction sent. Almost done...',
             });
           },
         });
@@ -312,8 +335,9 @@ function WrapPageContent() {
         });
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
+        // Reset decrypt gate — same reason as wrap path above.
+        setDecryptRequested(false);
         refetchPublicBalance();
-        refetchWrapperBalance();
       }
     } catch (err: unknown) {
       console.error(err);
@@ -352,19 +376,26 @@ function WrapPageContent() {
         </p>
       </div>
 
-      {/* Pending unshield banner for the currently selected token */}
-      {selectedWrapper && (
-        <div style={{ maxWidth: '480px', margin: '0 auto var(--sp-4)' }}>
-          <PendingUnshieldBanner
-            tokenAddress={selectedWrapper.erc7984Address}
-            symbol={`c${selectedWrapper.symbol}`}
-          />
+      {/* Pending unshield banners — one per wrapper; each self-hides if nothing is pending */}
+      {isConnected && (
+        <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+          {wrappers.map((w) => (
+            <PendingUnshieldBanner
+              key={w.erc7984Address}
+              tokenAddress={w.erc7984Address}
+              symbol={`c${w.symbol}`}
+            />
+          ))}
         </div>
       )}
 
       {/* Swap Card */}
-      <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-        <Card variant="accent" padding="lg" className="animate-slide-up">
+      <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+        <Card
+          variant="accent"
+          padding="lg"
+          className={`animate-slide-up swap-card ${txStep > 0 && txStep < 5 ? 'swap-card-pending' : ''}`}
+        >
           {/* From Panel */}
           <div className="swap-panel">
             <div className="flex justify-between items-center" style={{ marginBottom: 'var(--sp-3)' }}>
@@ -430,7 +461,7 @@ function WrapPageContent() {
                   <option value="">Select Token</option>
                   {wrappers.map(w => (
                     <option key={w.symbol} value={w.symbol}>
-                      {w.symbol}
+                      {action === 'wrap' ? w.symbol : `c${w.symbol}`}
                     </option>
                   ))}
                 </select>
@@ -559,7 +590,7 @@ function WrapPageContent() {
           {txStep > 0 && (
             <div style={{ marginTop: 'var(--sp-5)', padding: '0 var(--sp-2)' }}>
               <div className="steps" style={{ justifyContent: 'center' }}>
-                {action === 'wrap' && (
+                {action === 'wrap' && needsApproval && (
                   <>
                     <div className={`step ${txStep >= 2 ? 'completed' : txStep === 1 ? 'active' : ''}`}>
                       <div className="step-dot">{txStep >= 2 ? <Check size={12} /> : '1'}</div>
@@ -569,89 +600,32 @@ function WrapPageContent() {
                   </>
                 )}
                 <div className={`step ${txStep >= 4 ? 'completed' : txStep === 3 ? 'active' : ''}`}>
-                  <div className="step-dot">{txStep >= 4 ? <Check size={12} /> : action === 'wrap' ? '2' : '1'}</div>
-                  <span className="text-xs">{action === 'wrap' ? 'Shield' : 'Unshield'}</span>
+                  <div className="step-dot">
+                    {txStep >= 4 ? <Check size={12} /> : (action === 'wrap' && needsApproval) ? '2' : '1'}
+                  </div>
+                  <span className="text-xs">{action === 'wrap' ? 'Shield' : 'Unwrap'}</span>
                 </div>
                 <div className="step-line" />
+                {action === 'unwrap' && (
+                  <>
+                    <div className={`step ${txStep === 5 ? 'completed' : txStep >= 4 ? 'active' : ''}`}>
+                      <div className="step-dot">{txStep === 5 ? <Check size={12} /> : '2'}</div>
+                      <span className="text-xs">Finalize</span>
+                    </div>
+                    <div className="step-line" />
+                  </>
+                )}
                 <div className={`step ${txStep === 5 ? 'completed' : ''}`}>
-                  <div className="step-dot">{txStep === 5 ? <Check size={12} /> : action === 'wrap' ? '3' : '2'}</div>
+                  <div className="step-dot">
+                    {txStep === 5 ? <Check size={12} /> : action === 'unwrap' ? '3' : (needsApproval ? '3' : '2')}
+                  </div>
                   <span className="text-xs">Done</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Transaction Link */}
-          {(activeTxHash || finalTxHash) && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>
-              <div
-                className="animate-fade-in"
-                style={{
-                  padding: 'var(--sp-3) var(--sp-4)',
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 'var(--sp-2)',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span className="text-xs text-muted" style={{ fontWeight: 500 }}>
-                    {txStep === 5
-                      ? `${action === 'wrap' ? 'Shield' : 'Unshield'} Successful`
-                      : txStep === 2
-                      ? 'Approval Pending...'
-                      : txStep === 4
-                      ? `${action === 'wrap' ? 'Shielding' : 'Unshielding'} Pending...`
-                      : 'Transaction Submitted'}
-                  </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--accent)' }}>
-                    {formatAddress(finalTxHash || activeTxHash || '')}
-                  </span>
-                </div>
-                <a
-                  href={`${CHAIN_CONFIG[activeChainId]?.explorerUrl}/tx/${finalTxHash || activeTxHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: 'var(--sp-1.5) var(--sp-3)',
-                    fontSize: '11px',
-                    borderRadius: 'var(--radius-sm)',
-                    height: 'auto',
-                  }}
-                >
-                  View Explorer <ExternalLink size={12} />
-                </a>
-              </div>
-
-              {/* Coprocessor / Gateway Delay Explanation */}
-              {txStep > 0 && txStep < 5 && (
-                <div 
-                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
-                  style={{ 
-                    padding: 'var(--sp-2) var(--sp-3)',
-                    background: 'rgba(255, 210, 8, 0.03)',
-                    border: '1px dashed rgba(255, 210, 8, 0.15)',
-                    borderRadius: 'var(--radius-md)',
-                    lineHeight: '1.4'
-                  }}
-                >
-                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
-                  <span>
-                    FHE transactions require Zama Gateway & Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Submit Button */}
+          {/* Primary Action Button — ALWAYS in this slot */}
           <div style={{ marginTop: 'var(--sp-6)' }}>
             {!isConnected ? (
               <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)}>
@@ -720,6 +694,75 @@ function WrapPageContent() {
               </Button>
             )}
           </div>
+
+          {/* Transaction Info — appears BELOW the primary button, never replaces it */}
+          {(activeTxHash || finalTxHash) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', marginTop: 'var(--sp-3)' }}>
+              <div
+                className="animate-fade-in"
+                style={{
+                  padding: 'var(--sp-3) var(--sp-4)',
+                  background: txStep === 5 ? 'rgba(16, 185, 129, 0.06)' : 'var(--bg-elevated)',
+                  border: `1px solid ${txStep === 5 ? 'rgba(16, 185, 129, 0.3)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 'var(--sp-2)',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span className="text-xs" style={{ fontWeight: 500, color: txStep === 5 ? 'var(--success)' : 'var(--text-muted)' }}>
+                    {txStep === 5
+                      ? `${action === 'wrap' ? 'Shield' : 'Unshield'} Successful`
+                      : txStep === 2
+                      ? 'Approval Pending...'
+                      : txStep === 4
+                      ? `${action === 'wrap' ? 'Shielding' : 'Unshielding'} Pending...`
+                      : 'Transaction Submitted'}
+                  </span>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--accent)' }}>
+                    {formatAddress(finalTxHash || activeTxHash || '')}
+                  </span>
+                </div>
+                <a
+                  href={`${CHAIN_CONFIG[activeChainId]?.explorerUrl}/tx/${finalTxHash || activeTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 'var(--sp-1.5) var(--sp-3)',
+                    fontSize: '11px',
+                    borderRadius: 'var(--radius-sm)',
+                    height: 'auto',
+                  }}
+                >
+                  View Explorer <ExternalLink size={12} />
+                </a>
+              </div>
+
+              {txStep > 0 && txStep < 5 && (
+                <div
+                  className="flex items-start gap-2 text-xs text-muted animate-fade-in"
+                  style={{
+                    padding: 'var(--sp-2) var(--sp-3)',
+                    background: 'rgba(255, 210, 8, 0.03)',
+                    border: '1px dashed rgba(255, 210, 8, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    lineHeight: '1.4'
+                  }}
+                >
+                  <span style={{ color: 'var(--accent)', marginTop: '2px' }}>⚠️</span>
+                  <span>
+                    FHE transactions require Zama Gateway &amp; Coprocessor proof generation, which takes 15–40 seconds to confirm on-chain. Please keep this window open.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Info */}

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://YOUR_DEPLOYMENT_URL';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -477,7 +479,7 @@ function restApiSnippet(chain: string): string {
 // Returns all registered wrapper pairs with metadata.
 
 const response = await fetch(
-  'https://zamavault.xyz/api/registry?chain=${chain}'
+  '${APP_URL}/api/registry?chain=${chain}'
 );
 
 const data = await response.json();
@@ -563,7 +565,7 @@ export default function DevelopersPage() {
           style={{
             fontSize: 'var(--text-lg)',
             maxWidth: 640,
-            marginTop: 'var(--sp-3)',
+            margin: 'var(--sp-3) auto 0',
             lineHeight: 'var(--lh-relaxed)',
           }}
         >

@@ -1,0 +1,156 @@
+/* ============================================================================
+ * Landing v2 — editorial cream/gold identity. Imported ONLY from src/app/page.tsx.
+ * Independent from landing.css (v1) and globals.css (app). Tailwind v4 again,
+ * with a distinct token set and a finer typography stack.
+ * ============================================================================ */
+
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* ── Palette — cream base, gold accent, aubergine for the single dark beat ── */
+  --color-cream-50:   #FDFCF8;
+  --color-cream-100:  #FAF7F1;   /* page base */
+  --color-cream-200:  #F2EDE0;   /* alt band, card surface */
+  --color-cream-300:  #DCD7CC;
+  --color-cream-400:  #B8B1A2;
+
+  --color-gold-50:    #FFF8D4;
+  --color-gold-100:   #FFE89A;
+  --color-gold-300:   #FFDC4D;
+  --color-gold-500:   #FFD208;   /* primary */
+  --color-gold-600:   #E6B800;
+  --color-gold-700:   #A87A00;   /* deep */
+  --color-gold-900:   #5C4400;
+
+  --color-ink-50:     #FAFAF7;
+  --color-ink-200:    #C8C4BC;
+  --color-ink-400:    #5A5850;
+  --color-ink-700:    #3A352D;   /* body text */
+  --color-ink-900:    #1A1814;   /* headlines */
+
+  --color-aubergine:  #3B1F2B;   /* dark beat (final CTA) */
+  --color-aubergine-dark: #25141C;
+
+  /* ── Typography ── */
+  --font-display: var(--font-fraunces, 'Fraunces'), 'PP Editorial Old', Georgia, serif;
+  --font-sans:    var(--font-jakarta, 'Plus Jakarta Sans'), 'Inter Tight', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* shadcn / MagicCard compat */
+  --color-background: #FAF7F1;
+  --color-border: rgba(26, 24, 20, 0.10);
+
+  /* ── Motion tokens ── */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Section-dark override ── */
+.section-dark {
+  --color-background: #3B1F2B;
+  --color-border: rgba(255, 255, 255, 0.10);
+}
+
+/* ── Landing v2 root ── */
+.v2-root {
+  font-family: var(--font-sans);
+  background: var(--color-cream-100);
+  color: var(--color-ink-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  /* Lenis hook */
+  overflow-x: hidden;
+}
+
+.v2-root ::selection {
+  background: var(--color-gold-500);
+  color: var(--color-ink-900);
+}
+
+/* ── Display type ── */
+.v2-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'ss01', 'ss02';
+  letter-spacing: -0.025em;
+  font-weight: 500;
+}
+
+/* ── Eyebrow ticks ── */
+.v2-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: var(--color-gold-700);
+}
+
+/* ── Lenis baseline (required by the lib) ── */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* ── Reduced motion — disable everything decorative ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Section base spacing ── */
+.v2-section {
+  position: relative;
+  padding: clamp(6rem, 12vh, 10rem) 0;
+}
+
+/* ── Container ── */
+.v2-container {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+@media (min-width: 768px) {
+  .v2-container { padding: 0 2.5rem; }
+}
+
+/* ── Gold rule ── */
+.v2-rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--color-gold-500) 50%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+/* ── Keyframes ── */
+@keyframes v2-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(1.1); }
+}
+@keyframes v2-scramble {
+  0%   { filter: blur(0); }
+  50%  { filter: blur(2px); }
+  100% { filter: blur(0); }
+}

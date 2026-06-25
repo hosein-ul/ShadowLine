@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// Base URL for API examples in docs — set NEXT_PUBLIC_APP_URL in your deployment.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://YOUR_DEPLOYMENT_URL';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import CopyButton from '@/components/ui/CopyButton';
@@ -218,8 +221,8 @@ function AddressTable({
   pairs: { symbol: string; erc20: string; wrapper: string; decimals: number }[];
 }) {
   const explorerBase = network === 'Sepolia'
-    ? 'https://sepolia.etherscan.io/address'
-    : 'https://etherscan.io/address';
+    ? 'https://eth-sepolia.blockscout.com/address'
+    : 'https://eth.blockscout.com/address';
 
   return (
     <div className="docs-address-table-wrap">
@@ -591,15 +594,15 @@ function ShieldButton() {
               lang="bash"
               filename="curl"
               code={`# Fetch all Sepolia pairs
-curl "https://zamavault.xyz/api/registry?chain=sepolia"
+curl "${APP_URL}/api/registry?chain=sepolia"
 
 # Fetch Mainnet pairs
-curl "https://zamavault.xyz/api/registry?chain=mainnet"`}
+curl "${APP_URL}/api/registry?chain=mainnet"`}
             />
             <CodeBlock
               lang="ts"
               filename="fetch (JavaScript)"
-              code={`const res = await fetch('https://zamavault.xyz/api/registry?chain=sepolia');
+              code={`const res = await fetch('${APP_URL}/api/registry?chain=sepolia');
 const data = await res.json();
 
 // data.pairs is an array of PairResult
@@ -617,7 +620,7 @@ for (const pair of data.pairs) {
               code={`import requests
 
 resp = requests.get(
-    "https://zamavault.xyz/api/registry",
+    "${APP_URL}/api/registry",
     params={"chain": "sepolia"}
 )
 data = resp.json()
@@ -1129,7 +1132,7 @@ try {
             <Link href="/api/registry?chain=sepolia" className="docs-ext-link">
               <ExternalLink size={13} /> REST API (Sepolia)
             </Link>
-            <Link href="/learn" className="docs-ext-link">
+            <Link href="/app/learn" className="docs-ext-link">
               <BookOpen size={13} /> Interactive Tutorial
             </Link>
           </div>

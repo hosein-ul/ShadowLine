@@ -22,13 +22,14 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Registry' },
-  { href: '/wrap', label: 'Wrap' },
-  { href: '/portfolio', label: 'Portfolio' },
-  { href: '/faucet', label: 'Faucet' },
-  { href: '/learn', label: 'Learn' },
-  { href: '/developers', label: 'Dev Tools' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/app', label: 'Registry' },
+  { href: '/app/wrap', label: 'Wrap' },
+  { href: '/app/portfolio', label: 'Portfolio' },
+  { href: '/app/faucet', label: 'Faucet' },
+  { href: '/app/learn', label: 'Learn' },
+  { href: '/app/developers', label: 'Dev Tools' },
+  { href: '/app/analytics', label: 'Analytics' },
+  { href: '/app/docs', label: 'Docs' },
 ];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
@@ -82,7 +83,7 @@ export default function Header() {
     <header className="header">
       <div className="header-inner">
         {/* Logo */}
-        <Link href="/" className="header-logo">
+        <Link href="/app" className="header-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
             <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
