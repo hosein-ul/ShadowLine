@@ -1,41 +1,58 @@
 /**
- * Landing page (route: /).
+ * Landing page v2 (route: /).
  *
- * Completely separated from the app. Imports its own Tailwind v4 stylesheet
- * (`landing.css`); does NOT touch globals.css or ClientLayout. The /app/*
- * subtree has its own layout that brings in the app design system.
+ * Editorial scroll narrative — cream base, gold accent, aubergine for the
+ * single dark beat. Imports landing-v2.css ONLY; v1 (landing.css and
+ * src/components/landing/*) is retained on disk so previous design is
+ * one-branch-switch away.
  *
- * Composition is one section per file under `src/components/landing/*` so
- * each beat can be tuned independently.
+ * Structure: nav → 10 sections → footer, with a Lenis smooth-scroll
+ * provider, a scroll-progress rail, and a noise-driven background.
  */
-import './landing.css';
+import './landing-v2.css';
 
+import { LenisProvider } from '@/components/landing-v2/lib/lenis-provider';
+import { ScrollProgress } from '@/components/landing-v2/lib/scroll-progress';
+import { NoiseBackground } from '@/components/landing-v2/lib/noise-background';
 import { BFCacheRecovery } from '@/components/landing/bfcache-recovery';
-import { LandingNav } from '@/components/landing/nav';
-import { Hero } from '@/components/landing/hero';
-import { TrustRail } from '@/components/landing/trust-rail';
-import { Stats } from '@/components/landing/stats';
-import { Features } from '@/components/landing/features';
-import { HowItWorks } from '@/components/landing/how-it-works';
-import { FheExplainer } from '@/components/landing/fhe-explainer';
-import { FinalCta } from '@/components/landing/final-cta';
-import { LandingFooter } from '@/components/landing/footer';
+
+import { NavV2 } from '@/components/landing-v2/nav';
+import { Aperture } from '@/components/landing-v2/aperture';
+import { Manifesto } from '@/components/landing-v2/manifesto';
+import { ProblemLedger } from '@/components/landing-v2/problem-ledger';
+import { SolutionEncrypt } from '@/components/landing-v2/solution-encrypt';
+import { TokenConstellation } from '@/components/landing-v2/token-constellation';
+import { Capabilities } from '@/components/landing-v2/capabilities';
+import { Numbers } from '@/components/landing-v2/numbers';
+import { Flow } from '@/components/landing-v2/flow';
+import { ForDevs } from '@/components/landing-v2/for-devs';
+import { FinalBeat } from '@/components/landing-v2/final-beat';
+import { FooterV2 } from '@/components/landing-v2/footer';
 
 export default function LandingPage() {
   return (
-    <div className="landing-root landing-grain">
-      <BFCacheRecovery />
-      <LandingNav />
-      <main>
-        <Hero />
-        <TrustRail />
-        <Stats />
-        <Features />
-        <HowItWorks />
-        <FheExplainer />
-        <FinalCta />
-      </main>
-      <LandingFooter />
-    </div>
+    <LenisProvider>
+      <div className="v2-root">
+        <BFCacheRecovery />
+        <NoiseBackground />
+        <ScrollProgress />
+        <NavV2 />
+
+        <main>
+          <Aperture />
+          <Manifesto />
+          <ProblemLedger />
+          <SolutionEncrypt />
+          <TokenConstellation />
+          <Capabilities />
+          <Numbers />
+          <Flow />
+          <ForDevs />
+          <FinalBeat />
+        </main>
+
+        <FooterV2 />
+      </div>
+    </LenisProvider>
   );
 }
