@@ -4,566 +4,570 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import './globals.css';
 import {
-  Shield,
-  Lock,
-  Unlock,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Key,
-  BookOpen,
-  CheckCircle2,
-  AlertTriangle,
-  Zap,
-  Globe,
-  ChevronDown,
-  ExternalLink,
-  Cpu,
-  Database,
-  Network,
-  Layers,
-  Code2,
-  Activity,
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useInView,
+  AnimatePresence,
+} from 'motion/react';
+import { BlurFade } from '@/components/magic/blur-fade';
+import { NumberTicker } from '@/components/magic/number-ticker';
+import { MagicCard } from '@/components/magic/magic-card';
+import { BorderBeam } from '@/components/magic/border-beam';
+import { Marquee } from '@/components/magic/marquee';
+import {
+  Shield, Lock, Unlock, Eye, EyeOff, Key, BookOpen,
+  CheckCircle2, AlertTriangle, Globe, ChevronDown,
+  ExternalLink, Cpu, Database, Network, Layers, ArrowRight,
+  Activity, Droplets, GraduationCap, Wallet, BarChart3,
+  FileText, Wrench, Zap,
 } from 'lucide-react';
 
-function useInViewHook(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-}
-
-function useCounter(target: number, inView: boolean, duration = 1600) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    let start = 0;
-    const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { setValue(target); clearInterval(timer); }
-      else setValue(Math.floor(start));
-    }, 16);
-    return () => clearInterval(timer);
-  }, [inView, target, duration]);
-  return value;
-}
-
-function RevealSection({ children, delay = 0, style = {}, className = '' }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties; className?: string }) {
-  const { ref, inView } = useInViewHook();
+// ─── Scroll progress bar ─────────────────────────────────────────────────────
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   return (
-    <div ref={ref} className={className} style={{
-      opacity: inView ? 1 : 0,
-      transform: inView ? 'translateY(0)' : 'translateY(40px)',
-      transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`,
-      ...style,
-    }}>
-      {children}
-    </div>
+    <motion.div style={{
+      scaleX, position: 'fixed', top: 0, left: 0, right: 0, height: '3px',
+      background: 'linear-gradient(90deg, #FFD208, #000)',
+      transformOrigin: '0%', zIndex: 1000, pointerEvents: 'none',
+    }} />
   );
 }
 
-const CODE_SNIPPETS = {
-  shield: `import { useShield } from '@zama-fhe/react-sdk';
-
-function ShieldAssets() {
-  const { shield, isLoading } = useShield();
-
-  const handleShield = async () => {
-    // SDK auto-detects ERC-1363 path (1-tx)
-    // or approve + wrap path (2-tx)
-    await shield({
-      tokenAddress: '0xWrapperAddress...',
-      amount: 100_000_000n,   // 100 cUSDC (6 decimals)
-    });
-    // ✓ Public USDC transferred to wrapper
-    // ✓ Encrypted cUSDC minted to your wallet
-    // ✓ Balance stored as euint64 ciphertext on-chain
-  };
-
-  return (
-    <button onClick={handleShield} disabled={isLoading}>
-      {isLoading ? 'Shielding...' : 'Shield 100 USDC'}
-    </button>
-  );
-}`,
-  decrypt: `import { useConfidentialBalance } from '@zama-fhe/react-sdk';
-
-function ViewBalance() {
-  const { data, refetch, isLoading } = useConfidentialBalance({
-    tokenAddress: '0xWrapperAddress...',
-  });
-
-  // Decrypt flow:
-  // 1. User signs EIP-712 permit (read-only, no tokens spent)
-  // 2. SDK sends permit to Zama Gateway
-  // 3. KMS re-encrypts ciphertext → user's transport key
-  // 4. WASM decrypts locally — plaintext never leaves browser
-
-  return (
-    <div>
-      <p>Balance: {data ? data.toString() : '••••••'} cUSDC</p>
-      <button onClick={() => refetch()}>
-        {isLoading ? 'Signing EIP-712...' : 'Decrypt Balance'}
-      </button>
-    </div>
-  );
-}`,
-  transfer: `import { useConfidentialTransfer } from '@zama-fhe/react-sdk';
-
-function TransferPrivately() {
-  const { transfer } = useConfidentialTransfer({
-    tokenAddress: '0xWrapperAddress...',
-  });
-
-  const handleTransfer = async () => {
-    // Amount is FHE-encrypted client-side BEFORE tx is sent
-    // On-chain: sender & recipient addresses are public
-    //           transfer AMOUNT is fully encrypted ✓
-    await transfer({
-      to: '0xRecipientAddress...',
-      amount: 50_000_000n,  // 50 cUSDC — encrypted in WASM
-    });
-  };
-
-  return <button onClick={handleTransfer}>Send 50 cUSDC</button>;
-}`,
-};
-
-export default function LandingPageV2() {
-  const [vizState, setVizState] = useState<'public' | 'shielded'>('public');
-  const [activeCode, setActiveCode] = useState<'shield' | 'decrypt' | 'transfer'>('shield');
-  const [headerScrolled, setHeaderScrolled] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const [statsInView, setStatsInView] = useState(false);
-
+// ─── HERO — sticky parallax fade ─────────────────────────────────────────────
+function Hero() {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const y       = useTransform(scrollYProgress, [0, 1], ['0%', '26%']);
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const scale   = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const el = statsRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setStatsInView(true); obs.disconnect(); } }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const fn = () => setHeaderScrolled(window.scrollY > 50);
+    const fn = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setCurrentStep(s => (s + 1) % 4), 2200);
-    return () => clearInterval(t);
-  }, []);
+  return (
+    <motion.section ref={ref} style={{
+      position: 'relative', minHeight: '100vh',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '120px clamp(24px,6vw,80px) 80px',
+      textAlign: 'center', overflow: 'hidden', background: '#fafafa',
+    }}>
+      {/* Sticky header */}
+      <motion.header
+        animate={{ background: scrolled ? 'rgba(250,250,250,0.94)' : 'transparent', backdropFilter: scrolled ? 'blur(20px)' : 'none', borderBottomColor: scrolled ? '#e4e4e7' : 'transparent' }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '0 clamp(24px,4vw,60px)', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid transparent' }}
+        transition={{ duration: 0.3 }}
+      >
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <motion.div whileHover={{ rotate: 12, scale: 1.1 }} style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 14px rgba(255,210,8,.5)' }}>
+            <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
+          </motion.div>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
+        </Link>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(14px,2.5vw,32px)' }}>
+          {[['How It Works', '#how'], ['App Pages', '#app'], ['Technology', '#tech']].map(([l, h]) => (
+            <motion.a key={l} href={h} whileHover={{ y: -1 }} style={{ fontSize: '.875rem', fontWeight: 600, color: '#52525b', textDecoration: 'none' }}>{l}</motion.a>
+          ))}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+            <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: '#000', color: '#FFD208', fontWeight: 700, fontSize: '.875rem', borderRadius: '8px', textDecoration: 'none' }}>
+              Launch App <ArrowRight size={14} />
+            </Link>
+          </motion.div>
+        </nav>
+      </motion.header>
 
-  const c1 = useCounter(100, statsInView, 1200);
-  const c2 = useCounter(7984, statsInView, 1400);
-  const c3 = useCounter(2, statsInView, 800);
+      {/* Grid bg */}
+      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="1" /></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+      <div style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', width: '760px', height: '440px', background: 'radial-gradient(ellipse,rgba(255,210,8,.16) 0%,transparent 70%)', pointerEvents: 'none', filter: 'blur(40px)' }} />
 
-  const txSteps = [
-    { label: 'FHE encrypt amount', detail: 'WASM encrypts amount → euint64 ciphertext', icon: Cpu, color: '#FFD208' },
-    { label: 'Submit to blockchain', detail: 'from 0xAlice… to 0xBob… (addresses public)', icon: Network, color: '#3b82f6' },
-    { label: 'FHEVM executes', detail: 'Coprocessor performs encrypted arithmetic', icon: Zap, color: '#8b5cf6' },
-    { label: 'Balances updated', detail: 'Both balances updated as FHE ciphertexts', icon: CheckCircle2, color: '#10b981' },
+      {/* Parallax content block */}
+      <motion.div style={{ y, opacity, scale, width: '100%', maxWidth: '1000px' }}>
+
+        {/* Live badge */}
+        <BlurFade delay={0} inView>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(0,0,0,.1)', background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '32px' }}
+          >
+            <motion.span animate={{ scale: [1, 1.5, 1], opacity: [1, .5, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD208', display: 'block' }} />
+            Live on Ethereum Sepolia · ERC-7984 Standard
+          </motion.div>
+        </BlurFade>
+
+        {/* Headline — about the project, not a tautology */}
+        <BlurFade delay={0.12} inView>
+          <h1 style={{ fontSize: 'clamp(3rem,7.5vw,6.2rem)', fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.045em', color: '#000', margin: '0 auto 24px', maxWidth: '920px' }}>
+            Shield ERC-20 tokens.{' '}
+            <br />
+            <span style={{ background: 'linear-gradient(130deg, #FFD208 0%, #f59e0b 55%, #b45309 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Transfer amounts stay encrypted.
+            </span>
+          </h1>
+        </BlurFade>
+
+        <BlurFade delay={0.32} inView>
+          <p style={{ fontSize: 'clamp(1.05rem,2.2vw,1.28rem)', lineHeight: 1.7, color: '#52525b', maxWidth: '600px', margin: '0 auto 44px' }}>
+            ZamaVault converts public ERC-20 tokens into{' '}
+            <strong style={{ color: '#000' }}>ERC-7984 confidential cTokens</strong>{' '}
+            via Zama&apos;s Fully Homomorphic Encryption. Balances are stored as on-chain ciphertexts — computable without decrypting.
+          </p>
+        </BlurFade>
+
+        {/* CTAs */}
+        <BlurFade delay={0.46} inView>
+          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '64px' }}>
+            <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
+              <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', boxShadow: '0 4px 28px rgba(255,210,8,.5)' }}>
+                <Shield size={18} /> Launch ZamaVault
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
+              <a href="https://docs.zama.org/protocol" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: '2px solid #000' }}>
+                <BookOpen size={18} /> Read the Docs
+              </a>
+            </motion.div>
+          </div>
+        </BlurFade>
+
+        {/* 3 micro-stat pills */}
+        <BlurFade delay={0.58} inView>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {[
+              { icon: Lock, label: 'TFHE on-chain ciphertext' },
+              { icon: Key, label: 'EIP-712 decrypt permits' },
+              { icon: Zap, label: 'Zama Coprocessor verified' },
+            ].map((p, i) => (
+              <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '7px 16px', borderRadius: '100px', border: '1px solid #e4e4e7', background: '#fff', fontSize: '.78rem', fontWeight: 600, color: '#52525b' }}>
+                <p.icon size={13} style={{ color: '#FFD208' }} />
+                {p.label}
+              </div>
+            ))}
+          </div>
+        </BlurFade>
+      </motion.div>
+
+      {/* Scroll indicator */}
+      <motion.div animate={{ y: [0, 8, 0], opacity: [.4, .9, .4] }} transition={{ duration: 2.2, repeat: Infinity }} style={{ position: 'absolute', bottom: '36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '.68rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#a1a1aa' }}>Scroll</span>
+        <ChevronDown size={16} style={{ color: '#a1a1aa' }} />
+      </motion.div>
+    </motion.section>
+  );
+}
+
+// ─── MARQUEE ─────────────────────────────────────────────────────────────────
+const TRUST = ['TFHE Encryption','ERC-7984 Standard','EIP-712 Permits','OpenZeppelin Audited','Zama Coprocessor','Non-Custodial','Sepolia Testnet','WASM ZK Prover','Zero-Gas Decrypt'];
+
+// ─── PINNED STORYTELLING ─────────────────────────────────────────────────────
+function PinnedStory() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
+  const raw = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], [0, 1, 2, 3]);
+  const [ch, setCh] = useState(0);
+  useEffect(() => raw.on('change', v => setCh(Math.min(3, Math.floor(v)))), [raw]);
+
+  const chapters = [
+    { label: 'The Problem', icon: Eye, color: '#ef4444', title: 'Ethereum has zero financial privacy.', body: 'Every balance, transfer amount, and token holding is visible on block explorers. Your DeFi activity is permanently public by default — anyone can trace your portfolio.' },
+    { label: 'The Protocol', icon: Cpu, color: '#3b82f6', title: 'Fully Homomorphic Encryption on-chain.', body: "Zama's FHEVM lets smart contracts compute on encrypted integers (euint64) without ever decrypting them. Balances remain ciphertexts — arithmetic happens over encrypted data." },
+    { label: 'Privacy Boundary', icon: Lock, color: '#FFD208', title: 'Amounts private. Addresses visible.', body: 'FHE is a value-privacy model. Transfer amounts and balances are encrypted. Sender and recipient addresses remain public — observable on the blockchain.' },
+    { label: 'ZamaVault', icon: Shield, color: '#10b981', title: 'Shield, transfer, decrypt — self-custodial.', body: 'Wrap ERC-20 into ERC-7984 cTokens. Transfer confidentially. Decrypt your balance with a read-only EIP-712 permit — no gas, no approval, plaintext never leaves your browser.' },
   ];
 
   return (
-    <div data-theme="light" style={{ background: '#fafafa', color: '#000', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif", minHeight: '100vh' }}>
-      <style>{`
-        @keyframes floatUp { 0%,100%{transform:translateY(0) rotate(0deg);opacity:.15} to{transform:translateY(-28px) rotate(180deg);opacity:.4} }
-        @keyframes pulse-ring { 0%{transform:scale(.9);opacity:.8} 70%{transform:scale(1.2);opacity:0} 100%{transform:scale(.9);opacity:0} }
-        @keyframes fade-up { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-        .hero-badge { animation: fade-up .8s ease both; }
-        .hero-h1    { animation: fade-up .9s ease .1s both; }
-        .hero-sub   { animation: fade-up .9s ease .25s both; }
-        .hero-btns  { animation: fade-up .9s ease .4s both; }
-        .hero-card  { animation: fade-up .9s ease .55s both; }
-      `}</style>
-
-      {/* Header */}
-      <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        padding: '0 clamp(24px, 4vw, 60px)', height: '68px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: headerScrolled ? 'rgba(250,250,250,0.93)' : 'transparent',
-        backdropFilter: headerScrolled ? 'blur(20px)' : 'none',
-        borderBottom: `1px solid ${headerScrolled ? '#e4e4e7' : 'transparent'}`,
-        transition: 'all .35s ease',
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(255,210,8,.45)' }}>
-            <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
-          </div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
-        </Link>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(16px, 2.5vw, 32px)' }}>
-          {[['How it Works', '#how'], ['Technology', '#tech'], ['Developers', '#dev']].map(([l, h]) => (
-            <a key={l} href={h} style={{ fontSize: '.875rem', fontWeight: 600, color: '#27272a', textDecoration: 'none' }}>{l}</a>
+    <div ref={containerRef} style={{ position: 'relative', height: '400vh', background: '#000' }}>
+      <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden', display: 'flex' }}>
+        {/* Chapter nav */}
+        <div style={{ width: 'clamp(200px,24vw,300px)', padding: '80px clamp(20px,3.5vw,44px)', borderRight: '1px solid rgba(255,255,255,.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '6px' }}>
+          {chapters.map((c, i) => (
+            <motion.div key={i} animate={{ opacity: i === ch ? 1 : 0.28, x: i === ch ? 0 : -6 }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px' }}>
+              <motion.div animate={{ background: i === ch ? c.color : 'rgba(255,255,255,.05)' }} style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <c.icon size={17} style={{ color: i === ch ? '#000' : '#52525b' }} />
+              </motion.div>
+              <div>
+                <div style={{ fontSize: '.62rem', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: i === ch ? c.color : '#52525b' }}>{String(i + 1).padStart(2, '0')}</div>
+                <div style={{ fontWeight: 700, color: i === ch ? '#fff' : '#52525b', fontSize: '.84rem' }}>{c.label}</div>
+              </div>
+            </motion.div>
           ))}
-          <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: '#000', color: '#FFD208', fontWeight: 700, fontSize: '.875rem', borderRadius: '8px', textDecoration: 'none' }}>
-            Launch App <ArrowRight size={14} />
-          </Link>
-        </nav>
-      </header>
-
-      {/* ── HERO ── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px clamp(24px,6vw,80px) 80px', textAlign: 'center', overflow: 'hidden' }}>
-        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-          <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="1" /></pattern></defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-        <div style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', width: '720px', height: '420px', background: 'radial-gradient(ellipse, rgba(255,210,8,.18) 0%, transparent 70%)', pointerEvents: 'none', filter: 'blur(40px)' }} />
-
-        <div className="hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(0,0,0,.1)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '28px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD208', animation: 'blink 2s ease-in-out infinite' }} />
-          Powered by Zama FHEVM · ERC-7984 Standard
-        </div>
-
-        <h1 className="hero-h1" style={{ fontSize: 'clamp(2.8rem,7vw,5.5rem)', fontWeight: 900, lineHeight: 1.04, letterSpacing: '-0.04em', color: '#000', maxWidth: '900px', marginBottom: '24px' }}>
-          Confidential ERC-20 tokens,{' '}
-          <span style={{ position: 'relative', display: 'inline-block' }}>
-            <span style={{ background: 'linear-gradient(135deg, #000 0%, #3d3d3d 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>homomorphically encrypted</span>
-            <span style={{ position: 'absolute', bottom: '4px', left: 0, right: 0, height: '5px', borderRadius: '3px', background: '#FFD208', opacity: .9 }} />
-          </span>{' '}on-chain.
-        </h1>
-
-        <p className="hero-sub" style={{ fontSize: 'clamp(1.05rem,2.2vw,1.3rem)', lineHeight: 1.65, color: '#52525b', maxWidth: '620px', marginBottom: '44px' }}>
-          ZamaVault wraps your ERC-20 tokens into <strong style={{ color: '#000' }}>ERC-7984 confidential cTokens</strong> via Zama&apos;s FHE protocol. Shield, transfer privately, and decrypt your balance — all self-custodial, on Ethereum.
-        </p>
-
-        <div className="hero-btns" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '64px' }}>
-          <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', boxShadow: '0 4px 24px rgba(255,210,8,.45)' }}>
-            <Shield size={18} /> Launch Vault
-          </Link>
-          <a href="https://docs.zama.org/protocol" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: '2px solid #000' }}>
-            <BookOpen size={18} /> Read the Docs
-          </a>
-        </div>
-
-        {/* Floating card */}
-        <div className="hero-card" style={{ display: 'inline-block' }}>
-          <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e4e4e7', background: '#fff', boxShadow: '0 24px 80px rgba(0,0,0,.12)', padding: '24px 32px', minWidth: '340px', textAlign: 'left', animation: 'floatUp 4s ease-in-out infinite alternate' }}>
-            <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '14px' }}>cUSDC · Encrypted Balance</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Lock size={18} /></div>
-              <div>
-                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.8rem', color: '#FFD208', fontWeight: 700 }}>0x48e1a6c0b...a49d</div>
-                <div style={{ fontSize: '.7rem', color: '#a1a1aa' }}>euint64 FHE Ciphertext — on Sepolia</div>
-              </div>
-            </div>
-            <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(255,210,8,.08)', border: '1px solid rgba(255,210,8,.2)', fontSize: '.74rem', color: '#92700a', fontWeight: 600 }}>
-              Decrypt with EIP-712 permit — no gas required
+          <div style={{ marginTop: '28px', padding: '0 14px' }}>
+            <div style={{ height: '2px', background: 'rgba(255,255,255,.07)', borderRadius: '1px', overflow: 'hidden' }}>
+              <motion.div style={{ height: '100%', background: chapters[ch].color, width: `${((ch + 1) / 4) * 100}%`, transition: 'width .5s ease, background .4s ease' }} />
             </div>
           </div>
         </div>
 
-        <div style={{ position: 'absolute', bottom: '36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', opacity: .45 }}>
-          <span style={{ fontSize: '.68rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#52525b' }}>Scroll</span>
-          <ChevronDown size={16} style={{ color: '#52525b' }} />
-        </div>
-      </section>
+        {/* Morphing content */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px clamp(32px,6vw,80px)', position: 'relative', overflow: 'hidden' }}>
+          <AnimatePresence mode="wait">
+            <motion.div key={ch} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(ellipse 60% 50% at 60% 40%, ${chapters[ch].color}14 0%, transparent 70%)` }} />
+          </AnimatePresence>
 
-      {/* ── TRUST RAIL ── */}
-      <section style={{ borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7', background: '#fff', padding: '18px clamp(24px,6vw,80px)', display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {['TFHE Encryption', 'ERC-7984 Standard', 'EIP-712 Permits', 'OpenZeppelin Audited', 'Zama Coprocessor', 'Non-Custodial'].map(item => (
-          <div key={item} style={{ fontSize: '.82rem', fontWeight: 600, color: '#3f3f46', whiteSpace: 'nowrap', opacity: .7 }}>{item}</div>
-        ))}
-      </section>
-
-      {/* ── STATS ── */}
-      <section ref={statsRef} style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fff' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '2px', background: '#e4e4e7', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 4px 40px rgba(0,0,0,.06)' }}>
-          {[
-            { value: `${c1}%`, label: 'Homomorphic', sub: 'TFHE scheme — arithmetic on ciphertexts without decrypting', icon: Lock },
-            { value: `ERC-${c2}`, label: 'Token Standard', sub: 'OpenZeppelin confidential token with euint64 on-chain balances', icon: Layers },
-            { value: `${c3}-step`, label: 'Unshield Process', sub: 'On-chain unwrap + Gateway proof finalization', icon: Unlock },
-          ].map((s, i) => (
-            <div key={i} style={{ background: '#fff', padding: '40px 36px' }}>
-              <s.icon size={24} strokeWidth={2} style={{ color: '#FFD208', marginBottom: '10px' }} />
-              <div style={{ fontSize: 'clamp(2rem,4vw,2.75rem)', fontWeight: 900, letterSpacing: '-0.04em', color: '#000' }}>{s.value}</div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#000', marginTop: '6px' }}>{s.label}</div>
-              <div style={{ fontSize: '.8rem', color: '#71717a', lineHeight: 1.5, marginTop: '6px' }}>{s.sub}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── WHAT IS ENCRYPTED ── */}
-      <section style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#000', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,210,8,.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <RevealSection>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '20px' }}>
-              <Key size={11} /> Value-Privacy Model
-            </div>
-            <h2 style={{ fontSize: 'clamp(2rem,4.5vw,3.5rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: '700px', marginBottom: '18px' }}>
-              What FHE protects — and what it doesn&apos;t.
-            </h2>
-            <p style={{ color: '#a1a1aa', fontSize: '1.05rem', lineHeight: 1.7, maxWidth: '560px', marginBottom: '60px' }}>
-              Zama&apos;s FHE is a <strong style={{ color: '#fff' }}>value-privacy model</strong>. It encrypts amounts and balances — not participants. Addresses remain publicly visible on-chain.
-            </p>
-          </RevealSection>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '24px' }}>
-            <RevealSection delay={100}>
-              <div style={{ borderRadius: '16px', border: '1px solid rgba(255,210,8,.25)', background: 'rgba(255,210,8,.06)', padding: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,210,8,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Lock size={18} style={{ color: '#FFD208' }} /></div>
-                  <span style={{ color: '#FFD208', fontWeight: 700, fontSize: '.82rem', letterSpacing: '.06em', textTransform: 'uppercase' }}>Encrypted On-Chain</span>
+          <div style={{ maxWidth: '560px', width: '100%' }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={ch}
+                initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', marginBottom: '20px', background: `${chapters[ch].color}16`, border: `1px solid ${chapters[ch].color}28`, fontSize: '.72rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: chapters[ch].color }}>
+                  {chapters[ch].label}
                 </div>
-                {[{ t: 'Token balances', d: 'Stored as euint64 FHE ciphertext' }, { t: 'Confidential transfer amounts', d: 'FHE-encrypted client-side before tx' }, { t: 'Intermediate computation', d: 'FHE arithmetic never reveals plaintext' }].map((r, i) => (
-                  <div key={i} style={{ padding: '14px 0', borderBottom: i < 2 ? '1px solid rgba(255,210,8,.1)' : 'none' }}>
-                    <div style={{ color: '#fff', fontWeight: 600, fontSize: '.9rem', marginBottom: '4px' }}>{r.t}</div>
-                    <div style={{ color: '#71717a', fontSize: '.78rem' }}>{r.d}</div>
-                  </div>
-                ))}
-              </div>
-            </RevealSection>
-            <RevealSection delay={200}>
-              <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)', padding: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Eye size={18} style={{ color: '#a1a1aa' }} /></div>
-                  <span style={{ color: '#a1a1aa', fontWeight: 700, fontSize: '.82rem', letterSpacing: '.06em', textTransform: 'uppercase' }}>Publicly Visible</span>
-                </div>
-                {[{ t: 'Sender & recipient addresses', d: 'FHE hides values, not participants' }, { t: 'Shield & unshield amounts', d: 'Public ERC-20 movement — visible on explorer' }, { t: 'Transaction type & timing', d: 'Transfer, shield, or unshield is observable' }, { t: 'Token contract address', d: 'Which cToken is involved' }].map((r, i) => (
-                  <div key={i} style={{ padding: '14px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>
-                    <div style={{ color: '#e4e4e7', fontWeight: 600, fontSize: '.9rem', marginBottom: '4px' }}>{r.t}</div>
-                    <div style={{ color: '#52525b', fontSize: '.78rem' }}>{r.d}</div>
-                  </div>
-                ))}
-              </div>
-            </RevealSection>
-            <RevealSection delay={300}>
-              <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)', padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', boxSizing: 'border-box' }}>
-                <div>
-                  <AlertTriangle size={28} style={{ color: '#FFD208', marginBottom: '16px' }} />
-                  <p style={{ color: '#a1a1aa', lineHeight: 1.7, fontSize: '.9rem' }}>
-                    An observer sees that <strong style={{ color: '#fff' }}>0xAlice sent a confidential transfer to 0xBob</strong> on cUSDC. They <strong style={{ color: '#FFD208' }}>cannot see how much was sent.</strong>
-                  </p>
-                </div>
-                <div style={{ marginTop: '28px', padding: '16px', borderRadius: '10px', background: 'rgba(255,210,8,.08)', border: '1px solid rgba(255,210,8,.2)' }}>
-                  <p style={{ color: '#FFD208', fontSize: '.8rem', fontWeight: 600, lineHeight: 1.5 }}>For full graph privacy, combine with stealth addresses or mixers on top of FHE.</p>
-                </div>
-              </div>
-            </RevealSection>
-          </div>
-        </div>
-      </section>
+                <h2 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.8rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.12, marginBottom: '20px' }}>
+                  {chapters[ch].title}
+                </h2>
+                <p style={{ color: '#a1a1aa', fontSize: '1.05rem', lineHeight: 1.75, marginBottom: '32px' }}>
+                  {chapters[ch].body}
+                </p>
 
-      {/* ── INTERACTIVE LEDGER ── */}
-      <section id="how" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fafafa' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <RevealSection style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '100px', background: 'rgba(255,210,8,.12)', border: '1px solid rgba(255,210,8,.3)', fontSize: '.75rem', fontWeight: 700, color: '#92700a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Interactive Playground</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>Public ledger vs. FHE-shielded ledger</h2>
-            <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '540px', margin: '0 auto', lineHeight: 1.65 }}>Toggle between states. Notice addresses are always public — only amounts become encrypted ciphertexts.</p>
-          </RevealSection>
-
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
-            <div style={{ display: 'inline-flex', background: '#e4e4e7', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-              {(['public', 'shielded'] as const).map(s => (
-                <button key={s} onClick={() => setVizState(s)} style={{ padding: '10px 24px', borderRadius: '9px', border: 'none', fontWeight: 700, fontSize: '.875rem', cursor: 'pointer', background: vizState === s ? (s === 'shielded' ? '#FFD208' : '#fff') : 'transparent', color: vizState === s ? '#000' : '#71717a', boxShadow: vizState === s ? '0 2px 8px rgba(0,0,0,.1)' : 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all .2s ease' }}>
-                  {s === 'shielded' ? <Lock size={13} /> : <Eye size={13} />}
-                  {s === 'public' ? 'Public ERC-20' : 'FHE Shielded cToken'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ borderRadius: '20px', border: `2px solid ${vizState === 'shielded' ? '#FFD208' : '#e4e4e7'}`, background: '#fff', overflow: 'hidden', boxShadow: vizState === 'shielded' ? '0 0 40px rgba(255,210,8,.15)' : '0 4px 24px rgba(0,0,0,.06)', transition: 'all .4s ease' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e4e4e7', background: vizState === 'shielded' ? 'rgba(255,210,8,.06)' : '#fafafa', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background .4s ease' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: vizState === 'shielded' ? '#FFD208' : '#10b981', boxShadow: vizState === 'shielded' ? '0 0 10px rgba(255,210,8,.7)' : 'none', transition: 'all .4s ease' }} />
-                <span style={{ fontSize: '.78rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#71717a' }}>{vizState === 'public' ? 'Public Ledger State' : 'Encrypted Ledger State'}</span>
-              </div>
-              <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '.7rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', background: vizState === 'shielded' ? 'rgba(255,210,8,.15)' : 'rgba(16,185,129,.1)', color: vizState === 'shielded' ? '#92700a' : '#059669', transition: 'all .4s ease' }}>
-                {vizState === 'public' ? 'READABLE' : 'CRYPTOGRAPHICALLY PROTECTED'}
-              </span>
-            </div>
-            {[
-              { label: 'Sender Address', pub: '0x23D4…8234', enc: '0x23D4…8234', priv: false, note: 'Always public — FHE hides values, not participants' },
-              { label: 'Recipient Address', pub: '0x4aB9…F012', enc: '0x4aB9…F012', priv: false, note: 'Always public — FHE hides values, not participants' },
-              { label: 'Transfer Amount', pub: '50,000.00 USDC', enc: '0x7f2c1a4…d3 ← euint64', priv: true, note: 'FHE-encrypted client-side before the transaction is sent' },
-              { label: 'Sender Balance', pub: '125,300.50 USDC', enc: '0x9e81fa2…91 ← euint64', priv: true, note: 'Updated as ciphertext — FHE arithmetic without decrypting' },
-              { label: 'Recipient Balance', pub: '18,750.00 USDC', enc: '0x3d4a7b0…42 ← euint64', priv: true, note: 'Only owner can decrypt via EIP-712 permit' },
-            ].map((row, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '180px 1fr', padding: '18px 24px', borderBottom: i < 4 ? '1px solid #f4f4f5' : 'none', background: vizState === 'shielded' && row.priv ? 'rgba(255,210,8,.02)' : 'transparent', transition: 'background .4s ease', fontFamily: 'JetBrains Mono, monospace', alignItems: 'start' }}>
-                <span style={{ fontSize: '.8rem', color: '#71717a', paddingTop: '2px' }}>{row.label}</span>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {vizState === 'shielded' && row.priv
-                      ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#FFD208', fontWeight: 700, fontSize: '.8rem' }}><EyeOff size={13} /> {row.enc}</span>
-                      : <span style={{ color: '#000', fontWeight: 600, fontSize: '.8rem' }}>{row.pub}</span>
-                    }
-                    {vizState === 'shielded' && !row.priv && <span style={{ fontSize: '.64rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: 'rgba(239,68,68,.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,.15)', fontFamily: 'sans-serif' }}>VISIBLE</span>}
-                  </div>
-                  {vizState === 'shielded' && <div style={{ fontSize: '.7rem', color: '#a1a1aa', marginTop: '4px', fontFamily: 'sans-serif' }}>{row.note}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TRANSFER FLOW ── */}
-      <section style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fff' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <RevealSection style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>How a confidential transfer works</h2>
-            <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Amount is encrypted in WASM before it ever touches the blockchain.</p>
-          </RevealSection>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '0' }}>
-            {txSteps.map((step, i) => (
-              <RevealSection key={i} delay={i * 100}>
-                <div style={{ padding: '32px 28px', borderLeft: i > 0 ? '1px solid #e4e4e7' : 'none', borderTop: `3px solid ${i === currentStep ? step.color : '#e4e4e7'}`, background: i === currentStep ? `${step.color}08` : '#fff', transition: 'all .4s ease' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: i === currentStep ? step.color : '#f4f4f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', transition: 'all .4s ease', ...(i === currentStep ? { boxShadow: `0 4px 20px ${step.color}40` } : {}) }}>
-                    <step.icon size={22} style={{ color: i === currentStep ? '#000' : '#71717a' }} />
-                  </div>
-                  <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '8px' }}>Step {i + 1}</div>
-                  <div style={{ fontWeight: 800, color: '#000', fontSize: '1rem', marginBottom: '8px' }}>{step.label}</div>
-                  <div style={{ fontSize: '.82rem', color: '#71717a', lineHeight: 1.55, fontFamily: 'JetBrains Mono, monospace' }}>{step.detail}</div>
-                </div>
-              </RevealSection>
-            ))}
-          </div>
-          <RevealSection delay={200}>
-            <div style={{ marginTop: '32px', padding: '24px 28px', borderRadius: '16px', background: '#fafafa', border: '1px solid #e4e4e7', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '20px' }}>
-              <div>
-                <div style={{ fontSize: '.72rem', color: '#a1a1aa', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '8px' }}>What the blockchain sees</div>
-                <code style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.8rem', color: '#000' }}>
-                  from: 0x23D4…8234 → to: 0x4aB9…F012 · amount: <span style={{ color: '#FFD208', fontWeight: 700 }}>0x9e81f…← encrypted</span>
-                </code>
-              </div>
-              <ArrowRight size={20} style={{ color: '#d1d1d6', flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: '.72rem', color: '#a1a1aa', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '8px' }}>What an observer learns</div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(239,68,68,.08)', color: '#dc2626', fontSize: '.78rem', fontWeight: 600 }}>sender ✓ visible</span>
-                  <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(239,68,68,.08)', color: '#dc2626', fontSize: '.78rem', fontWeight: 600 }}>recipient ✓ visible</span>
-                  <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(255,210,8,.12)', color: '#92700a', fontSize: '.78rem', fontWeight: 600 }}>amount hidden</span>
-                </div>
-              </div>
-            </div>
-          </RevealSection>
-        </div>
-      </section>
-
-      {/* ── DEVELOPER SDK ── */}
-      <section id="dev" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fafafa' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr)', gap: '64px', alignItems: 'start' }}>
-          <RevealSection>
-            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '100px', background: 'rgba(255,210,8,.12)', border: '1px solid rgba(255,210,8,.3)', fontSize: '.75rem', fontWeight: 700, color: '#92700a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>For Developers</span>
-            <h2 style={{ fontSize: 'clamp(1.6rem,3.5vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '16px', lineHeight: 1.15 }}>Integrate confidential tokens in minutes.</h2>
-            <p style={{ color: '#52525b', fontSize: '.95rem', lineHeight: 1.7, marginBottom: '32px' }}>
-              <code style={{ fontFamily: 'JetBrains Mono', background: '#f0f0f0', padding: '1px 6px', borderRadius: '4px', fontSize: '.88em' }}>@zama-fhe/react-sdk</code> handles WASM encryption, permit caching, and Gateway communication.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '36px' }}>
-              {[
-                { l: 'Auto ERC-1363 detection', d: 'SDK picks optimal shield path (1-tx or 2-tx)' },
-                { l: 'EIP-712 permit caching', d: 'Sign once, read balance silently after' },
-                { l: 'WASM ZK prover', d: 'Zero-knowledge proofs generated in browser' },
-                { l: 'SHA-384 integrity check', d: 'CDN WASM bundle verified before execution' },
-              ].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <CheckCircle2 size={18} style={{ color: '#FFD208', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#000', fontSize: '.9rem' }}>{f.l}</div>
-                    <div style={{ color: '#71717a', fontSize: '.8rem' }}>{f.d}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <a href="https://docs.zama.org/protocol/sdk" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#000', color: '#FFD208', fontWeight: 700, fontSize: '.875rem', borderRadius: '10px', textDecoration: 'none' }}>
-              <ExternalLink size={15} /> SDK Documentation
-            </a>
-          </RevealSection>
-
-          <RevealSection delay={150}>
-            <div style={{ borderRadius: '16px', border: '1px solid #e4e4e7', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,.08)' }}>
-              <div style={{ display: 'flex', background: '#f4f4f5', borderBottom: '1px solid #e4e4e7' }}>
-                {(['shield', 'decrypt', 'transfer'] as const).map(tab => (
-                  <button key={tab} onClick={() => setActiveCode(tab)} style={{ padding: '12px 18px', border: 'none', background: activeCode === tab ? '#fff' : 'transparent', borderBottom: activeCode === tab ? '2px solid #FFD208' : '2px solid transparent', fontWeight: 700, fontSize: '.78rem', cursor: 'pointer', color: activeCode === tab ? '#000' : '#71717a', transition: 'all .2s ease' }}>
-                    {tab === 'shield' ? 'useShield' : tab === 'decrypt' ? 'useConfidentialBalance' : 'useConfidentialTransfer'}
-                  </button>
-                ))}
-              </div>
-              <div style={{ background: '#0d0d0d', padding: '28px', overflowX: 'auto', maxHeight: '400px', overflowY: 'auto' }}>
-                <pre style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.76rem', lineHeight: 1.75, color: '#d4d4d4', margin: 0 }}>{CODE_SNIPPETS[activeCode]}</pre>
-              </div>
-            </div>
-          </RevealSection>
-        </div>
-      </section>
-
-      {/* ── ARCH dark ── */}
-      <section id="tech" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#000', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', bottom: '-20%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '400px', background: 'radial-gradient(ellipse,rgba(255,210,8,.08) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <RevealSection style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Architecture</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: '14px' }}>Zama Coprocessor</h2>
-            <p style={{ color: '#a1a1aa', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Heavy FHE computations run off-chain. Results are verified and published back to the EVM.</p>
-          </RevealSection>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 1fr 48px 1fr', gap: '0', alignItems: 'center' }}>
-            {[
-              { label: 'Your Browser', sub: 'Client-side', icon: Globe, items: ['FHE encrypt amount', 'Generate ZK proof', 'Sign EIP-712 permit'], color: '#3b82f6' },
-              null,
-              { label: 'Ethereum FHEVM', sub: 'On-chain', icon: Database, items: ['Store euint64 handles', 'Emit FHE op events', 'Manage ACL'], color: '#8b5cf6' },
-              null,
-              { label: 'Zama Coprocessor', sub: 'Off-chain FHE', icon: Cpu, items: ['Execute FHE arithmetic', 'Validate ZK proofs', 'Publish results'], color: '#FFD208' },
-            ].map((item, i) => {
-              if (!item) return <div key={i} style={{ display: 'flex', justifyContent: 'center' }}><ArrowRight size={18} style={{ color: '#3f3f46' }} /></div>;
-              return (
-                <RevealSection key={i} delay={i * 80}>
-                  <div style={{ padding: '24px', border: `1px solid ${item.color}20`, borderRadius: '14px', background: `${item.color}06` }}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${item.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                      <item.icon size={19} style={{ color: item.color }} />
-                    </div>
-                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '.9rem', marginBottom: '3px' }}>{item.label}</div>
-                    <div style={{ fontSize: '.72rem', color: '#52525b', marginBottom: '14px' }}>{item.sub}</div>
-                    {item.items.map((line, j) => (
-                      <div key={j} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '5px 0', borderTop: j > 0 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
-                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: '.76rem', color: '#71717a' }}>{line}</span>
+                {/* Inline visual per chapter */}
+                {ch === 0 && (
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '.78rem', background: '#0d0d0d', borderRadius: '12px', padding: '20px', border: '1px solid rgba(255,255,255,.06)' }}>
+                    {[['Amount','50,000 USDC'],['Sender','0x23D4…8234'],['Recipient','0x4aB9…F012'],['Balance','125,300 USDC']].map(([k, v], i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
+                        <span style={{ color: '#52525b' }}>{k}</span>
+                        <span style={{ color: '#ef4444', fontWeight: 700 }}>{v} — visible</span>
                       </div>
                     ))}
                   </div>
-                </RevealSection>
-              );
-            })}
+                )}
+                {ch === 1 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {[['Add ciphertexts','euint64 + euint64'],['Multiply','no plaintext needed'],['Compare','encrypted comparison'],['Decrypt locally','WASM in browser']].map(([op, detail], i) => (
+                      <motion.div key={op} initial={{ opacity: 0, scale: .9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * .08 }} style={{ padding: '12px', borderRadius: '10px', background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.2)' }}>
+                        <div style={{ fontSize: '.78rem', fontWeight: 700, color: '#93c5fd', marginBottom: '2px' }}>{op}</div>
+                        <div style={{ fontSize: '.7rem', color: '#52525b' }}>{detail}</div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {ch === 2 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[{l:'Transfer Amount',priv:true},{l:'Token Balances',priv:true},{l:'Sender Address',priv:false},{l:'Recipient Address',priv:false}].map((r, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * .08 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px', borderRadius: '8px', background: r.priv ? 'rgba(255,210,8,.06)' : 'rgba(255,255,255,.03)', border: `1px solid ${r.priv ? 'rgba(255,210,8,.18)' : 'rgba(255,255,255,.06)'}` }}>
+                        <span style={{ fontSize: '.82rem', color: '#a1a1aa' }}>{r.l}</span>
+                        {r.priv
+                          ? <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#FFD208', display: 'flex', alignItems: 'center', gap: '4px' }}><EyeOff size={12} /> ENCRYPTED</span>
+                          : <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={12} /> VISIBLE</span>
+                        }
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {ch === 3 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {[{s:'Shield ERC-20',d:'transferAndCall or approve+wrap → cToken minted',i:Shield},{s:'Transfer cToken',d:'Amount encrypted in WASM → euint64 ciphertext on-chain',i:Lock},{s:'Decrypt Balance',d:'EIP-712 permit → KMS re-encrypt → WASM local decrypt',i:Key}].map((r, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * .1 }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', borderRadius: '10px', background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <r.i size={18} style={{ color: '#000' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, color: '#fff', fontSize: '.88rem' }}>{r.s}</div>
+                          <div style={{ fontSize: '.73rem', color: '#6ee7b7', marginTop: '2px' }}>{r.d}</div>
+                        </div>
+                        <CheckCircle2 size={17} style={{ color: '#10b981', flexShrink: 0 }} />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── CTA ── */}
-      <section style={{ padding: 'clamp(80px,12vw,160px) clamp(24px,6vw,80px)', background: '#000', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 50%,rgba(255,210,8,.1) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        {[1, 2, 3].map(r => <div key={r} style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: `${r * 280}px`, height: `${r * 280}px`, borderRadius: '50%', border: '1px solid rgba(255,210,8,.08)', pointerEvents: 'none', animation: `pulse-ring ${3 + r * .8}s ease-out ${r * .6}s infinite` }} />)}
-        <RevealSection style={{ position: 'relative', zIndex: 1 }}>
-          <h2 style={{ fontSize: 'clamp(2.2rem,6vw,4.5rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: '24px', maxWidth: '720px', margin: '0 auto 24px' }}>Shield your first tokens today.</h2>
-          <p style={{ color: '#71717a', fontSize: '1.05rem', lineHeight: 1.65, maxWidth: '440px', margin: '0 auto 48px' }}>Connect your wallet and explore the registry on Sepolia. Use the Faucet for free test tokens.</p>
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+// ─── HORIZONTAL SCROLL — App Pages ──────────────────────────────────────────
+const APP_PAGES = [
+  { href: '/app',            icon: Database,     label: 'Registry',     desc: 'Browse ERC-7984 wrappers on Sepolia and Mainnet. View live encrypted balances for connected wallets.',           color: '#3b82f6', tag: 'Explorer'   },
+  { href: '/app/wrap',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
+  { href: '/app/portfolio',  icon: Wallet,       label: 'Portfolio',    desc: 'Track all your shielded and unshielded balances. Decrypt FHE ciphertexts with EIP-712 permits.',                 color: '#10b981', tag: 'My Assets'  },
+  { href: '/app/analytics',  icon: BarChart3,    label: 'Analytics',    desc: 'Total Value Shielded, 24h shield/unshield volume, and per-token activity across the registry.',                  color: '#8b5cf6', tag: 'Insights'   },
+  { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC, WBTC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
+  { href: '/app/learn',      icon: GraduationCap,label: 'Learn',        desc: 'Step-by-step tutorial: connect wallet → get tokens → shield → decrypt balance. Interactive with rewards.',       color: '#f59e0b', tag: 'Tutorial'   },
+  { href: '/app/developers', icon: Wrench,       label: 'Dev Tools',    desc: 'Raw contract ABI explorer, SDK hook reference, and integration helpers for building on ERC-7984.',              color: '#ef4444', tag: 'Builder'    },
+  { href: '/app/docs',       icon: FileText,     label: 'Docs',         desc: 'ERC-7984 architecture, wrapper mechanics, permit model, and full SDK hook API reference.',                      color: '#64748b', tag: 'Reference'  },
+];
+
+function HorizontalScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const x = useTransform(scrollYProgress, [0, 1], ['0%', '-62%']);
+  const xS = useSpring(x, { stiffness: 80, damping: 20 });
+
+  return (
+    <div ref={ref} id="app" style={{ position: 'relative', height: '300vh', background: '#fff' }}>
+      <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }}>
+        <div style={{ padding: 'clamp(40px,5vw,64px) clamp(24px,6vw,80px) 20px' }}>
+          <BlurFade inView>
+            <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', background: 'rgba(255,210,8,.1)', border: '1px solid rgba(255,210,8,.3)', fontSize: '.75rem', fontWeight: 700, color: '#92700a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '10px' }}>The Dashboard</span>
+            <h2 style={{ fontSize: 'clamp(1.6rem,3.5vw,2.6rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '4px' }}>Eight pages for confidential DeFi.</h2>
+            <p style={{ color: '#71717a', fontSize: '.9rem' }}>Drag or scroll to explore all pages.</p>
+          </BlurFade>
+        </div>
+        <div style={{ overflow: 'hidden', paddingLeft: 'clamp(24px,6vw,80px)' }}>
+          <motion.div style={{ x: xS, display: 'flex', gap: '18px', width: 'max-content', paddingBottom: '24px', paddingRight: '80px' }}>
+            {APP_PAGES.map((page, i) => (
+              <motion.div key={page.href} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * .04 }} whileHover={{ y: -6 }} style={{ width: '278px', flexShrink: 0 }}>
+                <Link href={page.href} style={{ textDecoration: 'none', display: 'block' }}>
+                  <MagicCard mode="orb" glowFrom={`${page.color}40`} glowTo={`${page.color}05`} glowSize={200} glowBlur={80} glowOpacity={0.7}>
+                    <div style={{ padding: '26px 22px', border: '1px solid #e4e4e7', borderRadius: '16px', background: '#fff', cursor: 'pointer', height: '220px', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '11px', background: `${page.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <page.icon size={21} style={{ color: page.color }} />
+                        </div>
+                        <span style={{ fontSize: '.66rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: `${page.color}12`, color: page.color, letterSpacing: '.04em', textTransform: 'uppercase', border: `1px solid ${page.color}22` }}>{page.tag}</span>
+                      </div>
+                      <div style={{ fontWeight: 800, color: '#000', marginBottom: '8px', fontSize: '1rem' }}>{page.label}</div>
+                      <p style={{ fontSize: '.79rem', color: '#52525b', lineHeight: 1.6, margin: 0 }}>{page.desc}</p>
+                      <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '.78rem', fontWeight: 700, color: page.color }}>Open <ArrowRight size={12} /></div>
+                    </div>
+                  </MagicCard>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ANIMATED TIMELINE ───────────────────────────────────────────────────────
+const STEPS = [
+  { n:'01', icon:Droplets, color:'#06b6d4', title:'Get Test Tokens',       body:'Visit the Faucet and mint free Sepolia testnet tokens (USDC, WBTC). No real funds required to test the complete FHE flow.', link:'/app/faucet' },
+  { n:'02', icon:Shield,   color:'#FFD208', title:'Shield Your ERC-20',    body:'The SDK auto-detects ERC-1363 (one transferAndCall tx) or standard (approve + wrap). Your balance is now a euint64 ciphertext on-chain.', link:'/app/wrap' },
+  { n:'03', icon:EyeOff,   color:'#8b5cf6', title:'Transfer Confidentially',body:'Amounts are encrypted by WASM before the tx is broadcast. On-chain: sender and recipient are visible — only the amount is a ciphertext.', link:'/app' },
+  { n:'04', icon:Key,      color:'#10b981', title:'Decrypt Your Balance',  body:'Sign an EIP-712 read-only permit. The Zama Gateway re-encrypts to your transport key. WASM decrypts locally — plaintext never leaves the browser.', link:'/app/portfolio' },
+];
+
+function StepTimeline() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.8', 'end 0.3'] });
+  const h = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  const hS = useSpring(h, { stiffness: 55, damping: 20 });
+
+  return (
+    <section ref={ref} id="how" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fafafa' }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '72px' }}>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>From public ERC-20 to private cToken.</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '400px', margin: '0 auto', lineHeight: 1.65 }}>Four steps. Self-custodial. No third party sees your balance.</p>
+        </BlurFade>
+
+        <div style={{ position: 'relative' }}>
+          {/* Animated vertical progress line */}
+          <div style={{ position: 'absolute', left: '27px', top: '28px', bottom: '28px', width: '2px', background: '#e4e4e7', borderRadius: '1px' }}>
+            <motion.div style={{ height: hS, background: 'linear-gradient(180deg,#FFD208,#10b981)', borderRadius: '1px', width: '100%' }} />
+          </div>
+
+          {STEPS.map((step, i) => {
+            const stepRef = useRef<HTMLDivElement>(null);
+            const inV = useInView(stepRef, { once: false, margin: '-30% 0px -30% 0px' });
+            return (
+              <motion.div ref={stepRef} key={i} initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: '-20% 0px -20% 0px' }} transition={{ duration: 0.6, ease: [.22, 1, .36, 1], delay: .04 }} style={{ display: 'flex', gap: '32px', paddingBottom: '56px', position: 'relative' }}>
+                <motion.div animate={{ background: inV ? step.color : '#e4e4e7', boxShadow: inV ? `0 0 0 6px ${step.color}20` : 'none' }} transition={{ duration: 0.4 }} style={{ width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, position: 'relative' }}>
+                  <step.icon size={24} style={{ color: inV ? '#000' : '#a1a1aa', transition: 'color .3s' }} />
+                </motion.div>
+                <div style={{ paddingTop: '10px', flex: 1 }}>
+                  <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '8px' }}>Step {step.n}</div>
+                  <motion.h3 animate={{ color: inV ? '#000' : '#71717a' }} style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '12px' }}>{step.title}</motion.h3>
+                  <p style={{ color: '#52525b', fontSize: '.9rem', lineHeight: 1.7, maxWidth: '520px', marginBottom: '16px' }}>{step.body}</p>
+                  <Link href={step.link} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '.8rem', fontWeight: 700, color: step.color, textDecoration: 'none' }}>Try it <ArrowRight size={12} /></Link>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+function Stats() {
+  return (
+    <section style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fff' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView delay={0}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '2px', background: '#e4e4e7', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 4px 40px rgba(0,0,0,.04)' }}>
+            {[
+              { prefix:'',value:100,suffix:'%',label:'Homomorphic Encryption',sub:'TFHE — arithmetic on encrypted integers without decrypting',icon:Lock },
+              { prefix:'ERC-',value:7984,suffix:'',label:'Confidential Token Standard',sub:'euint64 ciphertext balances, OpenZeppelin-based wrapper',icon:Layers },
+              { prefix:'',value:8,suffix:' Pages',label:'Full Dashboard',sub:'Registry · Wrap · Portfolio · Analytics · Faucet · Learn · Dev · Docs',icon:Activity },
+            ].map((s, i) => (
+              <BlurFade key={i} inView delay={i * .1}>
+                <div style={{ background: '#fff', padding: '40px 36px' }}>
+                  <s.icon size={24} style={{ color: '#FFD208', marginBottom: '14px' }} />
+                  <div style={{ fontSize: 'clamp(2rem,4vw,2.8rem)', fontWeight: 900, letterSpacing: '-0.04em', color: '#000', display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                    {s.prefix}<NumberTicker value={s.value} className="!text-black !tracking-tight" />{s.suffix}
+                  </div>
+                  <div style={{ fontWeight: 700, color: '#000', marginTop: '6px' }}>{s.label}</div>
+                  <div style={{ fontSize: '.78rem', color: '#71717a', marginTop: '6px', lineHeight: 1.55 }}>{s.sub}</div>
+                </div>
+              </BlurFade>
+            ))}
+          </div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+// ─── ARCHITECTURE ────────────────────────────────────────────────────────────
+function Architecture() {
+  return (
+    <section id="tech" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#000', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '64px' }}>
+          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Architecture</span>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: '14px' }}>Zama Coprocessor</h2>
+          <p style={{ color: '#71717a', fontSize: '1rem', maxWidth: '460px', margin: '0 auto', lineHeight: 1.65 }}>FHE computations run off-chain in a decentralized Coprocessor. Results are cryptographically verified before landing on-chain.</p>
+        </BlurFade>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 40px 1fr 40px 1fr', gap: '0', alignItems: 'center' }}>
+          {[
+            { label:'Your Browser',   sub:'Client-side',  icon:Globe,    items:['FHE-encrypt amount','Generate ZK proof','Sign EIP-712 permit'],   color:'#3b82f6' },
+            null,
+            { label:'Ethereum FHEVM', sub:'On-chain',     icon:Database, items:['Store euint64 handles','Emit FHE events','Manage ACL'],            color:'#8b5cf6' },
+            null,
+            { label:'Zama Coprocessor',sub:'Off-chain FHE',icon:Cpu,    items:['Execute FHE arithmetic','Validate ZK proofs','Publish results'],    color:'#FFD208' },
+          ].map((item, i) => {
+            if (!item) return <div key={i} style={{ display: 'flex', justifyContent: 'center' }}><motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1.8, repeat: Infinity }}><ArrowRight size={18} style={{ color: '#3f3f46' }} /></motion.div></div>;
+            return (
+              <BlurFade key={i} inView delay={i * .09}>
+                <MagicCard mode="orb" glowFrom={`${item.color}25`} glowTo="transparent" glowSize={200} glowBlur={60} glowOpacity={0.5}>
+                  <div style={{ padding: '22px', border: `1px solid ${item.color}20`, borderRadius: '14px', background: `${item.color}06` }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${item.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}><item.icon size={18} style={{ color: item.color }} /></div>
+                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '.88rem', marginBottom: '2px' }}>{item.label}</div>
+                    <div style={{ fontSize: '.7rem', color: '#52525b', marginBottom: '12px' }}>{item.sub}</div>
+                    {item.items.map((line, j) => (
+                      <div key={j} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 0', borderTop: j > 0 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
+                        <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '.74rem', color: '#71717a' }}>{line}</span>
+                      </div>
+                    ))}
+                  </div>
+                </MagicCard>
+              </BlurFade>
+            );
+          })}
+        </div>
+
+        <BlurFade inView delay={0.4} style={{ marginTop: '28px' }}>
+          <div style={{ padding: '18px 22px', borderRadius: '12px', border: '1px solid rgba(255,210,8,.18)', background: 'rgba(255,210,8,.04)', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <AlertTriangle size={16} style={{ color: '#FFD208', flexShrink: 0, marginTop: '2px' }} />
+            <p style={{ color: '#71717a', fontSize: '.82rem', lineHeight: 1.65, margin: 0 }}>
+              <strong style={{ color: '#fff' }}>Trust model:</strong> The KMS re-encrypts ciphertexts from the network FHE key to your transport key without learning plaintext values — a cryptographic guarantee of TFHE, not a policy promise.
+            </p>
+          </div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+// ─── PERMIT FLOW ─────────────────────────────────────────────────────────────
+function PermitFlow() {
+  return (
+    <section style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fff' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '52px' }}>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>Reading your encrypted balance</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.65 }}>No gas. No tokens moved. Four cryptographic steps to reveal your balance only in your browser.</p>
+        </BlurFade>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '0', background: '#e4e4e7', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e4e4e7' }}>
+          {[
+            { n:'01', icon:Key,     title:'Grant Permit',    desc:'Sign EIP-712 typed-data. Binds to contract address, signer, chain ID, and a time window.',               note:'Read-only — no tokens moved' },
+            { n:'02', icon:Network, title:'SDK → Gateway',   desc:'SDK sends permit + transport public key to the Zama relayer. KMS verifies the EIP-712 signature.',       note:'Permit TTL: 30 days, cached locally' },
+            { n:'03', icon:Cpu,     title:'KMS Re-encrypts', desc:'KMS transforms the on-chain ciphertext from the network FHE key to your session transport key.',         note:'Cryptographic guarantee — not policy' },
+            { n:'04', icon:EyeOff,  title:'Local Decrypt',   desc:'WASM decrypts the re-encrypted ciphertext in your browser. Plaintext never leaves your device.',         note:'Subsequent reads are silent' },
+          ].map((s, i) => (
+            <BlurFade key={i} inView delay={i * .08}>
+              <div style={{ background: '#fff', padding: '30px 26px', borderLeft: i > 0 ? '1px solid #f0f0f0' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><s.icon size={19} style={{ color: '#000' }} /></div>
+                  <span style={{ fontSize: '1.7rem', fontWeight: 900, color: '#f0f0f0', letterSpacing: '-0.04em' }}>{s.n}</span>
+                </div>
+                <div style={{ fontWeight: 800, color: '#000', marginBottom: '8px', fontSize: '.95rem' }}>{s.title}</div>
+                <p style={{ color: '#52525b', fontSize: '.8rem', lineHeight: 1.65, marginBottom: '14px' }}>{s.desc}</p>
+                <div style={{ padding: '7px 10px', borderRadius: '7px', background: '#fafafa', border: '1px solid #e4e4e7', fontSize: '.72rem', color: '#71717a', fontWeight: 600 }}>{s.note}</div>
+              </div>
+            </BlurFade>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── CTA ─────────────────────────────────────────────────────────────────────
+function CTA() {
+  return (
+    <section style={{ padding: 'clamp(80px,12vw,160px) clamp(24px,6vw,80px)', background: '#000', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 50%,rgba(255,210,8,.1) 0%,transparent 70%)', pointerEvents: 'none' }} />
+      {[1,2,3,4].map(r => (
+        <motion.div key={r} animate={{ scale: [1,1.07,1], opacity: [.18,.05,.18] }} transition={{ duration: 3+r, repeat: Infinity, delay: r*.8 }} style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: `${r*240}px`, height: `${r*240}px`, borderRadius: '50%', border: '1px solid rgba(255,210,8,.18)', pointerEvents: 'none' }} />
+      ))}
+      <BlurFade inView delay={0} style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.25)', background: 'rgba(255,210,8,.08)', fontSize: '.78rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '32px' }}>
+          <motion.div animate={{ scale: [1,1.5,1] }} transition={{ repeat: Infinity, duration: 2.2 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD208' }} />
+          Live on Ethereum Sepolia
+        </div>
+        <h2 style={{ fontSize: 'clamp(2.2rem,6vw,4.5rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: '24px', maxWidth: '640px', margin: '0 auto 24px' }}>
+          Shield your first tokens today.
+        </h2>
+        <p style={{ color: '#71717a', fontSize: '1.05rem', lineHeight: 1.65, maxWidth: '400px', margin: '0 auto 48px' }}>
+          Use the Faucet for free Sepolia testnet tokens. No mainnet funds needed.
+        </p>
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
             <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '18px 36px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1.05rem', borderRadius: '12px', textDecoration: 'none', boxShadow: '0 8px 40px rgba(255,210,8,.35)' }}>
               <Shield size={20} /> Launch ZamaVault <ArrowRight size={18} />
             </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
             <a href="https://docs.zama.org/protocol" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '18px 36px', background: 'transparent', color: '#fff', fontWeight: 700, fontSize: '1.05rem', borderRadius: '12px', textDecoration: 'none', border: '2px solid rgba(255,255,255,.15)' }}>
               <BookOpen size={20} /> Zama Docs
             </a>
-          </div>
-        </RevealSection>
-      </section>
+          </motion.div>
+        </div>
+      </BlurFade>
+    </section>
+  );
+}
 
-      {/* ── FOOTER ── */}
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  return (
+    <div data-theme="light" style={{ background: '#fafafa', color: '#000', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif", minHeight: '100vh' }}>
+      <style>{`.pill{flex-shrink:0;padding:8px 22px;border:1px solid #e4e4e7;border-radius:100px;font-size:.78rem;font-weight:700;color:#52525b;background:#fff;white-space:nowrap;letter-spacing:.04em;}`}</style>
+      <ScrollProgress />
+      <Hero />
+      <section style={{ borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7', background: '#fff', overflow: 'hidden', padding: '4px 0' }}>
+        <Marquee pauseOnHover className="[--duration:28s] [--gap:12px]" repeat={3}>
+          {TRUST.map(item => <div key={item} className="pill">{item}</div>)}
+        </Marquee>
+      </section>
+      <Stats />
+      <PinnedStory />
+      <HorizontalScroll />
+      <StepTimeline />
+      <PermitFlow />
+      <Architecture />
+      <CTA />
       <footer style={{ padding: '36px clamp(24px,6vw,80px)', background: '#000', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -572,9 +576,9 @@ export default function LandingPageV2() {
           <span style={{ fontWeight: 800, color: '#fff', fontSize: '.95rem' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
           <span style={{ color: '#3f3f46', fontSize: '.78rem', marginLeft: '8px' }}>Built on Zama FHEVM · ERC-7984</span>
         </div>
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          {[{ l: 'Zama Protocol', h: 'https://docs.zama.org/protocol' }, { l: 'Security Model', h: 'https://docs.zama.org/protocol/sdk/concepts/security-model' }, { l: 'GitHub', h: 'https://github.com/hosein-ul/zamavault' }, { l: 'App →', h: '/app' }].map(link => (
-            <a key={link.l} href={link.h} target={link.h.startsWith('http') ? '_blank' : undefined} rel={link.h.startsWith('http') ? 'noopener noreferrer' : undefined} style={{ fontSize: '.8rem', fontWeight: 600, color: '#52525b', textDecoration: 'none' }}>{link.l}</a>
+        <div style={{ display: 'flex', gap: '24px' }}>
+          {[{l:'Zama Protocol',h:'https://docs.zama.org/protocol'},{l:'Security Model',h:'https://docs.zama.org/protocol/sdk/concepts/security-model'},{l:'GitHub',h:'https://github.com/hosein-ul/zamavault'},{l:'App →',h:'/app'}].map(link => (
+            <motion.a key={link.l} href={link.h} target={link.h.startsWith('http')?'_blank':undefined} rel={link.h.startsWith('http')?'noopener noreferrer':undefined} whileHover={{ color: '#a1a1aa' }} style={{ fontSize: '.8rem', fontWeight: 600, color: '#52525b', textDecoration: 'none' }}>{link.l}</motion.a>
           ))}
         </div>
       </footer>
