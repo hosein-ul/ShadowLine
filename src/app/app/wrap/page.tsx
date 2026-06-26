@@ -215,11 +215,6 @@ function WrapPageContent() {
     }
   }, [address, selectedWrapper, refetchPublicBalance, refetchAllowance]);
 
-  // Reset decrypt gate when the selected token changes so the user isn't
-  // surprised by a stale permit request for a different token.
-  useEffect(() => {
-    setDecryptRequested(false);
-  }, [selectedToken]);
 
   // Zama official Shield/Unshield hooks
   const { mutateAsync: shield } = useShield({
@@ -234,14 +229,14 @@ function WrapPageContent() {
   const wrapperDecimals = selectedWrapper?.wrapperDecimals ?? 6;
   const inputDecimals = action === 'wrap' ? underlyingDecimals : wrapperDecimals;
 
-  const parsedInputAmount = useMemo(() => {
+  const parsedInputAmount = (() => {
     if (!amount) return 0n;
     try {
       return parseAmount(amount, inputDecimals);
     } catch {
       return 0n;
     }
-  }, [amount, inputDecimals]);
+  })();
 
   const hasPublicBalance = rawPublicBalance !== undefined ? (rawPublicBalance as bigint) : 0n;
   const hasWrapperBalance = decryptedWrapperBalance !== undefined && decryptedWrapperBalance !== null ? decryptedWrapperBalance : 0n;

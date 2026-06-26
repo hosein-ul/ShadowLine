@@ -1,6 +1,6 @@
 "use client"
 
-import React, { HTMLAttributes, useCallback, useMemo } from "react"
+import React, { HTMLAttributes, useCallback, useMemo, useState, useEffect } from "react"
 import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
@@ -65,6 +65,11 @@ export const WarpBackground: React.FC<WarpBackgroundProps> = ({
   gridColor = "var(--border)",
   ...props
 }) => {
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const generateBeams = useCallback(() => {
     const beams = []
     const cellsPerSide = Math.floor(100 / beamSize)
@@ -82,6 +87,14 @@ export const WarpBackground: React.FC<WarpBackgroundProps> = ({
   const rightBeams = useMemo(() => generateBeams(), [generateBeams])
   const bottomBeams = useMemo(() => generateBeams(), [generateBeams])
   const leftBeams = useMemo(() => generateBeams(), [generateBeams])
+
+  if (!isMounted) {
+    return (
+      <div className={cn("relative rounded border p-20", className)} {...props}>
+        <div className="relative">{children}</div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("relative rounded border p-20", className)} {...props}>

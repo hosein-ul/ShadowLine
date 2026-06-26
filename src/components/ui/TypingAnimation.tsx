@@ -44,8 +44,10 @@ export default function TypingAnimation({
 
     // Handle fully deleted word
     if (isDeleting && currentText === '') {
-      setIsDeleting(false);
-      setCurrentWordIndex((prev) => (prev + 1) % words.length);
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setCurrentWordIndex((prev) => (prev + 1) % words.length);
+      }, 0);
     }
 
     return () => clearTimeout(timer);

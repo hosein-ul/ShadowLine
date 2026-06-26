@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
+  { href: '/', label: 'Home' },
   { href: '/app', label: 'Registry' },
   { href: '/app/wrap', label: 'Wrap' },
   { href: '/app/portfolio', label: 'Portfolio' },

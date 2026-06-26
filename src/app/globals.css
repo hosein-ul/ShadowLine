@@ -243,38 +243,38 @@ html[data-design-theme='aurora'] {
 
 /* ---------- 5. LIGHT MODE OVERRIDES ---------- */
 html[data-theme='light'] {
-  --bg-base: #f4f4f5;
+  --bg-base: #fafafa;
   --bg-surface: #ffffff;
-  --bg-elevated: #e4e4e7;
+  --bg-elevated: #f4f4f5;
   --bg-card: #ffffff;
   --bg-card-hover: #ffffff;
   --bg-input: #ffffff;
   
-  --accent: #09090b;
-  --accent-hover: #18181b;
-  --accent-muted: rgba(9, 9, 11, 0.08);
-  --accent-subtle: rgba(9, 9, 11, 0.03);
-  --accent-glow: rgba(9, 9, 11, 0.04);
+  --accent: #FFD208;
+  --accent-hover: #e0b806;
+  --accent-muted: rgba(255, 210, 8, 0.15);
+  --accent-subtle: rgba(255, 210, 8, 0.04);
+  --accent-glow: rgba(255, 210, 8, 0.2);
 
-  --text-primary: #09090b;
-  --text-secondary: #3f3f46;
-  --text-muted: #71717a;
-  --text-accent: #09090b;
-  --text-inverse: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: #27272a;
+  --text-muted: #52525b;
+  --text-accent: #000000;
+  --text-inverse: #000000;
 
-  --border: #d4d4d8;
+  --border: #e4e4e7;
   --border-hover: #a1a1aa;
-  --border-accent: rgba(9, 9, 11, 0.4);
-  --border-focus: #09090b;
+  --border-accent: #FFD208;
+  --border-focus: #000000;
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 10px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
-  --shadow-glow: 0 0 12px rgba(9, 9, 11, 0.02);
+  --shadow-glow: 0 0 16px rgba(255, 210, 8, 0.18);
   
-  --radial-glow-1: rgba(9, 9, 11, 0.01);
-  --radial-glow-2: rgba(113, 128, 150, 0.01);
-  --grid-line: rgba(0, 0, 0, 0.025);
+  --radial-glow-1: rgba(255, 210, 8, 0.03);
+  --radial-glow-2: rgba(0, 0, 0, 0.01);
+  --grid-line: rgba(0, 0, 0, 0.015);
 }
 
 /* ==========================================================================

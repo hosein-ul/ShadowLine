@@ -905,17 +905,17 @@ function Portfolio() {
               <tr className="docs-prop-row">
                 <td>Shield (wrap)</td>
                 <td><code>parseUnits(amount, underlyingDecimals)</code></td>
-                <td><code>parseUnits("1", 18)</code> → 10¹⁸</td>
+                <td><code>{"parseUnits('1', 18)"}</code> → 10¹⁸</td>
               </tr>
               <tr className="docs-prop-row">
                 <td>Unshield (unwrap)</td>
                 <td><code>parseUnits(amount, 6)</code></td>
-                <td><code>parseUnits("1", 6)</code> → 10⁶</td>
+                <td><code>{"parseUnits('1', 6)"}</code> → 10⁶</td>
               </tr>
               <tr className="docs-prop-row">
                 <td>Display confidential balance</td>
                 <td><code>formatUnits(balance, 6)</code></td>
-                <td><code>formatUnits(1_000_000n, 6)</code> → "1.0"</td>
+                <td><code>{"formatUnits(1_000_000n, 6)"}</code> → {"'1.0'"}</td>
               </tr>
             </tbody>
           </table>
