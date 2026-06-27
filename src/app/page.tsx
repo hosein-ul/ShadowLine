@@ -731,6 +731,462 @@ function CTA() {
   );
 }
 
+// ─── PLAYGROUND DEMO ─────────────────────────────────────────────────────────
+function PlaygroundDemo() {
+  const [amount, setAmount] = useState(1000);
+  const [publicBalance, setPublicBalance] = useState(5000);
+  const [isShielding, setIsShielding] = useState(false);
+  const [isShielded, setIsShielded] = useState(false);
+  const [showPermitModal, setShowPermitModal] = useState(false);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [isDecrypted, setIsDecrypted] = useState(false);
+
+  const handleShield = () => {
+    setIsShielding(true);
+    setTimeout(() => {
+      setIsShielding(false);
+      setIsShielded(true);
+      setPublicBalance(5000 - amount);
+    }, 1200);
+  };
+
+  const handleDecrypt = () => {
+    setShowPermitModal(true);
+  };
+
+  const handleSignPermit = () => {
+    setShowPermitModal(false);
+    setIsDecrypting(true);
+    setTimeout(() => {
+      setIsDecrypting(false);
+      setIsDecrypted(true);
+    }, 1000);
+  };
+
+  const handleReset = () => {
+    setAmount(1000);
+    setPublicBalance(5000);
+    setIsShielding(false);
+    setIsShielded(false);
+    setShowPermitModal(false);
+    setIsDecrypting(false);
+    setIsDecrypted(false);
+  };
+
+  return (
+    <section id="demo" style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fafafa', borderBottom: '1px solid #e4e4e7', borderTop: '1px solid #e4e4e7' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
+        <BlurFade inView delay={0}>
+          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Interactive Sandbox</span>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '12px' }}>Experience Homomorphic Shielding</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '580px', margin: '0 auto 40px', lineHeight: 1.6 }}>Drag the slider below to select an amount of USDT to shield, and witness how the public balance is converted into a secure, encrypted balance.</p>
+        </BlurFade>
+
+        <BlurFade inView delay={0.15}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px', alignItems: 'stretch', textAlign: 'left' }}>
+            {/* Control Panel Card */}
+            <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #e4e4e7', padding: '30px', boxShadow: '0 4px 20px rgba(0,0,0,.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#000', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><Zap size={18} style={{ color: '#FFD208' }} /> Shielding Controller</h3>
+                <label style={{ fontSize: '.82rem', fontWeight: 700, color: '#71717a', display: 'block', marginBottom: '8px' }}>AMOUNT TO SHIELD: <span style={{ color: '#000', fontSize: '1.05rem', fontWeight: 800 }}>{amount} USDT</span></label>
+                
+                <input 
+                  type="range" 
+                  min="100" 
+                  max="5000" 
+                  step="100"
+                  value={amount}
+                  onChange={(e) => !isShielding && !isShielded && setAmount(Number(e.target.value))}
+                  disabled={isShielding || isShielded}
+                  style={{ width: '100%', accentColor: '#FFD208', cursor: (isShielding || isShielded) ? 'not-allowed' : 'pointer', height: '6px', borderRadius: '3px', background: '#e4e4e7', outline: 'none', marginBottom: '24px' }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.75rem', fontWeight: 600, color: '#a1a1aa', marginTop: '-16px', marginBottom: '32px' }}>
+                  <span>100 USDT</span>
+                  <span>5,000 USDT</span>
+                </div>
+              </div>
+
+              <div>
+                {!isShielded ? (
+                  <button
+                    onClick={handleShield}
+                    disabled={isShielding}
+                    style={{ width: '100%', padding: '16px', background: isShielding ? '#f4f4f5' : '#000', color: isShielding ? '#a1a1aa' : '#FFD208', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '.95rem', cursor: isShielding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}
+                  >
+                    {isShielding ? (
+                      <>
+                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '16px', height: '16px', border: '2px solid #a1a1aa', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                        Executing TFHE Shield Transaction...
+                      </>
+                    ) : (
+                      <>
+                        <Shield size={16} /> Shield {amount} USDT
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', color: '#059669', fontSize: '.85rem', fontWeight: 700 }}>
+                      <CheckCircle2 size={16} /> Successfully Shielded {amount} USDT!
+                    </div>
+                    <button
+                      onClick={handleReset}
+                      style={{ width: '100%', padding: '12px', background: 'transparent', color: '#71717a', border: '1px solid #e4e4e7', borderRadius: '8px', fontWeight: 700, fontSize: '.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Reset Playground
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Wallet Balance Display Card */}
+            <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid #e4e4e7', padding: '30px', boxShadow: '0 4px 20px rgba(0,0,0,.02)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#000', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}><Activity size={18} style={{ color: '#FFD208' }} /> Wallet Balances</h3>
+              
+              {/* Public Balance Row */}
+              <div style={{ border: '1px solid #e4e4e7', borderRadius: '12px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
+                <div>
+                  <div style={{ fontSize: '.75rem', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Public Balance (ERC-20)</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#000', marginTop: '4px' }}>{publicBalance.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 700, color: '#71717a' }}>USDT</span></div>
+                </div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59,130,246,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.15)' }}>
+                  <Globe size={18} />
+                </div>
+              </div>
+
+              {/* Shielded Balance Row */}
+              <div style={{ border: '1px solid #e4e4e7', borderRadius: '12px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isShielded ? 'rgba(255,210,8,0.02)' : '#fff', position: 'relative', overflow: 'hidden' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ fontSize: '.75rem', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '.04em' }}>Shielded Balance (cUSDT)</div>
+                    <span style={{ fontSize: '.68rem', fontWeight: 700, background: '#FFD208', color: '#000', padding: '2px 6px', borderRadius: '4px' }}>ERC-7984</span>
+                  </div>
+                  
+                  {!isShielded ? (
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#a1a1aa', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Lock size={16} /> Encrypted
+                    </div>
+                  ) : isDecrypted ? (
+                    <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} style={{ fontSize: '1.5rem', fontWeight: 900, color: '#059669', marginTop: '4px' }}>
+                      {amount.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 700, color: '#34d399' }}>cUSDT</span>
+                    </motion.div>
+                  ) : (
+                    <div style={{ marginTop: '4px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '.8rem', color: '#71717a', background: '#f4f4f5', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e4e4e7', display: 'inline-block' }}>
+                        Handle: 0x9f3e...8ab
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {isShielded && !isDecrypted && (
+                    <button
+                      onClick={handleDecrypt}
+                      disabled={isDecrypting}
+                      style={{ padding: '8px 14px', background: '#000', color: '#FFD208', border: 'none', borderRadius: '6px', fontSize: '.8rem', fontWeight: 700, cursor: isDecrypting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                    >
+                      {isDecrypting ? (
+                        <>
+                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '12px', height: '12px', border: '2px solid #FFD208', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <Unlock size={12} /> Decrypt
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {isDecrypted && (
+                    <div style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '.8rem', fontWeight: 700 }}>
+                      <Unlock size={14} /> Decrypted
+                    </div>
+                  )}
+
+                  {!isShielded && (
+                    <div style={{ color: '#a1a1aa', border: '1px dashed #e4e4e7', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Lock size={16} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </BlurFade>
+
+        {/* Mock Permit Modal */}
+        <AnimatePresence>
+          {showPermitModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e4e4e7', width: '100%', maxWidth: '380px', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,.15)', textAlign: 'left' }}
+              >
+                {/* MetaMask Style Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f4f4f5', paddingBottom: '14px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#fff2e6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff8000', fontSize: '1rem', fontWeight: 800 }}>🦊</div>
+                    <span style={{ fontWeight: 800, fontSize: '.9rem', color: '#333' }}>Signature Request</span>
+                  </div>
+                  <span style={{ fontSize: '.75rem', fontWeight: 600, color: '#3b82f6', background: 'rgba(59,130,246,0.06)', padding: '2px 8px', borderRadius: '100px' }}>Sepolia</span>
+                </div>
+
+                <div style={{ fontSize: '.8rem', color: '#52525b', lineHeight: 1.5, marginBottom: '20px' }}>
+                  <p style={{ margin: '0 0 10px', fontWeight: 700, color: '#000' }}>You are signing a decryption permit:</p>
+                  <div style={{ background: '#fafafa', borderRadius: '8px', border: '1px solid #e4e4e7', padding: '12px', fontFamily: 'monospace', fontSize: '.72rem', color: '#4b5563', overflowX: 'auto' }}>
+                    <strong>Domain:</strong> ZamaVault (v1)<br />
+                    <strong>Contract:</strong> 0x9ee53764...825ab<br />
+                    <strong>Purpose:</strong> Decrypt cUSDT balance<br />
+                    <strong>Owner:</strong> 0xYourConnectedAddress<br />
+                    <strong>Expiry:</strong> +24 Hours (Permit Cache)
+                  </div>
+                  <p style={{ margin: '10px 0 0', color: '#71717a', fontSize: '.7rem' }}>This signature is free and does not require gas. It authorizes ZamaVault to decrypt your balance in this browser.</p>
+                </div>
+
+                {/* Footer Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setShowPermitModal(false)}
+                    style={{ flex: 1, padding: '12px', border: '1px solid #d4d4d8', background: 'transparent', borderRadius: '8px', color: '#27272a', fontWeight: 700, fontSize: '.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSignPermit}
+                    style={{ flex: 1, padding: '12px', border: 'none', background: '#FFD208', color: '#000', borderRadius: '8px', fontWeight: 800, fontSize: '.85rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(255,210,8,.25)' }}
+                  >
+                    Sign Permit
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+}
+
+// ─── ENTERPRISE USE CASES ──────────────────────────────────────────────────
+function EnterpriseUseCases() {
+  return (
+    <section id="usecases" style={{ padding: 'clamp(80px,10vw,120px) clamp(24px,6vw,80px)', background: '#fff', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
+      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Enterprise Applications</span>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>B2B & Institutional Use Cases</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.6 }}>Discover how Fully Homomorphic Encryption solves data exposure challenges in corporate finance and DeFi.</p>
+        </BlurFade>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {[
+            {
+              title: 'Confidential Payroll',
+              desc: 'Disburse salaries and consulting fees in stablecoins like cUSDC without revealing individual employee compensation structures or monthly payroll totals on-chain.',
+              icon: Wallet,
+              badge: 'Stablecoin Shield'
+            },
+            {
+              title: 'Institutional Dark Pools',
+              desc: 'Execute block trades and OTC orders privately. Prevent front-running, sandwich attacks, and order-book visibility by keeping trades encrypted during settlement.',
+              icon: Network,
+              badge: 'OTC Trading'
+            },
+            {
+              title: 'Private Treasury Reserves',
+              desc: 'Manage company assets, yield strategies, and inter-company financing options without exposing proprietary strategic financial positioning to competitors.',
+              icon: Cpu,
+              badge: 'Corporate Treasury'
+            }
+          ].map((item, i) => (
+            <BlurFade key={i} inView delay={i * 0.1}>
+              <div 
+                style={{ 
+                  background: '#fafafa', 
+                  border: '1px solid #e4e4e7', 
+                  borderRadius: '16px', 
+                  padding: '32px', 
+                  height: '100%', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 12px rgba(0,0,0,.01)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,210,8,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
+                      <item.icon size={22} style={{ color: '#b45309' }} />
+                    </div>
+                    <span style={{ fontSize: '.7rem', fontWeight: 700, color: '#71717a', background: '#fff', border: '1px solid #e4e4e7', padding: '3px 8px', borderRadius: '100px' }}>{item.badge}</span>
+                  </div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#000', marginBottom: '12px' }}>{item.title}</h3>
+                  <p style={{ fontSize: '.88rem', color: '#52525b', lineHeight: 1.65 }}>{item.desc}</p>
+                </div>
+              </div>
+            </BlurFade>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── SECURITY & COMPLIANCE ─────────────────────────────────────────────────
+function SecurityCompliance() {
+  return (
+    <section id="security" style={{ padding: 'clamp(80px,10vw,120px) clamp(24px,6vw,80px)', background: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
+      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '50px', alignItems: 'center' }}>
+          {/* Text content */}
+          <BlurFade inView delay={0}>
+            <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Security & Compliance</span>
+            <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '20px', lineHeight: 1.15 }}>Cryptographic Safety & Non-Custodial Design</h2>
+            <p style={{ color: '#52525b', fontSize: '.95rem', lineHeight: 1.7, marginBottom: '24px' }}>ZamaVault operates on a purely non-custodial basis. Tokens are locked inside the open-source ERC-7984 wrapper contracts. Private keys never leave your browser, and decrypted values are only accessible via EIP-712 cryptographic permit requests.</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { title: 'Lattice-Based TFHE', desc: 'Secure against quantum computing algorithms.' },
+                { title: 'Fully Non-Custodial', desc: 'No central server, admin key, or custodian holds your funds.' },
+                { title: 'Zama FHEVM Verifiable', desc: 'Computations run on off-chain coprocessors with cryptographically verified state updates.' }
+              ].map((point, index) => (
+                <div key={index} style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ color: '#059669', marginTop: '2px' }}><CheckCircle2 size={16} /></div>
+                  <div>
+                    <h4 style={{ fontSize: '.9rem', fontWeight: 700, color: '#000', margin: '0 0 2px' }}>{point.title}</h4>
+                    <p style={{ fontSize: '.8rem', color: '#71717a', margin: 0 }}>{point.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </BlurFade>
+
+          {/* Graphics/Shield Representation */}
+          <BlurFade inView delay={0.2}>
+            <div style={{ background: '#fff', border: '1px solid #e4e4e7', borderRadius: '24px', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', boxShadow: '0 4px 30px rgba(0,0,0,.02)', position: 'relative' }}>
+              <motion.div 
+                animate={{ scale: [1, 1.05, 1], boxShadow: ['0 0 0 0px rgba(255,210,8,0)', '0 0 0 20px rgba(255,210,8,0.06)', '0 0 0 0px rgba(255,210,8,0)'] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', marginBottom: '24px' }}
+              >
+                <Shield size={36} />
+              </motion.div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#000', marginBottom: '8px' }}>Security Audit Status</h3>
+              <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#059669', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 12px', borderRadius: '100px', display: 'inline-block', marginBottom: '16px' }}>Ready for Launch</span>
+              <p style={{ fontSize: '.82rem', color: '#71717a', lineHeight: 1.5, maxWidth: '280px', margin: 0 }}>The wrapper logic and Coprocessor interface conform to OpenZeppelin ERC-20 secure standards.</p>
+            </div>
+          </BlurFade>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ACCORDIONS ──────────────────────────────────────────────────────────
+function FaqAccordions() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      q: 'What is ERC-7984 and how does it differ from ERC-20?',
+      a: 'ERC-7984 is a confidential token wrapper standard built on top of Zama FHEVM. Unlike standard public ERC-20 tokens, which expose balances and transaction amounts to everyone on Etherscan, ERC-7984 encrypts token balances into on-chain ciphertexts (euint64 handles). Only the account owner can view their balance by signing a secure cryptographic permit.'
+    },
+    {
+      q: 'How does decryption work? Is my private key exposed?',
+      a: 'No, your private key is never exposed. Decryption uses EIP-712 permits. When you click "Decrypt", your wallet signs a structured message. This signed permit authorizes ZamaVault\'s frontend to retrieve the decryption credentials from Zama\'s Key Management System (KMS), which decrypts the ciphertext handle and displays it locally. This is non-custodial and secure.'
+    },
+    {
+      q: 'Is Fully Homomorphic Encryption (TFHE) secure against quantum computers?',
+      a: 'Yes. TFHE (Torus Fully Homomorphic Encryption) is based on the Ring Learning With Errors (LWE) lattice cryptography problem. Lattice-based cryptography is mathematically recognized as post-quantum secure, meaning it is mathematically resistant to cryptanalytic attacks from quantum computers.'
+    },
+    {
+      q: 'Are there gas fee differences when using cTokens?',
+      a: 'Yes, because FHE arithmetic and zero-knowledge proof verifications are computationally heavy. However, ZamaVault routes computationally intense operations off-chain to a Zama Coprocessor. The coprocessor processes the FHE logic and returns a verified state update, keeping gas fees comparable to standard public token transactions.'
+    }
+  ];
+
+  return (
+    <section id="faq" style={{ padding: 'clamp(80px,10vw,120px) clamp(24px,6vw,80px)', background: '#fff' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>FAQ</span>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>Frequently Asked Questions</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '500px', margin: '0 auto', lineHeight: 1.6 }}>Find answers to common technical and architectural questions about ZamaVault.</p>
+        </BlurFade>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {faqs.map((faq, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <BlurFade key={i} inView delay={i * 0.05}>
+                <div 
+                  style={{ 
+                    border: '1px solid #e4e4e7', 
+                    borderRadius: '12px', 
+                    overflow: 'hidden', 
+                    background: isOpen ? '#fafafa' : '#fff',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '20px 24px', 
+                      background: 'transparent', 
+                      border: 'none', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      color: '#000',
+                      gap: '20px'
+                    }}
+                  >
+                    <span>{faq.q}</span>
+                    <motion.div
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ color: '#71717a', flexShrink: 0 }}
+                    >
+                      <ChevronDown size={18} />
+                    </motion.div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      >
+                        <div style={{ padding: '0 24px 20px', fontSize: '.9rem', color: '#52525b', lineHeight: 1.65, borderTop: '1px solid #f4f4f5', paddingTop: '16px' }}>
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </BlurFade>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
@@ -744,12 +1200,27 @@ export default function LandingPage() {
         </Marquee>
       </section>
       <Stats />
+      
+      {/* 1. Interactive Shielding Playground */}
+      <PlaygroundDemo />
+
       <PinnedStory />
       <HorizontalScroll />
       <StepTimeline />
+
+      {/* 2. Enterprise Use Cases */}
+      <EnterpriseUseCases />
+
       <PermitFlow />
       <FragmentationSection />
       <DeveloperSection />
+
+      {/* 3. Security & Compliance */}
+      <SecurityCompliance />
+
+      {/* 4. FAQs */}
+      <FaqAccordions />
+
       <CTA />
       <footer style={{ padding: '36px clamp(24px,6vw,80px)', background: '#000', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
