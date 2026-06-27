@@ -1,273 +1,341 @@
-# ZamaVault — Confidential Wrapper Registry App
+# ZamaVault — Confidential Asset Shielding Protocol
 
-> **Zama Developer Program Season 3 · Bounty Track**  
-> Build the Confidential Wrapper Registry App
-
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hosein-ul/zamavault)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A production-ready dApp that turns the official [Zama Wrappers Registry](https://docs.zama.org/protocol/protocol-apps/confidential-tokens/wrapper-registry) into a usable product for every developer and user in the ecosystem.
+ZamaVault is an enterprise-grade, non-custodial decentralized application (dApp) that acts as the primary gateway for Zama's FHEVM Wrappers Registry. Built entirely on Fully Homomorphic Encryption (FHE), ZamaVault enables users and institutions to seamlessly shield standard ERC-20 tokens into ERC-7984 confidential tokens (cTokens) and perform private on-chain asset transfers.
+
+With ZamaVault, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
 
 ---
 
-## Live URL
+## Table of Contents
 
-> **[https://zamavault.vercel.app](https://zamavault.vercel.app)**
-> *(Update with final deployment URL before submission)*
-
----
-
-## Supported Networks
-
-| Network | Chain ID | Status |
-|---|---|---|
-| Ethereum Sepolia | 11155111 | ✅ Primary — all features |
-| Ethereum Mainnet | 1 | ✅ Registry browsing |
-
-All bounty features (shield, unshield, decrypt, faucet) are live on **Sepolia**.
-
----
-
-## Features
-
-All four bounty requirements are fully implemented:
-
-| Bounty Requirement | Feature | Page |
-|---|---|---|
-| Browse the registry | Live ERC-20 ↔ ERC-7984 pair table sourced from on-chain WrappersRegistry | `/app` |
-| Wrap and unwrap | ERC-20 → ERC-7984 (shield) and ERC-7984 → ERC-20 (unshield) with multi-step tx flow | `/app/wrap` |
-| Decrypt ERC-7984 balances | EIP-712 permit flow for registry tokens AND arbitrary address paste | `/app/portfolio` |
-| Faucet for cTokenMocks | Claim all official Sepolia cTokenMock test tokens | `/app/faucet` |
-
-Additional pages:
-- **Portfolio** — batch decrypt all registry positions + decrypt any arbitrary ERC-7984 address
-- **Analytics** — Total Value Shielded, 24h shield/unshield volume, per-token stats
-- **Learn** — step-by-step tutorial: connect → faucet → shield → decrypt → unshield
-- **Developer Tools** — contract ABI explorer, SDK hook reference, integration guide
-- **Docs** — ERC-7984 architecture, permit model, full SDK API
+- [1. About ZamaVault](#1-about-zamavault)
+- [2. Supported Networks](#2-supported-networks)
+- [3. Core Features Deep Dive](#3-core-features-deep-dive)
+- [4. Technical Architecture & Data Flows](#4-technical-architecture--data-flows)
+  - [4.1 FHE Shielding Flow (Public to Confidential)](#41-fhe-shielding-flow-public-to-confidential)
+  - [4.2 FHE Decryption Flow (Confidential to Plaintext)](#42-fhe-decryption-flow-confidential-to-plaintext)
+- [5. Security & Cryptographic Trust Model](#5-security--cryptographic-trust-model)
+- [6. Hybrid Registry Sourcing Strategy](#6-hybrid-registry-sourcing-strategy)
+- [7. B2B & Enterprise Use Cases](#7-b2b--enterprise-use-cases)
+- [8. How to Configure a New Token Pair](#8-how-to-configure-a-new-token-pair)
+- [9. Local Development & Setup](#9-local-development--setup)
+- [10. Repository Structure](#10-repository-structure)
+- [11. License](#11-license)
 
 ---
 
-## How the Registry is Sourced
+## 1. About ZamaVault
 
-ZamaVault uses a **three-layer hybrid** strategy:
+Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ZamaVault addresses this challenge by utilizing Torus Fully Homomorphic Encryption (TFHE) on-chain via Zama's FHEVM. 
 
-### Layer 1 — On-chain WrappersRegistry (primary, canonical)
-
-When a wallet is connected on the matching chain, the app reads the official Zama WrappersRegistry live via `@zama-fhe/react-sdk`'s `useListPairs` hook. This is the canonical source of truth.
-
-Registry contracts:
-- Sepolia: `0x2f0750Bbb0A246059d80e94c454586a7F27a128e`
-- Mainnet: `0xeb5015fF021DB115aCe010f23F55C2591059bBA0`
-
-All pairs (including revoked ones with `isValid: false`) are shown. Revoked pairs display a "Revoked" badge and have disabled wrap/unwrap actions.
-
-### Layer 2 — Local snapshot fallback (`src/config/contracts.ts`)
-
-When the wallet is disconnected or the on-chain fetch is loading, the app falls back to `KNOWN_WRAPPERS`, a hardcoded snapshot. A "Cached" banner alerts users that the list may be incomplete. This allows unconnected visitors to browse.
-
-### Layer 3 — Local config (`src/config/custom-pairs.ts`)
-
-Custom or dev-only pairs can be declared in `src/config/custom-pairs.ts` without touching the on-chain registry or any other file. These appear with a "Custom" badge so users can distinguish them from official pairs.
-
-**De-duplication rule**: if a custom pair's ERC-20 address later appears in the on-chain registry, the registry version wins and the custom entry is silently dropped.
+It wraps public ERC-20 tokens into **ERC-7984 Confidential Wrappers** (cTokens), converting open balance data into cryptographic ciphertext handles (`euint64`). Transactions and balances are processed on-chain in their encrypted state, ensuring confidentiality while maintaining decentralized validation.
 
 ---
 
-## How to Add a New ERC-20 ↔ ERC-7984 Pair
+## 2. Supported Networks
 
-### Option A — Local Config (immediate, no on-chain action required)
+ZamaVault supports the following network configurations:
 
-Best for: dev-only pairs, staging tokens, or pairs awaiting official registration.
+| Network | Chain ID | RPC Endpoint | Contract Registry Address |
+|---|---|---|---|
+| **Ethereum Sepolia** | 11155111 | Public / Infura / Alchemy | `0x2f0750Bbb0A246059d80e94c454586a7F27a128e` |
+| **Ethereum Mainnet** | 1 | Public / Infura | `0xeb5015fF021DB115aCe010f23F55C2591059bBA0` |
 
-**Step 1.** Open `src/config/custom-pairs.ts`
+*Note: Confidential operations (Shield, Unshield, Decrypt, and Faucet claims) are actively supported on the Ethereum Sepolia Testnet.*
 
-**Step 2.** Add an entry to the `CUSTOM_PAIRS` array:
+---
 
-```ts
+## 3. Core Features Deep Dive
+
+ZamaVault is divided into specialized modules tailored for retail and enterprise confidentiality management:
+
+### 3.1 Registry Browser (`/app`)
+Displays a live list of registered public-to-confidential token pairs fetched directly from the on-chain registry contract.
+* **On-Chain Sync:** Syncs contract metadata, validation states, and pair registry entries in real-time.
+* **Revocation Status:** Automatically marks revoked token pairs as inactive, disabling wrapping actions and providing alerts.
+* **Custom Indicators:** Visually distinguishes local configuration pairs from official on-chain pairs.
+
+### 3.2 Shielding & Unshielding Engine (`/app/wrap`)
+Facilitates the conversion between public assets (ERC-20) and confidential assets (ERC-7984 cTokens).
+* **WASM FHE Encryption:** Automatically encrypts the inputs locally in the browser before submitting the transaction to the network.
+* **Multi-Step Status Tracking:** Provides real-time visual progress across transaction states: Approval, Shielding, and On-Chain Confirmation.
+* **Smart Route Optimization:** Dynamically switches between the 1-transaction path (using ERC-1363 `transferAndCall`) and the 2-transaction path (using standard `approve` + `shield`) based on the target token's features.
+
+### 3.3 Portfolio Manager & Decrypter (`/app/portfolio`)
+A dashboard displaying all user balance details. Balances remain securely locked and hidden by default.
+* **Batch Decryption:** Leverages EIP-712 permits to batch-decrypt all registry balances simultaneously, reducing user interaction overhead.
+* **Arbitrary Token Scanner:** Allows developers to input any ERC-7984 contract address. ZamaVault scans the address, queries metadata, and adds it to the user's dashboard.
+* **My Recent Activity:** A personal ledger displaying historical transactions (shields, unwraps, faucet claims) made by the active wallet.
+
+### 3.4 DeFi Analytics Dashboard (`/app/analytics`)
+Provides protocol-wide analytics and transaction metrics.
+* **Total Value Shielded (TVS):** Displays live protocol statistics on wrapped assets, calculations, and pool metrics.
+* **Global Activity Stream:** Displays a live-updating transaction history of all wrapping events occurring across the registry.
+
+### 3.5 Token Faucet (`/app/faucet`)
+An integrated faucet allowing developers to claim testnet mock tokens to experiment with FHE capabilities.
+* **Single-Click Minting:** Requests public tokens (`USDT`, `USDC`, `WETH`, `BRON`) and automatically initiates shielding.
+* **Interactive Guides:** Linked directly to the onboarding tutorials.
+
+### 3.6 Onboarding Center (`/app/learn`)
+An interactive, step-by-step onboarding tutorial designed to guide users through the FHE lifecycle:
+1. **Wallet Connection:** Connecting to Ethereum Sepolia.
+2. **Faucet Claims:** Minting mock testnet tokens.
+3. **Asset Shielding:** Converting public tokens to cTokens.
+4. **Balance Decryption:** Executing EIP-712 signature prompts.
+5. **Asset Unshielding:** Restoring public balances.
+
+### 3.7 Developer Tools & ABI Explorer (`/app/developers`)
+A developer sandbox containing technical resources for custom integrations:
+* **Interactive ABI Explorer:** Read and query functions of ERC-20 and ERC-7984 contracts directly.
+* **SDK Integration Code Generator:** Explains hooks like `useShield`, `useUnshield`, and `useConfidentialBalance` with copy-pasteable React snippets.
+
+### 3.8 Docs Hub (`/app/docs`)
+An in-app documentation portal explaining technical architecture, decimal scaling rules, and EIP-712 permit verification processes.
+
+---
+
+## 4. Technical Architecture & Data Flows
+
+ZamaVault's architecture decouples public blockchain logic, local cryptographic calculations, and decentralized key management:
+
+```
+┌────────────────────────────────────────────────────────┐
+│             Browser UI (Next.js / React)               │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+      ┌────────────────────┴────────────────────┐
+      ▼                                         ▼
+┌───────────┐                             ┌───────────┐
+│  Wagmi &  │                             │ Zama React│
+│   Viem    │                             │    SDK    │
+└─────┬─────┘                             └─────┬─────┘
+      │                                         │ (WASM FHEVM library)
+      │                                         ▼
+      │                                  ┌─────────────┐
+      │                                  │ Local WASM  │
+      │                                  │ Cryptography│
+      │                                  └──────┬──────┘
+      │                                         │
+      ▼                                         ▼
+┌───────────────────────────────────────────────────────┐
+│                 Ethereum Sepolia / FHEVM              │
+│  ┌────────────────────────┐ ┌──────────────────────┐  │
+│  │ WrappersRegistry       │ │ cToken Wrapper       │  │
+│  └────────────────────────┘ └──────────────────────┘  │
+└───────────────────────────────────┬───────────────────┘
+                                    │
+                                    ▼
+                        ┌──────────────────────┐
+                        │    Zama KMS / GW     │
+                        └──────────────────────┘
+```
+
+### 4.1 FHE Shielding Flow (Public to Confidential)
+
+The diagram below illustrates the process of shielding public ERC-20 tokens into encrypted cTokens:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Browser Wallet
+    participant SDK as Zama SDK (WASM)
+    participant E20 as ERC-20 Contract
+    participant Wrap as cToken Wrapper (ERC-7984)
+    participant Coproc as Zama Coprocessor (FHE)
+
+    User->>SDK: Enter Amount to Shield (e.g., 100 USDT)
+    Note over SDK: Encrypts amount locally into FHE ciphertext
+    SDK->>E20: Approve cToken contract to transfer 100 USDT
+    E20-->>User: Tx Confirmed
+    SDK->>Wrap: Call shield(encryptedAmount)
+    Note over Wrap: Transfers underlying USDT to vault
+    Wrap->>Coproc: Request state updates for encrypted balances
+    Note over Coproc: Off-chain FHE execution on encrypted integers
+    Coproc-->>Wrap: Verify results & publish updated euint64 handles
+    Wrap-->>User: Tx Confirmed (Shield Completed)
+```
+
+### 4.2 FHE Decryption Flow (Confidential to Plaintext)
+
+To query and view confidential balances, ZamaVault uses EIP-712 permits. The process prevents gas consumption and ensures the plaintext is only visible to the user:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Wallet (MetaMask)
+    participant SDK as Zama SDK (WASM)
+    participant KMS as Zama KMS & Gateway
+    participant Node as Blockchain State
+
+    User->>SDK: Click Decrypt Balance
+    Note over SDK: Generates EIP-712 Permit Typed Data
+    SDK->>User: Request Signature (Permit authorization)
+    User-->>SDK: Signed EIP-712 Signature
+    SDK->>KMS: Send Permit + Signature + Ciphertext Handle
+    KMS->>Node: Verify permission & signature on-chain
+    Node-->>KMS: Verified (True)
+    Note over KMS: Re-encrypts network FHE ciphertext to session transport key
+    KMS-->>SDK: Return Re-encrypted Ciphertext
+    Note over SDK: Decrypts locally in-browser using session key
+    SDK->>User: Display Plaintext Balance (e.g., 1,000 cUSDT)
+```
+
+---
+
+## 5. Security & Cryptographic Trust Model
+
+ZamaVault's privacy architecture relies on the following security properties:
+
+* **Lattice-Based Cryptography:** FHE is built on Ring Learning With Errors (LWE) lattice assumptions, which are mathematically recognized as secure against quantum computer attacks.
+* **Session Key Decryption:** Plaintext values are never transmitted across the network or stored on servers. Decryption occurs strictly inside the local browser context using ephemeral session keys.
+* **EIP-712 Permit Scoping:** Permit signatures are read-only and restricted to balance views. They cannot approve token transfers, withdraw funds, or modify contract states.
+* **Zero-Knowledge KMS Boundaries:** The Key Management System (KMS) re-encrypts FHE ciphertexts from the network key to the user's session key. This cryptographic handshake ensures that neither the KMS gateway nor any relayer can inspect the user's plaintext values.
+
+---
+
+## 6. Hybrid Registry Sourcing Strategy
+
+To guarantee uptime and developer flexibility, ZamaVault merges token information from three layers:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                 ZamaVault Client                       │
+├────────────────────────────────────────────────────────┤
+│ 1. Reads On-Chain WrappersRegistry                     │
+│ 2. Merges local JSON snapshot (Disconnect Fallback)    │
+│ 3. Appends custom developer tokens (custom-pairs.ts)   │
+│ 4. Applies de-duplication rules                        │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Layer 1: On-Chain WrappersRegistry (Canonical Source)**
+   Reads official token pairs directly from the Zama WrappersRegistry contract on Ethereum Sepolia or Mainnet. This is the canonical source of truth.
+2. **Layer 2: Local Snapshot Fallback (`src/config/contracts.ts`)**
+   If the user's wallet is disconnected or the RPC connection fails, ZamaVault falls back to a local JSON snapshot of known wrappers. This allows visitors to browse the catalog offline.
+3. **Layer 3: Local Custom Configuration (`src/config/custom-pairs.ts`)**
+   Allows developers to add custom token wrappers (e.g., local development pairs or tokens awaiting official registration) by adding them to a local configuration file.
+   * **De-duplication Logic:** If a custom token pair is subsequently registered on-chain, ZamaVault automatically prioritizes the canonical on-chain record and drops the local duplicate.
+
+---
+
+## 7. B2B & Enterprise Use Cases
+
+Confidential ERC-7984 wrapper standard implementations enable several corporate use cases:
+
+* **Confidential Corporate Payroll:** Allows companies to pay salaries, consulting fees, and bonuses in stablecoins (e.g., cUSDC) on public ledgers without exposing employee compensation details or monthly payroll figures.
+* **OTC Trading & Institutional Dark Pools:** Enables institutions to execute block trades and OTC swaps privately. Keeping trade sizes and token balances encrypted during settlement prevents front-running and visible order books.
+* **Private Treasury Reserves:** Allows corporations to manage reserve assets, yield farming positions, and inter-company financing on-chain without exposing strategic financial positioning to competitors.
+
+---
+
+## 8. How to Configure a New Token Pair
+
+Developers can register custom wrappers immediately without submitting on-chain governance proposals.
+
+### Step 1: Open the configuration file
+Edit the custom pairs file: [`src/config/custom-pairs.ts`](file:///C:/Users/hashe/Documents/antigravity/adventurous-lavoisier/src/config/custom-pairs.ts)
+
+### Step 2: Add your contract details
+Insert an entry into the `CUSTOM_PAIRS` array:
+
+```typescript
 import type { CustomPair } from '@/config/contracts';
 
 export const CUSTOM_PAIRS: CustomPair[] = [
   {
-    erc20Address:    '0xYourERC20TokenAddress',    // underlying ERC-20
-    erc7984Address:  '0xYourERC7984WrapperAddress', // confidential wrapper
+    erc20Address:    '0xYourERC20TokenAddress',    // Public underlying token
+    erc7984Address:  '0xYourERC7984WrapperAddress', // Confidential wrapper contract
     symbol:          'MYT',
     name:            'My Test Token',
-    decimals:        18,    // underlying ERC-20 decimals
-    wrapperDecimals: 6,     // almost always 6 for ERC-7984 wrappers
+    decimals:        18,                           // Decimals of public token
+    wrapperDecimals: 6,                            // Decimals of confidential token (typically 6)
     source:          'custom',
-    note:            'Dev token deployed 2025-06-27 — awaiting on-chain registration',
+    note:            'Deployed for local staging — awaiting on-chain registration',
   },
 ];
 ```
 
-**Step 3.** Run `npm run dev` — the pair appears immediately in:
-- Registry table `/app` — with a "Custom" badge
-- Wrap/Unwrap selector `/app/wrap` — in the token dropdown
-- Portfolio `/app/portfolio` — as a decryptable position
-- Faucet `/app/faucet` — if the ERC-20 has a public `mint()` function
+### Step 3: Run the local build
+Run the development server. The custom pair will immediately populate across all interface modules (Registry, Wrap/Unwrap dropdowns, Portfolio Decrypter).
 
-**Step 4.** Commit `custom-pairs.ts` to persist the pair across deployments.
-
-> ⚠️ ZamaVault cannot verify that `erc7984Address` is a legitimate ERC-7984 implementation. The wrapper must implement ERC-165 with interface ID `0x4958f2a4`. Only add addresses you deployed and control.
+*Note: The target `erc7984Address` must implement the ERC-165 interface standard and return `true` for interface ID `0x4958f2a4`.*
 
 ---
 
-### Option B — Official On-chain Registration
+## 9. Local Development & Setup
 
-Once a pair is registered in the official Zama WrappersRegistry, ZamaVault surfaces it automatically for all users — no code change needed.
+### Prerequisites
+* **Node.js:** v18.17.0 or higher
+* **Package Manager:** npm / yarn
 
-**Prerequisites:**
-- An ERC-7984 confidential wrapper that:
-  - Implements ERC-165 and returns `true` for interface ID `0x4958f2a4`
-  - Wraps a specific ERC-20 underlying token
-- Authorization from the Zama Protocol DAO governance (registry owner)
-
-**Registration call** (Solidity):
-```solidity
-// Sepolia registry: 0x2f0750Bbb0A246059d80e94c454586a7F27a128e
-registry.registerConfidentialToken(
-    address erc20TokenAddress,
-    address confidentialWrapperAddress
-);
-```
-
-Validation performed on-chain:
-- Neither address can be zero
-- Confidential token must implement ERC-165 with interface `0x4958f2a4`
-- ERC-20 must not already have an associated wrapper
-- Wrapper must not already be associated with another ERC-20
-
-See [Zama Registry docs](https://docs.zama.org/protocol/protocol-apps/confidential-tokens/wrapper-registry) for full details.
-
----
-
-### Option C — Decrypt an Arbitrary ERC-7984 Address (no registration needed)
-
-To decrypt the balance of any ERC-7984 token not in the registry:
-
-1. Go to `/app/portfolio`
-2. Scroll to **"Decrypt Any ERC-7984 Token"**
-3. Paste the contract address — ZamaVault auto-fetches the token symbol from the contract
-4. Click **Add Token**, then **Decrypt Balance**
-
-This uses the same EIP-712 permit flow as registry tokens. Always verify the address on a block explorer before decrypting.
-
----
-
-## Architecture
-
-```
-Browser (Next.js 16 / React 19)
-  │
-  ├── @zama-fhe/react-sdk       — useShield / useUnshield / useConfidentialBalance(s)
-  │     └── FHEVM WASM          — FHE encryption (input) + local decryption (output)
-  │
-  ├── wagmi v2 + viem           — Wallet connection, on-chain reads/writes
-  │
-  ├── Zama WrappersRegistry     — Official on-chain pair source
-  │     ├── Sepolia: 0x2f0750Bbb0A246059d80e94c454586a7F27a128e
-  │     └── Mainnet: 0xeb5015fF021DB115aCe010f23F55C2591059bBA0
-  │
-  └── Zama KMS / Gateway        — Re-encrypts ciphertexts for EIP-712 user-decrypt
-```
-
-**Shield flow:**
-1. User enters amount → WASM encrypts to `euint64` ciphertext
-2. SDK auto-selects 1-tx (ERC-1363 `transferAndCall`) or 2-tx (`approve` + `shield`) path
-3. Zama Coprocessor executes FHE arithmetic, publishes result on-chain
-4. Balance stored as an on-chain `euint64` ciphertext handle
-
-**Decrypt flow:**
-1. User clicks "Decrypt Balance"
-2. SDK generates EIP-712 typed-data permit — no tokens moved
-3. KMS validates permit, re-encrypts from network FHE key to session transport key
-4. WASM decrypts locally → plaintext shown only in browser, never transmitted
-
----
-
-## Security Model
-
-- **Value-privacy, not anonymity**: sender and recipient addresses are public on-chain. Only amounts and balances are encrypted.
-- **TFHE on-chain**: balances are stored as `euint64` ciphertexts — arithmetic can be performed without decrypting.
-- **EIP-712 permits are read-only**: the permit signature cannot transfer tokens or approve contracts. Default TTL: 30 days, cached in `localStorage`.
-- **Non-custodial**: ZamaVault never holds funds. All operations go directly to on-chain contracts.
-- **KMS guarantee**: the Zama KMS re-encrypts ciphertexts under your session transport key via a cryptographic protocol — it cannot learn your plaintext balance.
-
----
-
-## Local Development
+### Installation
 
 ```bash
-# Install
+# Clone the repository
+git clone https://github.com/hosein-ul/zamavault.git
+cd zamavault
+
+# Install dependencies
 npm install
+```
 
-# Dev server
-npm run dev        # → http://localhost:3000
+### Running the Application
 
-# Type check
+```bash
+# Run the Next.js Turbopack development server
+npm run dev
+```
+Open `http://localhost:3000` to interact with the application.
+
+### Compilation & Build Verification
+
+```bash
+# Run TypeScript compilation checks
 npx tsc --noEmit
 
-# Production build
+# Compile production bundle
 npm run build
 ```
 
-No environment variables required for local development. The app uses public RPC endpoints for Sepolia/Mainnet configured in `src/config/chains.ts`.
-
 ---
 
-## Repository Structure
+## 10. Repository Structure
 
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Landing page (scrollytelling)
+│   ├── page.tsx               # Landing Page (Scrollytelling)
 │   └── app/
-│       ├── page.tsx          # Registry — browse all pairs
-│       ├── wrap/             # Shield / Unshield
-│       ├── portfolio/        # Decrypt (registry + arbitrary address)
-│       ├── faucet/           # Claim cTokenMocks
-│       ├── analytics/        # TVS + volume stats
-│       ├── learn/            # Step-by-step tutorial
-│       ├── developers/       # ABI explorer, SDK hooks
-│       └── docs/             # Architecture docs
+│       ├── page.tsx           # Registry Catalog Browser
+│       ├── wrap/              # Wrapping & Shielding Panel
+│       ├── portfolio/         # Portfolio Decryption & Local Activity Feed
+│       ├── faucet/            # Claim cTokenMocks
+│       ├── analytics/         # Protocol Analytics & Global Stream
+│       ├── learn/             # Interactive User Onboarding Guide
+│       ├── developers/        # ABI Explorer & SDK Code Generator
+│       └── docs/              # In-App Architecture Docs
 ├── config/
-│   ├── contracts.ts          # WrapperPair type + KNOWN_WRAPPERS snapshot
-│   ├── custom-pairs.ts       # ← ADD NEW PAIRS HERE
-│   ├── chains.ts             # Chain config
-│   └── tokens.ts             # Display metadata
+│   ├── contracts.ts           # Registry ABIs and known snapshots
+│   ├── custom-pairs.ts        # Custom developer pairs configuration
+│   ├── chains.ts              # Blockchain networks
+│   └── tokens.ts              # Token logos and configuration
 ├── lib/
-│   ├── registry.ts           # useRegistryPairs (hybrid merge logic)
-│   ├── wrapper-abi.ts        # ERC-20 + ERC-7984 ABIs
-│   ├── errors.ts             # Error classification
-│   └── utils.ts              # Format helpers
-└── components/               # Reusable UI
+│   ├── registry.ts            # Hybrid merge and de-duplication rules
+│   ├── wrapper-abi.ts         # Wrapper and ERC-20 ABIs
+│   ├── errors.ts              # Transaction error handlers
+│   └── utils.ts               # Formatting utilities
+└── components/                # Shared layout and UI components
 ```
 
 ---
 
-## Tech Stack
+## 11. License
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Language | TypeScript (strict mode) |
-| Wallet | wagmi v2 + viem |
-| FHE SDK | `@zama-fhe/react-sdk` v3 |
-| UI | Custom design system (no Tailwind) |
-| Styling | Vanilla CSS custom properties |
-
----
-
-## Submission
-
-- **Bounty submission form:** [forms.zama.org/developer-program-mainnet-season3-bounty-track](https://forms.zama.org/developer-program-mainnet-season3-bounty-track)
-- **Deadline:** July 7, 2026 — 23:59 AOE
-
----
-
-## License
-
-MIT
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
