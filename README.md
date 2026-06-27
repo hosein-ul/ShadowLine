@@ -1,258 +1,273 @@
-# ZamaVault
+# ZamaVault — Confidential Wrapper Registry App
 
-> The canonical web interface for the Zama Confidential Wrappers Registry — discover every ERC-20 ↔ ERC-7984 pair, shield in seconds, decrypt on demand.
+> **Zama Developer Program Season 3 · Bounty Track**  
+> Build the Confidential Wrapper Registry App
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev/)
-[![Wagmi](https://img.shields.io/badge/Wagmi-3-1c1b1f?logo=ethereum)](https://wagmi.sh/)
 [![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
-
-## What it is
-
-ZamaVault is a Next.js dApp that turns the on-chain `WrappersRegistry` into a product. Every registered ERC-20 ↔ ERC-7984 confidential wrapper pair on **Sepolia** and **Ethereum mainnet** is discovered live; users can shield (wrap) public tokens into encrypted balances, transfer them privately, decrypt with a single EIP-712 signature, and unshield back to public ERC-20 — all from one consistent interface.
-
-Built around the official `@zama-fhe/react-sdk` and `WrappersRegistry` contract, it serves both end-users (Portfolio, Wrap, Faucet, Learn) and developers (REST API, snippet generator, on-chain Analytics).
+A production-ready dApp that turns the official [Zama Wrappers Registry](https://docs.zama.org/protocol/protocol-apps/confidential-tokens/wrapper-registry) into a usable product for every developer and user in the ecosystem.
 
 ---
 
-## Pages & routes
+## Live URL
 
-| Route                  | Purpose                                                                                |
-| ---------------------- | -------------------------------------------------------------------------------------- |
-| `/`                    | Marketing landing page with scroll-narrative onboarding                                |
-| `/app`                 | Live wrapper registry table with per-row public + confidential balance reads           |
-| `/app/wrap`            | Shield (wrap) and unshield (unwrap) swap interface for any registered pair             |
-| `/app/portfolio`       | Confidential portfolio with batch EIP-712 decrypt, re-shield, and unshield             |
-| `/app/analytics`       | TVS (Total Value Shielded) by token + 24h shield/unshield activity, since 00:00 UTC    |
-| `/app/faucet`          | Sepolia mock token mint (USDC, USDT, WETH, BRON, ZAMA, tGBP, XAUt)                     |
-| `/app/learn`           | 5-step interactive tutorial covering FHE → faucet → shield → decrypt → unshield        |
-| `/app/developers`      | Copy-paste code snippets (React hook / viem / ethers)                                  |
-| `/app/docs`            | In-app reference for the SDK calls ZamaVault uses                                      |
-| `/api/registry`        | Public REST endpoint returning every wrapper pair on a given chain                     |
+> **[https://zamavault.vercel.app](https://zamavault.vercel.app)**
+> *(Update with final deployment URL before submission)*
 
-The landing (`/`) and the application (`/app/*`) are deliberately isolated — they use independent stylesheets, fonts, and providers (see [Architecture](#architecture)).
+---
+
+## Supported Networks
+
+| Network | Chain ID | Status |
+|---|---|---|
+| Ethereum Sepolia | 11155111 | ✅ Primary — all features |
+| Ethereum Mainnet | 1 | ✅ Registry browsing |
+
+All bounty features (shield, unshield, decrypt, faucet) are live on **Sepolia**.
+
+---
+
+## Features
+
+All four bounty requirements are fully implemented:
+
+| Bounty Requirement | Feature | Page |
+|---|---|---|
+| Browse the registry | Live ERC-20 ↔ ERC-7984 pair table sourced from on-chain WrappersRegistry | `/app` |
+| Wrap and unwrap | ERC-20 → ERC-7984 (shield) and ERC-7984 → ERC-20 (unshield) with multi-step tx flow | `/app/wrap` |
+| Decrypt ERC-7984 balances | EIP-712 permit flow for registry tokens AND arbitrary address paste | `/app/portfolio` |
+| Faucet for cTokenMocks | Claim all official Sepolia cTokenMock test tokens | `/app/faucet` |
+
+Additional pages:
+- **Portfolio** — batch decrypt all registry positions + decrypt any arbitrary ERC-7984 address
+- **Analytics** — Total Value Shielded, 24h shield/unshield volume, per-token stats
+- **Learn** — step-by-step tutorial: connect → faucet → shield → decrypt → unshield
+- **Developer Tools** — contract ABI explorer, SDK hook reference, integration guide
+- **Docs** — ERC-7984 architecture, permit model, full SDK API
+
+---
+
+## How the Registry is Sourced
+
+ZamaVault uses a **three-layer hybrid** strategy:
+
+### Layer 1 — On-chain WrappersRegistry (primary, canonical)
+
+When a wallet is connected on the matching chain, the app reads the official Zama WrappersRegistry live via `@zama-fhe/react-sdk`'s `useListPairs` hook. This is the canonical source of truth.
+
+Registry contracts:
+- Sepolia: `0x2f0750Bbb0A246059d80e94c454586a7F27a128e`
+- Mainnet: `0xeb5015fF021DB115aCe010f23F55C2591059bBA0`
+
+All pairs (including revoked ones with `isValid: false`) are shown. Revoked pairs display a "Revoked" badge and have disabled wrap/unwrap actions.
+
+### Layer 2 — Local snapshot fallback (`src/config/contracts.ts`)
+
+When the wallet is disconnected or the on-chain fetch is loading, the app falls back to `KNOWN_WRAPPERS`, a hardcoded snapshot. A "Cached" banner alerts users that the list may be incomplete. This allows unconnected visitors to browse.
+
+### Layer 3 — Local config (`src/config/custom-pairs.ts`)
+
+Custom or dev-only pairs can be declared in `src/config/custom-pairs.ts` without touching the on-chain registry or any other file. These appear with a "Custom" badge so users can distinguish them from official pairs.
+
+**De-duplication rule**: if a custom pair's ERC-20 address later appears in the on-chain registry, the registry version wins and the custom entry is silently dropped.
+
+---
+
+## How to Add a New ERC-20 ↔ ERC-7984 Pair
+
+### Option A — Local Config (immediate, no on-chain action required)
+
+Best for: dev-only pairs, staging tokens, or pairs awaiting official registration.
+
+**Step 1.** Open `src/config/custom-pairs.ts`
+
+**Step 2.** Add an entry to the `CUSTOM_PAIRS` array:
+
+```ts
+import type { CustomPair } from '@/config/contracts';
+
+export const CUSTOM_PAIRS: CustomPair[] = [
+  {
+    erc20Address:    '0xYourERC20TokenAddress',    // underlying ERC-20
+    erc7984Address:  '0xYourERC7984WrapperAddress', // confidential wrapper
+    symbol:          'MYT',
+    name:            'My Test Token',
+    decimals:        18,    // underlying ERC-20 decimals
+    wrapperDecimals: 6,     // almost always 6 for ERC-7984 wrappers
+    source:          'custom',
+    note:            'Dev token deployed 2025-06-27 — awaiting on-chain registration',
+  },
+];
+```
+
+**Step 3.** Run `npm run dev` — the pair appears immediately in:
+- Registry table `/app` — with a "Custom" badge
+- Wrap/Unwrap selector `/app/wrap` — in the token dropdown
+- Portfolio `/app/portfolio` — as a decryptable position
+- Faucet `/app/faucet` — if the ERC-20 has a public `mint()` function
+
+**Step 4.** Commit `custom-pairs.ts` to persist the pair across deployments.
+
+> ⚠️ ZamaVault cannot verify that `erc7984Address` is a legitimate ERC-7984 implementation. The wrapper must implement ERC-165 with interface ID `0x4958f2a4`. Only add addresses you deployed and control.
+
+---
+
+### Option B — Official On-chain Registration
+
+Once a pair is registered in the official Zama WrappersRegistry, ZamaVault surfaces it automatically for all users — no code change needed.
+
+**Prerequisites:**
+- An ERC-7984 confidential wrapper that:
+  - Implements ERC-165 and returns `true` for interface ID `0x4958f2a4`
+  - Wraps a specific ERC-20 underlying token
+- Authorization from the Zama Protocol DAO governance (registry owner)
+
+**Registration call** (Solidity):
+```solidity
+// Sepolia registry: 0x2f0750Bbb0A246059d80e94c454586a7F27a128e
+registry.registerConfidentialToken(
+    address erc20TokenAddress,
+    address confidentialWrapperAddress
+);
+```
+
+Validation performed on-chain:
+- Neither address can be zero
+- Confidential token must implement ERC-165 with interface `0x4958f2a4`
+- ERC-20 must not already have an associated wrapper
+- Wrapper must not already be associated with another ERC-20
+
+See [Zama Registry docs](https://docs.zama.org/protocol/protocol-apps/confidential-tokens/wrapper-registry) for full details.
+
+---
+
+### Option C — Decrypt an Arbitrary ERC-7984 Address (no registration needed)
+
+To decrypt the balance of any ERC-7984 token not in the registry:
+
+1. Go to `/app/portfolio`
+2. Scroll to **"Decrypt Any ERC-7984 Token"**
+3. Paste the contract address — ZamaVault auto-fetches the token symbol from the contract
+4. Click **Add Token**, then **Decrypt Balance**
+
+This uses the same EIP-712 permit flow as registry tokens. Always verify the address on a block explorer before decrypting.
 
 ---
 
 ## Architecture
 
 ```
+Browser (Next.js 16 / React 19)
+  │
+  ├── @zama-fhe/react-sdk       — useShield / useUnshield / useConfidentialBalance(s)
+  │     └── FHEVM WASM          — FHE encryption (input) + local decryption (output)
+  │
+  ├── wagmi v2 + viem           — Wallet connection, on-chain reads/writes
+  │
+  ├── Zama WrappersRegistry     — Official on-chain pair source
+  │     ├── Sepolia: 0x2f0750Bbb0A246059d80e94c454586a7F27a128e
+  │     └── Mainnet: 0xeb5015fF021DB115aCe010f23F55C2591059bBA0
+  │
+  └── Zama KMS / Gateway        — Re-encrypts ciphertexts for EIP-712 user-decrypt
+```
+
+**Shield flow:**
+1. User enters amount → WASM encrypts to `euint64` ciphertext
+2. SDK auto-selects 1-tx (ERC-1363 `transferAndCall`) or 2-tx (`approve` + `shield`) path
+3. Zama Coprocessor executes FHE arithmetic, publishes result on-chain
+4. Balance stored as an on-chain `euint64` ciphertext handle
+
+**Decrypt flow:**
+1. User clicks "Decrypt Balance"
+2. SDK generates EIP-712 typed-data permit — no tokens moved
+3. KMS validates permit, re-encrypts from network FHE key to session transport key
+4. WASM decrypts locally → plaintext shown only in browser, never transmitted
+
+---
+
+## Security Model
+
+- **Value-privacy, not anonymity**: sender and recipient addresses are public on-chain. Only amounts and balances are encrypted.
+- **TFHE on-chain**: balances are stored as `euint64` ciphertexts — arithmetic can be performed without decrypting.
+- **EIP-712 permits are read-only**: the permit signature cannot transfer tokens or approve contracts. Default TTL: 30 days, cached in `localStorage`.
+- **Non-custodial**: ZamaVault never holds funds. All operations go directly to on-chain contracts.
+- **KMS guarantee**: the Zama KMS re-encrypts ciphertexts under your session transport key via a cryptographic protocol — it cannot learn your plaintext balance.
+
+---
+
+## Local Development
+
+```bash
+# Install
+npm install
+
+# Dev server
+npm run dev        # → http://localhost:3000
+
+# Type check
+npx tsc --noEmit
+
+# Production build
+npm run build
+```
+
+No environment variables required for local development. The app uses public RPC endpoints for Sepolia/Mainnet configured in `src/config/chains.ts`.
+
+---
+
+## Repository Structure
+
+```
 src/
 ├── app/
-│   ├── layout.tsx             ← root: <html>, fonts, theme bootstrap (no CSS)
-│   ├── landing.css            ← Tailwind v4, scoped to landing only
-│   ├── page.tsx               ← landing route (cream/gold design)
-│   ├── error.tsx              ← global error boundary
-│   ├── ClientLayout.tsx       ← providers + theme/network context (app only)
-│   ├── globals.css            ← app design system (vanilla CSS, scoped to /app)
-│   ├── app/
-│   │   ├── layout.tsx         ← imports globals.css + ClientLayout
-│   │   ├── page.tsx           ← /app — registry table
-│   │   ├── wrap/page.tsx
-│   │   ├── portfolio/page.tsx
-│   │   ├── analytics/page.tsx
-│   │   ├── faucet/page.tsx
-│   │   ├── learn/page.tsx
-│   │   ├── developers/page.tsx
-│   │   └── docs/page.tsx
-│   └── api/registry/route.ts  ← public REST endpoint
-├── components/
-│   ├── landing/               ← landing sections (hero, features, etc.)
-│   ├── magic/                 ← Magic UI primitives (TextAnimate, MagicCard…)
-│   ├── ui/                    ← in-app design system (Card, Button, Badge…)
-│   ├── layout/                ← in-app Header, Footer
-│   └── PendingUnshieldBanner.tsx
+│   ├── page.tsx              # Landing page (scrollytelling)
+│   └── app/
+│       ├── page.tsx          # Registry — browse all pairs
+│       ├── wrap/             # Shield / Unshield
+│       ├── portfolio/        # Decrypt (registry + arbitrary address)
+│       ├── faucet/           # Claim cTokenMocks
+│       ├── analytics/        # TVS + volume stats
+│       ├── learn/            # Step-by-step tutorial
+│       ├── developers/       # ABI explorer, SDK hooks
+│       └── docs/             # Architecture docs
 ├── config/
-│   ├── chains.ts              ← Sepolia + Mainnet definitions
-│   ├── contracts.ts           ← WrappersRegistry addresses, KNOWN_WRAPPERS fallback
-│   └── tokens.ts              ← logo + colour metadata keyed by symbol
+│   ├── contracts.ts          # WrapperPair type + KNOWN_WRAPPERS snapshot
+│   ├── custom-pairs.ts       # ← ADD NEW PAIRS HERE
+│   ├── chains.ts             # Chain config
+│   └── tokens.ts             # Display metadata
 ├── lib/
-│   ├── registry.ts            ← useRegistryPairs hook + blocklist + helpers
-│   ├── errors.ts              ← classifyError() using matchZamaError
-│   ├── utils.ts               ← formatAmount, parseAmount (decimal scaling)
-│   └── wrapper-abi.ts         ← WRAPPER_ABI, ERC20_ABI
-└── providers/
-    └── Providers.tsx          ← Wagmi + ZamaProvider + TanStack Query
-```
-
-### Two design systems, hermetically separated
-
-The landing (`/`) and the application (`/app/*`) need to look completely different — the landing is editorial gold-on-cream, the app is a dense data UI. They live in the same Next.js project but never share CSS:
-
-- `src/app/layout.tsx` (the root) imports **no** CSS. It only sets `<html lang>`, the font variables (Fraunces + Plus Jakarta Sans), and the theme bootstrap script.
-- `src/app/page.tsx` (landing) imports **`landing.css`** — Tailwind v4 with `@import 'tailwindcss'` and a `@theme` block of gold/cream/ink tokens.
-- `src/app/app/layout.tsx` imports **`globals.css`** — the vanilla-CSS app design system with `--bg-base`, `--accent`, `--sp-*` tokens — and wraps everything in `ClientLayout` (providers + Header + Footer).
-
-Because Next.js route-subtree layouts only apply CSS within their own subtree, Tailwind's preflight never leaks into `/app`, and the app's design tokens never leak into `/`.
-
----
-
-## FHE & flows
-
-### Permit-based decryption
-
-Confidential balances are stored on-chain as `euint64` ciphertext handles. To display the plaintext to the user, ZamaVault uses Zama's `useConfidentialBalance` hook, gated behind an **explicit user click** — the EIP-712 permit signature must never auto-fire on render. The flow:
-
-1. User clicks **Decrypt** next to any encrypted balance.
-2. Wallet shows a typed-data signature request (EIP-712, not a transaction — zero gas).
-3. The signature scopes an ephemeral session key to that wallet + contract.
-4. SDK sends ciphertext + permit to the Zama Gateway/Coprocessor.
-5. Coprocessor verifies the signature, decrypts, returns plaintext to the browser.
-6. The plaintext is rendered client-side; private keys never leave the wallet and plaintext is never stored on-chain.
-
-### Shield (wrap) — one or two transactions
-
-`WrappedToken.shield(amount)` routes through one of two paths depending on the underlying ERC-20:
-
-| Path                | Triggered when                                | Wallet prompts | Tokens (mainnet)     |
-| ------------------- | --------------------------------------------- | -------------- | -------------------- |
-| `transferAndCall`   | Underlying implements **ERC-1363**            | 1              | cTGBP, cZAMA         |
-| `approve` + `wrap`  | Underlying does **not** implement ERC-1363    | 2              | cUSDC, cUSDT, cWETH, cBRON |
-
-The SDK detects ERC-1363 support automatically via `supportsInterface` — callers don't choose a path. On the two-tx path, ZamaVault checks the existing ERC-20 allowance and passes `approvalStrategy: 'skip'` when it's already sufficient, so users aren't prompted for a fresh `approve(0)` + `approve(amount)` every time.
-
-### Unshield (unwrap) — two phases
-
-Unshielding is **not** a single transaction:
-
-1. **Unwrap request** — user submits an on-chain transaction burning the encrypted wrapper amount.
-2. **Gateway finalize** — the Zama Gateway generates a decryption proof (~15–40 s), then submits a finalize transaction that releases the underlying ERC-20.
-
-If the user closes the browser between (1) and (2), ZamaVault's `PendingUnshieldBanner` detects the unfinalized request on next visit and offers a one-click Resume.
-
-### Decimal scaling
-
-All wrapper tokens use **6 decimals** regardless of the underlying token's precision. This is because FHE operates on `euint64` (a 64-bit unsigned integer), which would overflow at 18-decimal values. The wrapper contract scales amounts during shield and unshield. `formatAmount`/`parseAmount` in `src/lib/utils.ts` must be kept in sync with this constraint — see the inline comments.
-
----
-
-## Tech stack
-
-| Layer             | Library / version                                                                                                |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Framework         | [Next.js 16](https://nextjs.org/) (App Router, Turbopack, static prerender)                                      |
-| UI runtime        | [React 19](https://react.dev/)                                                                                   |
-| Web3              | [Wagmi 3](https://wagmi.sh/) + [Viem 2](https://viem.sh/)                                                        |
-| FHE               | [`@zama-fhe/react-sdk` 3](https://docs.zama.org/protocol/sdk/overview)                                           |
-| Data fetching     | [TanStack Query 5](https://tanstack.com/query)                                                                   |
-| Animation         | [motion (Framer Motion) 12](https://motion.dev/) for landing primitives                                          |
-| 3D / canvas       | [three.js](https://threejs.org/) + [@react-three/fiber](https://r3f.docs.pmnd.rs/)                               |
-| Landing styling   | [Tailwind v4](https://tailwindcss.com/) (scoped to `/`)                                                          |
-| App styling       | Vanilla CSS custom properties (scoped to `/app/*`)                                                               |
-| Icons             | [lucide-react](https://lucide.dev/) + [react-icons](https://react-icons.github.io/react-icons/)                  |
-| Magic UI          | [magicui.design](https://magicui.design/) — TextAnimate, MagicCard, BorderBeam, NumberTicker, Marquee, BlurFade  |
-| Confetti          | [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)                                                 |
-| Language          | TypeScript 5 (strict mode)                                                                                       |
-
----
-
-## Quick start
-
-### Prerequisites
-- Node.js v18 or newer
-- npm / pnpm / yarn
-
-### Install
-
-```bash
-git clone https://github.com/hosein-ul/zamavault.git
-cd zamavault
-npm install
-```
-
-### Run
-
-```bash
-npm run dev          # Dev server on http://localhost:3000
-npm run build        # Production build
-npm run start        # Serve production build
-npm run lint         # ESLint
-npx tsc --noEmit     # TypeScript check (no output files)
-```
-
-### Environment (all optional)
-
-ZamaVault works with no configuration — it falls back to public RPC endpoints. To use your own, create `.env.local`:
-
-```env
-NEXT_PUBLIC_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
-NEXT_PUBLIC_MAINNET_RPC=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
+│   ├── registry.ts           # useRegistryPairs (hybrid merge logic)
+│   ├── wrapper-abi.ts        # ERC-20 + ERC-7984 ABIs
+│   ├── errors.ts             # Error classification
+│   └── utils.ts              # Format helpers
+└── components/               # Reusable UI
 ```
 
 ---
 
-## REST API
+## Tech Stack
 
-`GET /api/registry?chain=sepolia|mainnet`
-
-Returns every registered wrapper pair on the given chain, with ERC-20 metadata enriched on the server. CORS-enabled, cached at the edge for 60 s.
-
-### Example
-
-```bash
-curl https://your-deployment.vercel.app/api/registry?chain=sepolia
-```
-
-### Response
-
-```json
-{
-  "pairs": [
-    {
-      "tokenAddress": "0x...",
-      "confidentialTokenAddress": "0x...",
-      "symbol": "USDC",
-      "confidentialSymbol": "cUSDC",
-      "name": "USD Coin",
-      "decimals": 6,
-      "wrapperDecimals": 6
-    }
-  ],
-  "total": 8,
-  "chain": "sepolia",
-  "registryAddress": "0x...",
-  "timestamp": 1735000000000,
-  "source": "on-chain"
-}
-```
-
-If the on-chain read fails (RPC issue), the endpoint falls back to a hardcoded snapshot and sets `source: "cached-snapshot"` with a `warning` field.
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript (strict mode) |
+| Wallet | wagmi v2 + viem |
+| FHE SDK | `@zama-fhe/react-sdk` v3 |
+| UI | Custom design system (no Tailwind) |
+| Styling | Vanilla CSS custom properties |
 
 ---
 
-## Registry & blocklist
+## Submission
 
-ZamaVault reads the on-chain `WrappersRegistry` via `useListPairs` whenever a wallet is connected to a supported chain. When disconnected (or the chain doesn't match), it falls back to `KNOWN_WRAPPERS` in `src/config/contracts.ts` — a hand-curated snapshot — so anonymous visitors can still browse.
-
-Revoked pairs (`isValid === false`) are tagged with a red "Revoked" badge in the registry table and excluded from the wrap/unwrap selector.
-
-A small `BLOCKLISTED_WRAPPERS` set in `src/lib/registry.ts` hides one suspicious mainnet entry (`cbbqTGBP` at `0xBA4c…6762`) — vanity-prefix wrapper for an unknown underlying token; documented in code with the rationale.
-
----
-
-## Project conventions
-
-- **No auto-fire signatures.** Every `useConfidentialBalance` is gated behind a `decryptRequested` boolean set only by an explicit user click. The state pattern in `src/app/app/wrap/page.tsx` is the reference — do not weaken it.
-- **No secrets in the repo.** `.env*` files are gitignored. `.env.example` documents the optional vars.
-- **Strict mode TS.** All new code must type-check with `npx tsc --noEmit`.
-- **Two design systems, never mix.** If a CSS rule touches the landing, it belongs in `landing.css`; if it touches the app, in `globals.css`.
-
----
-
-## Roadmap
-
-- [ ] Polygon, Base, Arbitrum support (once Zama deploys WrappersRegistry there)
-- [ ] Confidential transfer UI (send encrypted balance to another address)
-- [ ] Multi-account permit caching in browser storage
-- [ ] WalletConnect v2 + Safe support
-- [ ] Subgraph-backed historical analytics
+- **Bounty submission form:** [forms.zama.org/developer-program-mainnet-season3-bounty-track](https://forms.zama.org/developer-program-mainnet-season3-bounty-track)
+- **Deadline:** July 7, 2026 — 23:59 AOE
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT

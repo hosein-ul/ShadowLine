@@ -55,13 +55,13 @@ function Hero() {
     <motion.section ref={ref} style={{
       position: 'relative', minHeight: '100vh',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '120px clamp(24px,6vw,80px) 80px',
+      padding: '100px clamp(24px,6vw,80px) 40px',
       textAlign: 'center', overflow: 'hidden', background: '#fafafa',
     }}>
       {/* Sticky header */}
       <motion.header
         animate={{ background: scrolled ? 'rgba(250,250,250,0.94)' : 'transparent', backdropFilter: scrolled ? 'blur(20px)' : 'none', borderBottomColor: scrolled ? '#e4e4e7' : 'transparent' }}
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '0 clamp(24px,4vw,60px)', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid transparent' }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '0 clamp(24px,4vw,60px)', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid transparent' }}
         transition={{ duration: 0.3 }}
       >
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
@@ -96,7 +96,7 @@ function Hero() {
         <BlurFade delay={0} inView>
           <motion.div
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(0,0,0,.1)', background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '32px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(0,0,0,.1)', background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '20px' }}
           >
             <motion.span animate={{ scale: [1, 1.5, 1], opacity: [1, .5, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD208', display: 'block' }} />
             Live on Ethereum Sepolia · ERC-7984 Standard
@@ -105,7 +105,7 @@ function Hero() {
 
         {/* Headline — about the project, not a tautology */}
         <BlurFade delay={0.12} inView>
-          <h1 style={{ fontSize: 'clamp(3rem,7.5vw,6.2rem)', fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.045em', color: '#000', margin: '0 auto 24px', maxWidth: '920px' }}>
+          <h1 style={{ fontSize: 'clamp(2.5rem,5.5vw,4.4rem)', fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.045em', color: '#000', margin: '0 auto 16px', maxWidth: '920px' }}>
             Shield ERC-20 tokens.{' '}
             <br />
             <span style={{ background: 'linear-gradient(130deg, #FFD208 0%, #f59e0b 55%, #b45309 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -115,7 +115,7 @@ function Hero() {
         </BlurFade>
 
         <BlurFade delay={0.32} inView>
-          <p style={{ fontSize: 'clamp(1.05rem,2.2vw,1.28rem)', lineHeight: 1.7, color: '#52525b', maxWidth: '600px', margin: '0 auto 44px' }}>
+          <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.1rem)', lineHeight: 1.7, color: '#52525b', maxWidth: '600px', margin: '0 auto 24px' }}>
             ZamaVault converts public ERC-20 tokens into{' '}
             <strong style={{ color: '#000' }}>ERC-7984 confidential cTokens</strong>{' '}
             via Zama&apos;s Fully Homomorphic Encryption. Balances are stored as on-chain ciphertexts — computable without decrypting.
@@ -124,16 +124,16 @@ function Hero() {
 
         {/* CTAs */}
         <BlurFade delay={0.46} inView>
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '64px' }}>
+          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
             <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
               <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', boxShadow: '0 4px 28px rgba(255,210,8,.5)' }}>
                 <Shield size={18} /> Launch ZamaVault
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
-              <a href="https://docs.zama.org/protocol" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: '2px solid #000' }}>
+              <Link href="/app/docs" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: '2px solid #000' }}>
                 <BookOpen size={18} /> Read the Docs
-              </a>
+              </Link>
             </motion.div>
           </div>
         </BlurFade>
@@ -412,7 +412,13 @@ function Stats() {
                 <div style={{ background: '#fff', padding: '40px 36px' }}>
                   <s.icon size={24} style={{ color: '#FFD208', marginBottom: '14px' }} />
                   <div style={{ fontSize: 'clamp(2rem,4vw,2.8rem)', fontWeight: 900, letterSpacing: '-0.04em', color: '#000', display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-                    {s.prefix}<NumberTicker value={s.value} className="!text-black !tracking-tight" />{s.suffix}
+                    {s.prefix}
+                    {s.value === 7984 ? (
+                      <span>{s.value}</span>
+                    ) : (
+                      <NumberTicker value={s.value} className="!text-black !tracking-tight" />
+                    )}
+                    {s.suffix}
                   </div>
                   <div style={{ fontWeight: 700, color: '#000', marginTop: '6px' }}>{s.label}</div>
                   <div style={{ fontSize: '.78rem', color: '#71717a', marginTop: '6px', lineHeight: 1.55 }}>{s.sub}</div>
@@ -512,8 +518,184 @@ function PermitFlow() {
     </section>
   );
 }
+// ─── FRAGMENTATION PROBLEM ────────────────────────────────────────────────────
+function FragmentationSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: false, margin: '-10% 0px' });
+  return (
+    <section ref={ref} style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fafafa' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '64px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', border: '1px solid #e4e4e7', background: '#fff', fontSize: '.72rem', fontWeight: 700, color: '#71717a', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '24px' }}>
+            <AlertTriangle size={10} style={{ color: '#f59e0b' }} /> Why This Matters
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '16px' }}>Fragmentation is killing<br />developer composability.</h2>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Every team spinning up their own ERC-7984 wrapper creates isolated liquidity pools and incompatible tooling. ZamaVault is the canonical interface — not one of many.</p>
+        </BlurFade>
+        {/* Comparison table */}
+        <BlurFade inView delay={0.1}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 4px 40px rgba(0,0,0,.04)' }}>
+            {/* Left: the problem */}
+            <div style={{ background: '#fff7ed', padding: 'clamp(28px,4vw,48px)', borderRight: '1px solid #e4e4e7' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={14} style={{ color: '#92400e' }} />
+                </div>
+                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#92400e' }}>Custom Wrappers</span>
+              </div>
+              {[
+                'Fragmented liquidity — each project has its own pool',
+                'Incompatible tooling — no shared SDK integration path',
+                'Trust ambiguity — users cannot verify legitimacy',
+                'Protocol isolation — transfers don\'t cross wrapper boundaries',
+                'Developer friction — re-implement ABI parsing per project',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'flex-start' }}>
+                  <span style={{ color: '#f87171', fontSize: '1rem', flexShrink: 0, marginTop: '1px' }}>✗</span>
+                  <span style={{ fontSize: '.82rem', color: '#78350f', lineHeight: 1.55 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            {/* Right: the solution */}
+            <div style={{ background: '#f0fdf4', padding: 'clamp(28px,4vw,48px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={14} style={{ color: '#166534' }} />
+                </div>
+                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#166534' }}>ZamaVault · Official Registry</span>
+              </div>
+              {[
+                'Canonical registry — one source of truth for all wallets',
+                'SDK-native — useShield / useUnshield / useConfidentialBalance',
+                'On-chain verified — ERC-165 interface ID 0x4958f2a4 enforced',
+                'Composable — any app can read the same registry and interoperate',
+                'Extensible — add custom pairs via local config without forking',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'flex-start' }}>
+                  <span style={{ color: '#4ade80', fontSize: '1rem', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                  <span style={{ fontSize: '.82rem', color: '#166534', lineHeight: 1.55 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
 
-// ─── CTA ─────────────────────────────────────────────────────────────────────
+// ─── FOR DEVELOPERS ──────────────────────────────────────────────────────────
+function DeveloperSection() {
+  return (
+    <section id="tech" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#000', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,210,8,.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '64px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.25)', background: 'rgba(255,210,8,.08)', fontSize: '.72rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '24px' }}>
+            <Wrench size={10} /> For Developers
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: '16px' }}>Built for the ecosystem,<br />not just users.</h2>
+          <p style={{ color: '#71717a', fontSize: '1rem', maxWidth: '480px', margin: '0 auto', lineHeight: 1.65 }}>Integrate the official registry and FHE flows into your dApp with three imports. Extend with custom pairs — no forking required.</p>
+        </BlurFade>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '24px' }}>
+          {/* SDK Hooks */}
+          <BlurFade inView delay={0.05}>
+            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px', padding: '28px 24px', height: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={16} style={{ color: '#000' }} /></div>
+                <span style={{ fontWeight: 800, color: '#fff', fontSize: '.95rem' }}>SDK Hooks</span>
+              </div>
+              <pre style={{ background: 'rgba(0,0,0,.4)', borderRadius: '10px', padding: '14px 16px', fontSize: '.72rem', color: '#a1a1aa', lineHeight: 1.7, overflowX: 'auto', margin: 0 }}><code>{`import {
+  useShield,
+  useUnshield,
+  useConfidentialBalance,
+  useListPairs,
+} from '@zama-fhe/react-sdk';
+
+// Shield ERC-20 → ERC-7984
+const { shield } = useShield({
+  wrapperAddress: '0x...',
+});
+
+// Decrypt any ERC-7984 balance
+const { data } = useConfidentialBalance(
+  { tokenAddress: '0x...' },
+  { enabled: userClicked },
+);`}</code></pre>
+            </div>
+          </BlurFade>
+
+          {/* Contract Addresses */}
+          <BlurFade inView delay={0.1}>
+            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px', padding: '28px 24px', height: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Database size={16} style={{ color: '#000' }} /></div>
+                <span style={{ fontWeight: 800, color: '#fff', fontSize: '.95rem' }}>Official Registry</span>
+              </div>
+              {[{ chain: 'Sepolia', addr: '0x2f0750...128e', color: '#6366f1' }, { chain: 'Mainnet', addr: '0xeb5015...bBA0', color: '#10b981' }].map(r => (
+                <div key={r.chain} style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
+                  <div style={{ fontSize: '.7rem', fontWeight: 700, color: r.color, letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '6px' }}>{r.chain}</div>
+                  <code style={{ fontSize: '.73rem', color: '#a1a1aa', fontFamily: 'monospace' }}>{r.addr}</code>
+                </div>
+              ))}
+              <div style={{ marginTop: '18px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,210,8,.06)', border: '1px solid rgba(255,210,8,.15)' }}>
+                <div style={{ fontSize: '.72rem', fontWeight: 700, color: '#FFD208', marginBottom: '6px' }}>ERC-165 Interface ID</div>
+                <code style={{ fontSize: '.73rem', color: '#a1a1aa', fontFamily: 'monospace' }}>0x4958f2a4</code>
+              </div>
+            </div>
+          </BlurFade>
+
+          {/* Extensibility */}
+          <BlurFade inView delay={0.15}>
+            <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '16px', padding: '28px 24px', height: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Layers size={16} style={{ color: '#000' }} /></div>
+                <span style={{ fontWeight: 800, color: '#fff', fontSize: '.95rem' }}>Custom Pairs</span>
+              </div>
+              <p style={{ fontSize: '.8rem', color: '#71717a', lineHeight: 1.65, marginBottom: '16px' }}>Add dev-only or pre-registration pairs without touching the on-chain registry or forking the app.</p>
+              <pre style={{ background: 'rgba(0,0,0,.4)', borderRadius: '10px', padding: '14px 16px', fontSize: '.72rem', color: '#a1a1aa', lineHeight: 1.7, overflowX: 'auto', margin: 0 }}><code>{`// src/config/custom-pairs.ts
+export const CUSTOM_PAIRS: CustomPair[] = [
+  {
+    erc20Address: '0xYourERC20',
+    erc7984Address: '0xYourWrapper',
+    symbol: 'MYT',
+    name: 'My Token',
+    decimals: 18,
+    wrapperDecimals: 6,
+    source: 'custom',
+    note: 'Dev pair',
+  },
+];`}</code></pre>
+            </div>
+          </BlurFade>
+        </div>
+
+        {/* Links */}
+        <BlurFade inView delay={0.2} style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '48px', flexWrap: 'wrap' }}>
+          {[
+            { label: 'View on GitHub', href: 'https://github.com/hosein-ul/zamavault', icon: Globe },
+            { label: 'Zama SDK Docs', href: 'https://docs.zama.org/protocol/sdk', icon: BookOpen },
+            { label: 'Developer Tools', href: '/app/developers', icon: Wrench },
+          ].map(link => (
+            <motion.a
+              key={link.label}
+              href={link.href}
+              target={link.href.startsWith('http') ? '_blank' : undefined}
+              rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+              whileHover={{ y: -2, borderColor: 'rgba(255,210,8,.5)' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 22px', borderRadius: '10px', border: '1px solid rgba(255,255,255,.1)', color: '#a1a1aa', fontSize: '.82rem', fontWeight: 600, textDecoration: 'none', background: 'rgba(255,255,255,.03)', transition: 'color .2s' }}
+            >
+              <link.icon size={14} />
+              {link.label} <ExternalLink size={11} />
+            </motion.a>
+          ))}
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
 function CTA() {
   return (
     <section style={{ padding: 'clamp(80px,12vw,160px) clamp(24px,6vw,80px)', background: '#000', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -566,7 +748,8 @@ export default function LandingPage() {
       <HorizontalScroll />
       <StepTimeline />
       <PermitFlow />
-      <Architecture />
+      <FragmentationSection />
+      <DeveloperSection />
       <CTA />
       <footer style={{ padding: '36px clamp(24px,6vw,80px)', background: '#000', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

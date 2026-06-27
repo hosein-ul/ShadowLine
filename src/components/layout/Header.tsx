@@ -104,7 +104,7 @@ export default function Header() {
             >
               {item.label}
               {item.label === 'Faucet' && (
-                <Badge variant="accent" size="sm" style={{ marginLeft: '6px', fontSize: '9px' }}>
+                <Badge variant="default" size="sm" style={{ marginLeft: '6px', fontSize: '9px', color: 'var(--text-secondary)' }}>
                   TESTNET
                 </Badge>
               )}

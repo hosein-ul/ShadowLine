@@ -1135,8 +1135,20 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 }
 
 .header-link:hover { color: var(--text-primary); background: var(--bg-elevated); }
-.header-link.active { color: var(--accent); background: var(--accent-subtle); }
+.header-link.active { color: var(--text-primary) !important; background: var(--bg-elevated) !important; }
 .header-actions { display: flex; align-items: center; gap: var(--sp-3); }
+
+.btn-primary-black {
+  background: var(--text-primary) !important;
+  color: var(--bg-surface) !important;
+  box-shadow: var(--shadow-sm);
+  border: none;
+}
+.btn-primary-black:hover {
+  background: var(--accent-hover) !important;
+  opacity: 0.95;
+  box-shadow: var(--shadow-md);
+}
 
 /* ---------- Footer ---------- */
 .footer {

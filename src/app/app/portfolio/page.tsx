@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -14,12 +14,13 @@ import { classifyError } from '@/lib/errors';
 import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs } from '@/lib/registry';
-import { useAccount, useConnect, usePublicClient } from 'wagmi';
-import { useConfidentialBalances, useRevokeSession } from '@zama-fhe/react-sdk';
+import { useAccount, useConnect, usePublicClient, useReadContract } from 'wagmi';
+import { useConfidentialBalances, useConfidentialBalance, useRevokeSession } from '@zama-fhe/react-sdk';
 import { useToast } from '@/components/ui/Toast';
 import BlurIn from '@/components/ui/BlurIn';
-import { parseAbiItem, formatUnits } from 'viem';
+import { isAddress, parseAbiItem, formatUnits } from 'viem';
 import { CHAIN_CONFIG } from '@/config/chains';
+import { ERC20_ABI } from '@/lib/wrapper-abi';
 import {
   Lock,
   Unlock,
@@ -32,6 +33,9 @@ import {
   ArrowDownLeft,
   BarChart2,
   ExternalLink,
+  AlertTriangle,
+  Search,
+  Plus,
 } from 'lucide-react';
 
 const TRANSFER_ABI = parseAbiItem(
@@ -345,6 +349,9 @@ export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { addToast } = useToast();
+
+  // Block explorer base URL for the active chain
+  const explorerBase = CHAIN_CONFIG[activeChainId as keyof typeof CHAIN_CONFIG]?.explorerUrl ?? 'https://eth-sepolia.blockscout.com';
 
   // Live registry read with hardcoded fallback. We deliberately keep
   // revoked pairs OUT of the portfolio: a revoked wrapper cannot accept new

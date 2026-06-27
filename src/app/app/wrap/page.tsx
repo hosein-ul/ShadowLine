@@ -20,7 +20,8 @@ import {
   useSwitchChain,
 } from 'wagmi';
 import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
-import { ERC20_ABI } from '@/lib/wrapper-abi';
+import { ERC20_ABI, WRAPPER_ABI } from '@/lib/wrapper-abi';
+import { isAddress } from 'viem';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
 import confetti from 'canvas-confetti';
@@ -159,7 +160,55 @@ function WrapPageContent() {
     () => allPairs.filter((p) => p.isValid !== false),
     [allPairs],
   );
-  const selectedWrapper = findPairBySymbol(wrappers, selectedToken);
+  const isTokenAddress = useMemo(() => isAddress(selectedToken), [selectedToken]);
+
+  const { data: customSymbol } = useReadContract({
+    abi: ERC20_ABI,
+    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    functionName: 'symbol',
+    query: { enabled: isTokenAddress },
+  });
+
+  const { data: customName } = useReadContract({
+    abi: ERC20_ABI,
+    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    functionName: 'name',
+    query: { enabled: isTokenAddress },
+  });
+
+  const { data: customDecimals } = useReadContract({
+    abi: ERC20_ABI,
+    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    functionName: 'decimals',
+    query: { enabled: isTokenAddress },
+  });
+
+  const { data: customUnderlying } = useReadContract({
+    abi: WRAPPER_ABI,
+    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    functionName: 'underlyingToken',
+    query: { enabled: isTokenAddress },
+  });
+
+  const selectedWrapper = useMemo(() => {
+    const found = findPairBySymbol(wrappers, selectedToken);
+    if (found) return found;
+
+    // If selectedToken is an address, resolve dynamically
+    if (isTokenAddress && customSymbol && customName) {
+      return {
+        erc20Address: (customUnderlying as `0x${string}`) || ('0x0000000000000000000000000000000000000000' as `0x${string}`),
+        erc7984Address: selectedToken as `0x${string}`,
+        symbol: String(customSymbol).replace(/Mock$/i, ''),
+        name: String(customName),
+        decimals: typeof customDecimals === 'number' ? customDecimals : (typeof customDecimals === 'bigint' ? Number(customDecimals) : 18),
+        wrapperDecimals: 6,
+        isValid: true,
+        source: 'custom' as const,
+      };
+    }
+    return undefined;
+  }, [wrappers, selectedToken, isTokenAddress, customSymbol, customName, customDecimals, customUnderlying]);
 
   // Real contract balance reads (Public underlying)
   const { data: rawPublicBalance, refetch: refetchPublicBalance, error: publicBalanceError } = useReadContract({
@@ -623,7 +672,7 @@ function WrapPageContent() {
           {/* Primary Action Button — ALWAYS in this slot */}
           <div style={{ marginTop: 'var(--sp-6)' }}>
             {!isConnected ? (
-              <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)}>
+              <Button variant="primary" fullWidth size="lg" onClick={() => setIsConnectModalOpen(true)} className="btn-primary-black">
                 Connect Wallet
               </Button>
             ) : isChainMismatch ? (
@@ -657,6 +706,7 @@ function WrapPageContent() {
                 isLoading={txStep === 1 || txStep === 2}
                 disabled={!selectedToken || !amount || amount === '0' || parsedInputAmount > hasPublicBalance}
                 onClick={handleAction}
+                className="btn-primary-black"
               >
                 {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedToken}`}
               </Button>
@@ -674,6 +724,7 @@ function WrapPageContent() {
                   (action === 'unwrap' && parsedInputAmount > hasWrapperBalance)
                 }
                 onClick={handleAction}
+                className="btn-primary-black"
               >
                 {!selectedToken
                   ? 'Select Token'
