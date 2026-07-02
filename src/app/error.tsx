@@ -66,7 +66,7 @@ export default function ErrorBoundary({
           Try again
         </button>
         <Link
-          href="/"
+          href="/app"
           style={{
             padding: '0.5rem 1.25rem',
             background: 'var(--bg-surface, #252538)',

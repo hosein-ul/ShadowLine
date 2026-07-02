@@ -1,8 +1,8 @@
 # Zama WrappersRegistry — Potential Documentation / Registry Issue Report
 
-**Prepared by:** ZamaVault team
+**Prepared by:** ShadowLine team
 **Date:** 2026-06-22
-**Context:** While building [ZamaVault](https://github.com/hosein-ul/zamavault) — a confidential token registry explorer and wrapping dApp for the Zama Developer Program Mainnet Season 3 Bounty Track — we read the on-chain `WrappersRegistry` dynamically via `useListPairs` from `@zama-fhe/react-sdk` and cross-referenced the results against the official Zama address documentation. We identified one entry on Ethereum Mainnet that appears to be a test/placeholder rather than a legitimate production wrapper.
+**Context:** While building [ShadowLine](https://github.com/hosein-ul/ShadowLine) — a confidential token registry explorer and wrapping dApp for the Zama Developer Program Mainnet Season 3 Bounty Track — we read the on-chain `WrappersRegistry` dynamically via `useListPairs` from `@zama-fhe/react-sdk` and cross-referenced the results against the official Zama address documentation. We identified one entry on Ethereum Mainnet that appears to be a test/placeholder rather than a legitimate production wrapper.
 
 ---
 
@@ -25,9 +25,9 @@
 
 3. **Possible relationship to `tGBP`.** The name "bbqTGBP" contains "TGBP" as a suffix, raising the possibility that this is a variant, fork, or test deployment related to the existing `ctGBP` wrapper (`0xa873...eDD9`). If so, having both in the production registry without any disambiguation could confuse users and developers building on the registry.
 
-### What we did in ZamaVault
+### What we did in ShadowLine
 
-- ZamaVault reads the `WrappersRegistry` **live on-chain** via `useListPairs({ metadata: true })` from `@zama-fhe/react-sdk`. This means any pair registered on-chain appears automatically in our app.
+- ShadowLine reads the `WrappersRegistry` **live on-chain** via `useListPairs({ metadata: true })` from `@zama-fhe/react-sdk`. This means any pair registered on-chain appears automatically in our app.
 - We added a **manual blocklist** specifically for `cbbqTGBP` (`0xBA4cFF6ED6F7Cb2A58776dECa4E984b498446762`) to exclude it from the user-facing display. The blocklist is documented in our source code (`src/lib/registry.ts`) with a full rationale.
 - If this entry is confirmed as legitimate and has a corrected name, we will remove it from the blocklist immediately.
 
@@ -48,7 +48,7 @@ For completeness, we also note that the Sepolia testnet has **two distinct tGBP 
 | Confidential tGBP (Mock) | `ctGBPMock` | `0xfCE5...F7CC` | `0x93c9...1442` | Public (1M limit) |
 | Confidential tGBP | `ctGBP` | `0x167D...A208` | `0xf6Ef...7ff3` | Restricted |
 
-We understand this is **intentional** — the mock version is for developer testing (with a public `mint` function), and the non-mock version wraps the "official" testnet tGBP with restricted minting. We handle both correctly in ZamaVault:
+We understand this is **intentional** — the mock version is for developer testing (with a public `mint` function), and the non-mock version wraps the "official" testnet tGBP with restricted minting. We handle both correctly in ShadowLine:
 - The mock `ctGBPMock` appears in both the registry table and the faucet (mintable).
 - The restricted `ctGBP` appears in the registry table but is **excluded from the faucet** (since its underlying does not have a public `mint`).
 - Both appear in the Portfolio for balance decryption.
@@ -61,7 +61,7 @@ We mention this only because the dual-entry pattern might confuse other bounty p
 
 | Entry | Network | Status | Our Action |
 |---|---|---|---|
-| `cbbqTGBP` (`0xBA4c...6762`) | Mainnet | Suspected test/placeholder | Blocklisted in ZamaVault display |
+| `cbbqTGBP` (`0xBA4c...6762`) | Mainnet | Suspected test/placeholder | Blocklisted in ShadowLine display |
 | Dual `ctGBP` / `ctGBPMock` | Sepolia | Intentional (mock + real) | Both displayed correctly, faucet filters mock-only |
 
 We appreciate any clarification the Zama team can provide. This report is shared in good faith as part of our bounty development work to help improve the ecosystem documentation and registry hygiene.

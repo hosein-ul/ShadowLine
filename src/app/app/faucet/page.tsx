@@ -302,7 +302,7 @@ export default function FaucetPage() {
                 Transaction pending...
               </div>
               <a
-                href={`https://sepolia.etherscan.io/tx/${activeTxHash}`}
+                href={`https://eth-sepolia.blockscout.com/tx/${activeTxHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs flex items-center justify-center gap-1"

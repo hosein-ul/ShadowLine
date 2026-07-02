@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+// Base URL for API examples in docs — set NEXT_PUBLIC_APP_URL in your deployment.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://YOUR_DEPLOYMENT_URL';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import CopyButton from '@/components/ui/CopyButton';
@@ -218,8 +221,8 @@ function AddressTable({
   pairs: { symbol: string; erc20: string; wrapper: string; decimals: number }[];
 }) {
   const explorerBase = network === 'Sepolia'
-    ? 'https://sepolia.etherscan.io/address'
-    : 'https://etherscan.io/address';
+    ? 'https://eth-sepolia.blockscout.com/address'
+    : 'https://eth.blockscout.com/address';
 
   return (
     <div className="docs-address-table-wrap">
@@ -331,7 +334,7 @@ export default function DocsPage() {
       <aside className={`docs-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="docs-sidebar-title">
           <BookOpen size={16} />
-          ZamaVault Docs
+          ShadowLine Docs
         </div>
 
         <nav className="docs-sidebar-nav">
@@ -362,7 +365,7 @@ export default function DocsPage() {
             <ExternalLink size={12} /> Zama Official Docs
           </a>
           <a
-            href="https://github.com/hosein-ul/zamavault"
+            href="https://github.com/hosein-ul/ShadowLine"
             target="_blank"
             rel="noopener noreferrer"
             className="docs-ext-link"
@@ -383,7 +386,7 @@ export default function DocsPage() {
         {/* ════════════════════════════════════════════════════════════════ */}
         <Section id="overview" title="Overview">
           <p className="docs-lead">
-            ZamaVault is the canonical interface and developer toolkit for
+            ShadowLine is the canonical interface and developer toolkit for
             Zama&apos;s confidential token ecosystem. It lets users and developers
             discover, wrap, unwrap, and decrypt ERC-20 tokens that have been
             converted into confidential ERC-7984 wrappers using{' '}
@@ -445,7 +448,7 @@ export default function DocsPage() {
 
           <SubSection id="qs-providers" title="2. Wrap your app with providers">
             <p className="docs-p">
-              ZamaVault uses Wagmi for wallet connections and the Zama React SDK for FHE operations.
+              ShadowLine uses Wagmi for wallet connections and the Zama React SDK for FHE operations.
               Both must be initialized at the root of your app.
             </p>
             <CodeBlock
@@ -519,7 +522,7 @@ function ShieldButton() {
         {/* ════════════════════════════════════════════════════════════════ */}
         <Section id="rest-api" title="REST API">
           <p className="docs-lead">
-            ZamaVault exposes a public REST API for querying the on-chain registry.
+            ShadowLine exposes a public REST API for querying the on-chain registry.
             No SDK, no wallet, no authentication — just a <code>fetch()</code> call.
           </p>
 
@@ -591,15 +594,15 @@ function ShieldButton() {
               lang="bash"
               filename="curl"
               code={`# Fetch all Sepolia pairs
-curl "https://zamavault.xyz/api/registry?chain=sepolia"
+curl "${APP_URL}/api/registry?chain=sepolia"
 
 # Fetch Mainnet pairs
-curl "https://zamavault.xyz/api/registry?chain=mainnet"`}
+curl "${APP_URL}/api/registry?chain=mainnet"`}
             />
             <CodeBlock
               lang="ts"
               filename="fetch (JavaScript)"
-              code={`const res = await fetch('https://zamavault.xyz/api/registry?chain=sepolia');
+              code={`const res = await fetch('${APP_URL}/api/registry?chain=sepolia');
 const data = await res.json();
 
 // data.pairs is an array of PairResult
@@ -617,7 +620,7 @@ for (const pair of data.pairs) {
               code={`import requests
 
 resp = requests.get(
-    "https://zamavault.xyz/api/registry",
+    "${APP_URL}/api/registry",
     params={"chain": "sepolia"}
 )
 data = resp.json()
@@ -902,17 +905,17 @@ function Portfolio() {
               <tr className="docs-prop-row">
                 <td>Shield (wrap)</td>
                 <td><code>parseUnits(amount, underlyingDecimals)</code></td>
-                <td><code>parseUnits("1", 18)</code> → 10¹⁸</td>
+                <td><code>{"parseUnits('1', 18)"}</code> → 10¹⁸</td>
               </tr>
               <tr className="docs-prop-row">
                 <td>Unshield (unwrap)</td>
                 <td><code>parseUnits(amount, 6)</code></td>
-                <td><code>parseUnits("1", 6)</code> → 10⁶</td>
+                <td><code>{"parseUnits('1', 6)"}</code> → 10⁶</td>
               </tr>
               <tr className="docs-prop-row">
                 <td>Display confidential balance</td>
                 <td><code>formatUnits(balance, 6)</code></td>
-                <td><code>formatUnits(1_000_000n, 6)</code> → "1.0"</td>
+                <td><code>{"formatUnits(1_000_000n, 6)"}</code> → {"'1.0'"}</td>
               </tr>
             </tbody>
           </table>
@@ -1049,7 +1052,7 @@ const { data: balance } = useConfidentialBalance({
         <Section id="errors" title="Error Reference">
           <p className="docs-lead">
             Use <code>matchZamaError</code> from <code>@zama-fhe/sdk</code> to classify SDK
-            errors into user-friendly messages. ZamaVault re-exports this via the{' '}
+            errors into user-friendly messages. ShadowLine re-exports this via the{' '}
             <code>classifyError(err)</code> utility in <code>src/lib/errors.ts</code>.
           </p>
 
@@ -1119,7 +1122,7 @@ try {
               <ExternalLink size={13} /> Zama SDK Docs
             </a>
             <a
-              href="https://github.com/hosein-ul/zamavault"
+              href="https://github.com/hosein-ul/ShadowLine"
               target="_blank"
               rel="noopener noreferrer"
               className="docs-ext-link"
@@ -1129,7 +1132,7 @@ try {
             <Link href="/api/registry?chain=sepolia" className="docs-ext-link">
               <ExternalLink size={13} /> REST API (Sepolia)
             </Link>
-            <Link href="/learn" className="docs-ext-link">
+            <Link href="/app/learn" className="docs-ext-link">
               <BookOpen size={13} /> Interactive Tutorial
             </Link>
           </div>

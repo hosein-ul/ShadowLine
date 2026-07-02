@@ -269,4 +269,36 @@ export const ERC20_ABI = [
     ],
     outputs: [{ name: '', type: 'bool' }],
   },
+  {
+    name: 'supportsInterface',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'interfaceId', type: 'bytes4' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
 ] as const;
+
+/**
+ * Minimal ERC-165 ABI — only supportsInterface.
+ * Used by the wallet scanner to check if a contract is ERC-7984 compliant.
+ * ERC-7984 interface ID: 0x4958f2a4
+ */
+export const ERC165_ABI = [
+  {
+    name: 'supportsInterface',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'interfaceId', type: 'bytes4' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
+/**
+ * ERC-7984 interface ID as defined by the Zama Protocol.
+ * All official ERC-7984 confidential tokens support this interface.
+ * Used with ERC-165 supportsInterface to distinguish ERC-7984 contracts
+ * from plain ERC-20 contracts during wallet scanning.
+ *
+ * Reference: https://docs.zama.org/protocol/protocol-apps/confidential-tokens/wrapper-registry
+ */
+export const ERC7984_INTERFACE_ID = '0x4958f2a4' as const;

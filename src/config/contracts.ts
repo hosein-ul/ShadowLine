@@ -41,7 +41,31 @@ export interface WrapperPair {
    * falls back to the hardcoded mock list when this is absent.
    */
   underlyingRawSymbol?: string;
+  /**
+   * Source of this pair:
+   *  - `'registry'`  — read live from the on-chain WrappersRegistry (default).
+   *  - `'cache'`     — from the local KNOWN_WRAPPERS snapshot (fallback).
+   *  - `'custom'`    — declared in src/config/custom-pairs.ts by the operator.
+   * Optional for backward-compat; treat `undefined` as `'registry'`.
+   */
+  source?: 'registry' | 'cache' | 'custom';
+  /**
+   * Human-readable note about why this pair exists (e.g. "Dev-only test pair").
+   * Shown in the UI as a tooltip on the "Custom" badge.
+   * Only meaningful when source === 'custom'.
+   */
+  note?: string;
 }
+
+/**
+ * A locally-declared custom pair added via src/config/custom-pairs.ts.
+ * Extends WrapperPair with required `source: 'custom'` so TypeScript
+ * can distinguish it at the call site.
+ */
+export type CustomPair = Omit<WrapperPair, 'source'> & {
+  source: 'custom';
+  note?: string;
+};
 
 // Registry contract addresses per network
 export const REGISTRY_ADDRESSES: Record<SupportedChainId, `0x${string}`> = {

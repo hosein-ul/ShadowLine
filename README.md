@@ -1,112 +1,341 @@
-# 🛡️ ZamaVault — Confidential Asset Vault
+# ShadowLine — Confidential Asset Shielding Protocol
 
-ZamaVault is a production-grade Web3 application built on top of the **Zama Protocol** and **ERC-7984 Confidential Token Standard**. It provides a premium, highly responsive interface for shielding public ERC-20 tokens into encrypted, privacy-preserving ERC-7984 confidential tokens and unshielding them back to public balances.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hosein-ul/ShadowLine)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Using Fully Homomorphic Encryption (FHE), ZamaVault ensures that your token balances and transaction amounts remain completely encrypted on-chain, while allowing you to securely decrypt and inspect your balances locally using cryptographic permits.
+ShadowLine is an enterprise-grade, non-custodial decentralized application (dApp) that acts as the primary gateway for Zama's FHEVM Wrappers Registry. Built entirely on Fully Homomorphic Encryption (FHE), ShadowLine enables users and institutions to seamlessly shield standard ERC-20 tokens into ERC-7984 confidential tokens (cTokens) and perform private on-chain asset transfers.
 
----
-
-## ✨ Features
-
-*   **🔒 Shielding (Wrap)**: Convert public ERC-20 tokens into encrypted ERC-7984 confidential wrappers. On-chain balances and transfer amounts are completely obfuscated.
-*   **🔓 Unshielding (Unwrap)**: Convert encrypted ERC-7984 confidential wrappers back into public ERC-20 tokens.
-*   **💼 Confidential Portfolio**: View all confidential assets in one place. Balances remain encrypted on-chain, but can be decrypted on the client side using **EIP-712 permit signatures**.
-*   **📊 Wrapper Registry Explorer**: Reads Zama's on-chain `WrappersRegistry` directly (via `useListPairs` from `@zama-fhe/react-sdk`) and lists every registered ERC-20 ↔ ERC-7984 pair on the active network — including pairs added after this client was built. Falls back to a hardcoded snapshot when no wallet is connected so anonymous visitors can still browse. Revoked pairs (`isValid === false`) are flagged with a "Revoked" badge and hidden from the wrap/unwrap selector.
-*   **🚰 Test Faucet**: A built-in developer faucet with a **5-second cooldown** to acquire test tokens (USDC, USDT, WETH, ZAMA, etc.) on the Sepolia network.
-*   **🎨 Nordic Clean Aesthetic**: A default premium dark-themed design system featuring smooth micro-animations, glassmorphism card layouts, custom typography, and official brand logos.
-*   **🎉 Transaction Feedback & Delighters**: Custom transaction tracking with direct links to block explorers and interactive confetti blasts on successful wrap/unwrap actions.
+With ShadowLine, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
 
 ---
 
-## 🏗️ Technical Architecture & Stack
+## Table of Contents
 
-ZamaVault is designed as a secure, decentralized client-side application that interfaces with the Ethereum blockchain:
-
-*   **Frontend Framework**: [Next.js](https://nextjs.org/) (App Router, static compilation, Turbopack enabled).
-*   **FHE Integration**: Official Zama React SDK (`@zama-fhe/react-sdk`) for managing FHE permits, querying encrypted balances, shielding (`useShield`), and unshielding (`useUnshield`).
-*   **Web3 & Provider Layer**: [Wagmi](https://wagmi.sh/) and [Viem](https://viem.sh/) configured with high-performance, stable RPC endpoints (using Alchemy for Sepolia and Mainnet).
-*   **Design & Styling**: Pure Vanilla CSS system (`globals.css`) using custom CSS Custom Properties for maximum flexibility and performance. Fully responsive for mobile, tablet, and desktop screens.
-*   **Icons**: [Lucide React](https://lucide.dev/).
-*   **Transaction Delighters**: [canvas-confetti](https://www.npmjs.com/package/canvas-confetti) for victory animations.
-
----
-
-## 🔑 FHE & Confidential Flows
-
-### 1. Permit-Based Decryption
-On-chain confidential balances are stored as encrypted ciphertext handles. To display these balances to the user, ZamaVault utilizes the Zama React SDK's `useConfidentialBalance` hook:
-1. The user requests decryption of an asset balance.
-2. The application prompts the user to sign an **EIP-712 permit** using their Web3 wallet.
-3. This signature registers an ephemeral public key for decryption.
-4. The Zama SDK sends the permit signature and ciphertext to Zama's Gateway/Coprocessor.
-5. The Coprocessor validates the signature, decrypts the balance handle, and returns the plaintext balance.
-6. The plaintext balance is rendered locally; **private keys never leave the wallet and plaintext balances are never stored on-chain**.
-
-### 2. Shielding (Wrap) Flow
-1. **Approval**: The user approves the ERC-7984 Wrapper contract to spend the underlying public ERC-20 tokens.
-2. **Shielding**: The user submits the shield transaction. The SDK calls `deposit(amount)` on the wrapper contract, which wraps the public ERC-20 and mints encrypted ERC-7984 wrappers to the user's address.
-
-### 3. Unshielding (Unwrap) Flow
-1. **Withdrawal**: The user submits the unshield transaction.
-2. **Gateway Processing**: The SDK calls `withdraw(amount)` on the wrapper. This burns the encrypted wrappers and triggers Zama's Gateway/Coprocessor flow to securely process the unshielding.
-3. **Finalization**: Once processed, the underlying public ERC-20 tokens are returned to the user's public wallet address.
+- [1. About ShadowLine](#1-about-shadowline)
+- [2. Supported Networks](#2-supported-networks)
+- [3. Core Features Deep Dive](#3-core-features-deep-dive)
+- [4. Technical Architecture & Data Flows](#4-technical-architecture--data-flows)
+  - [4.1 FHE Shielding Flow (Public to Confidential)](#41-fhe-shielding-flow-public-to-confidential)
+  - [4.2 FHE Decryption Flow (Confidential to Plaintext)](#42-fhe-decryption-flow-confidential-to-plaintext)
+- [5. Security & Cryptographic Trust Model](#5-security--cryptographic-trust-model)
+- [6. Hybrid Registry Sourcing Strategy](#6-hybrid-registry-sourcing-strategy)
+- [7. B2B & Enterprise Use Cases](#7-b2b--enterprise-use-cases)
+- [8. How to Configure a New Token Pair](#8-how-to-configure-a-new-token-pair)
+- [9. Local Development & Setup](#9-local-development--setup)
+- [10. Repository Structure](#10-repository-structure)
+- [11. License](#11-license)
 
 ---
 
-## 🚀 Getting Started
+## 1. About ShadowLine
+
+Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ShadowLine addresses this challenge by utilizing Torus Fully Homomorphic Encryption (TFHE) on-chain via Zama's FHEVM. 
+
+It wraps public ERC-20 tokens into **ERC-7984 Confidential Wrappers** (cTokens), converting open balance data into cryptographic ciphertext handles (`euint64`). Transactions and balances are processed on-chain in their encrypted state, ensuring confidentiality while maintaining decentralized validation.
+
+---
+
+## 2. Supported Networks
+
+ShadowLine supports the following network configurations:
+
+| Network | Chain ID | RPC Endpoint | Contract Registry Address |
+|---|---|---|---|
+| **Ethereum Sepolia** | 11155111 | Public / Infura / Alchemy | `0x2f0750Bbb0A246059d80e94c454586a7F27a128e` |
+| **Ethereum Mainnet** | 1 | Public / Infura | `0xeb5015fF021DB115aCe010f23F55C2591059bBA0` |
+
+*Note: Confidential operations (Shield, Unshield, Decrypt, and Faucet claims) are actively supported on the Ethereum Sepolia Testnet.*
+
+---
+
+## 3. Core Features Deep Dive
+
+ShadowLine is divided into specialized modules tailored for retail and enterprise confidentiality management:
+
+### 3.1 Registry Browser (`/app`)
+Displays a live list of registered public-to-confidential token pairs fetched directly from the on-chain registry contract.
+* **On-Chain Sync:** Syncs contract metadata, validation states, and pair registry entries in real-time.
+* **Revocation Status:** Automatically marks revoked token pairs as inactive, disabling wrapping actions and providing alerts.
+* **Custom Indicators:** Visually distinguishes local configuration pairs from official on-chain pairs.
+
+### 3.2 Shielding & Unshielding Engine (`/app/wrap`)
+Facilitates the conversion between public assets (ERC-20) and confidential assets (ERC-7984 cTokens).
+* **WASM FHE Encryption:** Automatically encrypts the inputs locally in the browser before submitting the transaction to the network.
+* **Multi-Step Status Tracking:** Provides real-time visual progress across transaction states: Approval, Shielding, and On-Chain Confirmation.
+* **Smart Route Optimization:** Dynamically switches between the 1-transaction path (using ERC-1363 `transferAndCall`) and the 2-transaction path (using standard `approve` + `shield`) based on the target token's features.
+
+### 3.3 Portfolio Manager & Decrypter (`/app/portfolio`)
+A dashboard displaying all user balance details. Balances remain securely locked and hidden by default.
+* **Batch Decryption:** Leverages EIP-712 permits to batch-decrypt all registry balances simultaneously, reducing user interaction overhead.
+* **Arbitrary Token Scanner:** Allows developers to input any ERC-7984 contract address. ShadowLine scans the address, queries metadata, and adds it to the user's dashboard.
+* **My Recent Activity:** A personal ledger displaying historical transactions (shields, unwraps, faucet claims) made by the active wallet.
+
+### 3.4 DeFi Analytics Dashboard (`/app/analytics`)
+Provides protocol-wide analytics and transaction metrics.
+* **Total Value Shielded (TVS):** Displays live protocol statistics on wrapped assets, calculations, and pool metrics.
+* **Global Activity Stream:** Displays a live-updating transaction history of all wrapping events occurring across the registry.
+
+### 3.5 Token Faucet (`/app/faucet`)
+An integrated faucet allowing developers to claim testnet mock tokens to experiment with FHE capabilities.
+* **Single-Click Minting:** Requests public tokens (`USDT`, `USDC`, `WETH`, `BRON`) and automatically initiates shielding.
+* **Interactive Guides:** Linked directly to the onboarding tutorials.
+
+### 3.6 Onboarding Center (`/app/learn`)
+An interactive, step-by-step onboarding tutorial designed to guide users through the FHE lifecycle:
+1. **Wallet Connection:** Connecting to Ethereum Sepolia.
+2. **Faucet Claims:** Minting mock testnet tokens.
+3. **Asset Shielding:** Converting public tokens to cTokens.
+4. **Balance Decryption:** Executing EIP-712 signature prompts.
+5. **Asset Unshielding:** Restoring public balances.
+
+### 3.7 Developer Tools & ABI Explorer (`/app/developers`)
+A developer sandbox containing technical resources for custom integrations:
+* **Interactive ABI Explorer:** Read and query functions of ERC-20 and ERC-7984 contracts directly.
+* **SDK Integration Code Generator:** Explains hooks like `useShield`, `useUnshield`, and `useConfidentialBalance` with copy-pasteable React snippets.
+
+### 3.8 Docs Hub (`/app/docs`)
+An in-app documentation portal explaining technical architecture, decimal scaling rules, and EIP-712 permit verification processes.
+
+---
+
+## 4. Technical Architecture & Data Flows
+
+ShadowLine's architecture decouples public blockchain logic, local cryptographic calculations, and decentralized key management:
+
+```
+┌────────────────────────────────────────────────────────┐
+│             Browser UI (Next.js / React)               │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+      ┌────────────────────┴────────────────────┐
+      ▼                                         ▼
+┌───────────┐                             ┌───────────┐
+│  Wagmi &  │                             │ Zama React│
+│   Viem    │                             │    SDK    │
+└─────┬─────┘                             └─────┬─────┘
+      │                                         │ (WASM FHEVM library)
+      │                                         ▼
+      │                                  ┌─────────────┐
+      │                                  │ Local WASM  │
+      │                                  │ Cryptography│
+      │                                  └──────┬──────┘
+      │                                         │
+      ▼                                         ▼
+┌───────────────────────────────────────────────────────┐
+│                 Ethereum Sepolia / FHEVM              │
+│  ┌────────────────────────┐ ┌──────────────────────┐  │
+│  │ WrappersRegistry       │ │ cToken Wrapper       │  │
+│  └────────────────────────┘ └──────────────────────┘  │
+└───────────────────────────────────┬───────────────────┘
+                                    │
+                                    ▼
+                        ┌──────────────────────┐
+                        │    Zama KMS / GW     │
+                        └──────────────────────┘
+```
+
+### 4.1 FHE Shielding Flow (Public to Confidential)
+
+The diagram below illustrates the process of shielding public ERC-20 tokens into encrypted cTokens:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Browser Wallet
+    participant SDK as Zama SDK (WASM)
+    participant E20 as ERC-20 Contract
+    participant Wrap as cToken Wrapper (ERC-7984)
+    participant Coproc as Zama Coprocessor (FHE)
+
+    User->>SDK: Enter Amount to Shield (e.g., 100 USDT)
+    Note over SDK: Encrypts amount locally into FHE ciphertext
+    SDK->>E20: Approve cToken contract to transfer 100 USDT
+    E20-->>User: Tx Confirmed
+    SDK->>Wrap: Call shield(encryptedAmount)
+    Note over Wrap: Transfers underlying USDT to vault
+    Wrap->>Coproc: Request state updates for encrypted balances
+    Note over Coproc: Off-chain FHE execution on encrypted integers
+    Coproc-->>Wrap: Verify results & publish updated euint64 handles
+    Wrap-->>User: Tx Confirmed (Shield Completed)
+```
+
+### 4.2 FHE Decryption Flow (Confidential to Plaintext)
+
+To query and view confidential balances, ShadowLine uses EIP-712 permits. The process prevents gas consumption and ensures the plaintext is only visible to the user:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Wallet (MetaMask)
+    participant SDK as Zama SDK (WASM)
+    participant KMS as Zama KMS & Gateway
+    participant Node as Blockchain State
+
+    User->>SDK: Click Decrypt Balance
+    Note over SDK: Generates EIP-712 Permit Typed Data
+    SDK->>User: Request Signature (Permit authorization)
+    User-->>SDK: Signed EIP-712 Signature
+    SDK->>KMS: Send Permit + Signature + Ciphertext Handle
+    KMS->>Node: Verify permission & signature on-chain
+    Node-->>KMS: Verified (True)
+    Note over KMS: Re-encrypts network FHE ciphertext to session transport key
+    KMS-->>SDK: Return Re-encrypted Ciphertext
+    Note over SDK: Decrypts locally in-browser using session key
+    SDK->>User: Display Plaintext Balance (e.g., 1,000 cUSDT)
+```
+
+---
+
+## 5. Security & Cryptographic Trust Model
+
+ShadowLine's privacy architecture relies on the following security properties:
+
+* **Lattice-Based Cryptography:** FHE is built on Ring Learning With Errors (LWE) lattice assumptions, which are mathematically recognized as secure against quantum computer attacks.
+* **Session Key Decryption:** Plaintext values are never transmitted across the network or stored on servers. Decryption occurs strictly inside the local browser context using ephemeral session keys.
+* **EIP-712 Permit Scoping:** Permit signatures are read-only and restricted to balance views. They cannot approve token transfers, withdraw funds, or modify contract states.
+* **Zero-Knowledge KMS Boundaries:** The Key Management System (KMS) re-encrypts FHE ciphertexts from the network key to the user's session key. This cryptographic handshake ensures that neither the KMS gateway nor any relayer can inspect the user's plaintext values.
+
+---
+
+## 6. Hybrid Registry Sourcing Strategy
+
+To guarantee uptime and developer flexibility, ShadowLine merges token information from three layers:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                 ShadowLine Client                       │
+├────────────────────────────────────────────────────────┤
+│ 1. Reads On-Chain WrappersRegistry                     │
+│ 2. Merges local JSON snapshot (Disconnect Fallback)    │
+│ 3. Appends custom developer tokens (custom-pairs.ts)   │
+│ 4. Applies de-duplication rules                        │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Layer 1: On-Chain WrappersRegistry (Canonical Source)**
+   Reads official token pairs directly from the Zama WrappersRegistry contract on Ethereum Sepolia or Mainnet. This is the canonical source of truth.
+2. **Layer 2: Local Snapshot Fallback (`src/config/contracts.ts`)**
+   If the user's wallet is disconnected or the RPC connection fails, ShadowLine falls back to a local JSON snapshot of known wrappers. This allows visitors to browse the catalog offline.
+3. **Layer 3: Local Custom Configuration (`src/config/custom-pairs.ts`)**
+   Allows developers to add custom token wrappers (e.g., local development pairs or tokens awaiting official registration) by adding them to a local configuration file.
+   * **De-duplication Logic:** If a custom token pair is subsequently registered on-chain, ShadowLine automatically prioritizes the canonical on-chain record and drops the local duplicate.
+
+---
+
+## 7. B2B & Enterprise Use Cases
+
+Confidential ERC-7984 wrapper standard implementations enable several corporate use cases:
+
+* **Confidential Corporate Payroll:** Allows companies to pay salaries, consulting fees, and bonuses in stablecoins (e.g., cUSDC) on public ledgers without exposing employee compensation details or monthly payroll figures.
+* **OTC Trading & Institutional Dark Pools:** Enables institutions to execute block trades and OTC swaps privately. Keeping trade sizes and token balances encrypted during settlement prevents front-running and visible order books.
+* **Private Treasury Reserves:** Allows corporations to manage reserve assets, yield farming positions, and inter-company financing on-chain without exposing strategic financial positioning to competitors.
+
+---
+
+## 8. How to Configure a New Token Pair
+
+Developers can register custom wrappers immediately without submitting on-chain governance proposals.
+
+### Step 1: Open the configuration file
+Edit the custom pairs file: [`src/config/custom-pairs.ts`](file:///C:/Users/hashe/Documents/antigravity/adventurous-lavoisier/src/config/custom-pairs.ts)
+
+### Step 2: Add your contract details
+Insert an entry into the `CUSTOM_PAIRS` array:
+
+```typescript
+import type { CustomPair } from '@/config/contracts';
+
+export const CUSTOM_PAIRS: CustomPair[] = [
+  {
+    erc20Address:    '0xYourERC20TokenAddress',    // Public underlying token
+    erc7984Address:  '0xYourERC7984WrapperAddress', // Confidential wrapper contract
+    symbol:          'MYT',
+    name:            'My Test Token',
+    decimals:        18,                           // Decimals of public token
+    wrapperDecimals: 6,                            // Decimals of confidential token (typically 6)
+    source:          'custom',
+    note:            'Deployed for local staging — awaiting on-chain registration',
+  },
+];
+```
+
+### Step 3: Run the local build
+Run the development server. The custom pair will immediately populate across all interface modules (Registry, Wrap/Unwrap dropdowns, Portfolio Decrypter).
+
+*Note: The target `erc7984Address` must implement the ERC-165 interface standard and return `true` for interface ID `0x4958f2a4`.*
+
+---
+
+## 9. Local Development & Setup
 
 ### Prerequisites
-Make sure you have [Node.js (v18+)](https://nodejs.org/) and a package manager (`npm`, `pnpm`, or `yarn`) installed.
+* **Node.js:** v18.17.0 or higher
+* **Package Manager:** npm / yarn
 
 ### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/hosein-ul/zamavault.git
-   cd zamavault
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
 
-### Configuration
-ZamaVault is pre-configured to use stable Alchemy RPC endpoints. If you want to use your own RPC endpoints, create a `.env.local` file in the root directory:
-```env
-NEXT_PUBLIC_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
-NEXT_PUBLIC_MAINNET_RPC=https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
+```bash
+# Clone the repository
+git clone https://github.com/hosein-ul/ShadowLine.git
+cd ShadowLine
+
+# Install dependencies
+npm install
 ```
 
-### Running Locally
-To launch the local development server:
+### Running the Application
+
 ```bash
+# Run the Next.js Turbopack development server
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open `http://localhost:3000` to interact with the application.
 
-### Building for Production
-To generate a fully optimized static and server-rendered production build:
+### Compilation & Build Verification
+
 ```bash
+# Run TypeScript compilation checks
+npx tsc --noEmit
+
+# Compile production bundle
 npm run build
-npm run start
 ```
 
 ---
 
-## 🎨 Theme & Design System
+## 10. Repository Structure
 
-ZamaVault supports multiple visual design themes which can be customized via the Header theme-selector. The default theme is **Nordic Clean**:
-
-*   **Nordic Clean**: A sleek, clean layout with high-contrast elements, neutral dark backgrounds, subtle gray borders, and Zama yellow/mint-accent highlights.
-*   **Cyber**: A futuristic cyberpunk theme with neon purple borders, green glowing accents, and dark grid backdrops.
-*   **Nebula**: A cosmic dark theme using deep indigo/purple gradients and space-like aesthetics.
-*   **Emerald**: A clean dark theme featuring vibrant emerald green highlights and green-bordered containers.
-
-All layouts, cards, buttons, badges, tables, and inputs are built using semantic variables declared in `src/app/globals.css`.
+```
+src/
+├── app/
+│   ├── page.tsx               # Landing Page (Scrollytelling)
+│   └── app/
+│       ├── page.tsx           # Registry Catalog Browser
+│       ├── wrap/              # Wrapping & Shielding Panel
+│       ├── portfolio/         # Portfolio Decryption & Local Activity Feed
+│       ├── faucet/            # Claim cTokenMocks
+│       ├── analytics/         # Protocol Analytics & Global Stream
+│       ├── learn/             # Interactive User Onboarding Guide
+│       ├── developers/        # ABI Explorer & SDK Code Generator
+│       └── docs/              # In-App Architecture Docs
+├── config/
+│   ├── contracts.ts           # Registry ABIs and known snapshots
+│   ├── custom-pairs.ts        # Custom developer pairs configuration
+│   ├── chains.ts              # Blockchain networks
+│   └── tokens.ts              # Token logos and configuration
+├── lib/
+│   ├── registry.ts            # Hybrid merge and de-duplication rules
+│   ├── wrapper-abi.ts         # Wrapper and ERC-20 ABIs
+│   ├── errors.ts              # Transaction error handlers
+│   └── utils.ts               # Formatting utilities
+└── components/                # Shared layout and UI components
+```
 
 ---
 
-## 📄 License
+## 11. License
 
-This project is licensed under the MIT License.
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.

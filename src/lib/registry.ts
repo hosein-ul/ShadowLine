@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { useListPairs } from '@zama-fhe/react-sdk';
 import { KNOWN_WRAPPERS, type WrapperPair } from '@/config/contracts';
+import { CUSTOM_PAIRS } from '@/config/custom-pairs';
 import { type SupportedChainId } from '@/config/chains';
 import { getTokenInfo } from '@/config/tokens';
 
@@ -145,6 +146,27 @@ function isBlocklisted(pair: WrapperPair): boolean {
 }
 
 /**
+ * Merge custom pairs from the local config into a live pair list.
+ * De-duplication rule: if the same erc20Address already exists in `base`
+ * (from the on-chain registry or the hardcoded snapshot), the onchain/snapshot
+ * entry wins and the custom pair is silently dropped.
+ *
+ * This ensures that once a dev pair gets officially registered on-chain,
+ * the registry version takes over automatically without any manual cleanup.
+ */
+function mergeCustomPairs(base: WrapperPair[]): WrapperPair[] {
+  if (CUSTOM_PAIRS.length === 0) return base;
+  const knownErc20 = new Set(base.map((p) => p.erc20Address.toLowerCase()));
+  const knownErc7984 = new Set(base.map((p) => p.erc7984Address.toLowerCase()));
+  const toAdd = CUSTOM_PAIRS.filter(
+    (cp) =>
+      !knownErc20.has(cp.erc20Address.toLowerCase()) &&
+      !knownErc7984.has(cp.erc7984Address.toLowerCase()),
+  );
+  return [...base, ...toAdd];
+}
+
+/**
  * Read the on-chain WrappersRegistry for a given chain.
  *
  * Behaviour:
@@ -165,19 +187,8 @@ function isBlocklisted(pair: WrapperPair): boolean {
 export function useRegistryPairs(chainId: SupportedChainId): RegistryPairsResult {
   const { isConnected, chain } = useAccount();
 
-  // Only trust the SDK's chain-bound result when our intent matches the
-  // signer's actual chain. This guards against showing Mainnet pairs in a
-  // UI that has the Sepolia tab selected (or vice versa) during a chain
-  // switch race.
   const isChainAligned = isConnected && chain?.id === chainId;
 
-  // `useListPairs` in @zama-fhe/react-sdk@^3 takes a single options arg
-  // and does not expose a TanStack-style `enabled` option. We always fire
-  // the hook (cheap RPC reads, deduped by the underlying TanStack Query
-  // cache) and gate consumption of its result on `isChainAligned` below.
-  // When the wallet is disconnected the SDK signer has no chain and the
-  // hook simply returns an error or empty result, both of which we
-  // already handle via the fallback path.
   const sdkResult = useListPairs({
     page: 1,
     pageSize: 200,
@@ -189,39 +200,40 @@ export function useRegistryPairs(chainId: SupportedChainId): RegistryPairsResult
   };
 
   return useMemo<RegistryPairsResult>(() => {
-    const fallbackPairs = KNOWN_WRAPPERS[chainId] ?? [];
+    const fallbackPairs = (KNOWN_WRAPPERS[chainId] ?? []).map((p) => ({ ...p, source: 'cache' as const }));
 
     if (isChainAligned && sdkResult.data?.items && sdkResult.data.items.length > 0) {
-      const mapped = sdkResult.data.items
-        .map(mapSdkPair)
+      const liveBase = sdkResult.data.items
+        .map((item) => ({ ...mapSdkPair(item), source: 'registry' as const }))
         .filter((p) => !isBlocklisted(p));
+      const merged = mergeCustomPairs(liveBase);
       return {
-        pairs: mapped,
+        pairs: merged,
         isLoading: false,
         error: null,
         isFromCache: false,
-        total: mapped.length,
+        total: merged.length,
       };
     }
 
-    // Live fetch in flight but no cached items yet — surface loading state
-    // while still rendering the fallback list (lets the UI stay populated).
     if (isChainAligned && sdkResult.isLoading) {
+      const merged = mergeCustomPairs(fallbackPairs);
       return {
-        pairs: fallbackPairs,
+        pairs: merged,
         isLoading: true,
         error: null,
         isFromCache: true,
-        total: fallbackPairs.length,
+        total: merged.length,
       };
     }
 
+    const merged = mergeCustomPairs(fallbackPairs);
     return {
-      pairs: fallbackPairs,
+      pairs: merged,
       isLoading: false,
       error: (isChainAligned ? sdkResult.error : null) as Error | null,
       isFromCache: true,
-      total: fallbackPairs.length,
+      total: merged.length,
     };
   }, [chainId, isChainAligned, sdkResult.data, sdkResult.isLoading, sdkResult.error]);
 }

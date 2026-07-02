@@ -1,16 +1,16 @@
-# ZamaVault — Bounty Submission Audit Report
+# ShadowLine — Bounty Submission Audit Report
 
 **Audit date:** 2026-06-21
 **Submission deadline:** 2026-07-07 AOE
 **Target:** Zama Developer Program Mainnet Season 3 — Bounty Track
-**Repository:** https://github.com/hosein-ul/zamavault
+**Repository:** https://github.com/hosein-ul/ShadowLine
 **Audited commit:** local `main` HEAD as of 2026-06-21
 
 ---
 
 ## 1. Executive summary
 
-ZamaVault is a visually polished Next.js front-end for the Zama confidential wrapper flows (shield/unshield/decrypt) plus a Sepolia mint faucet. However, **the application does not actually read the on-chain Wrappers Registry**: every page renders pairs from a hardcoded list in [contracts.ts](src/config/contracts.ts), and the registry ABI in [registry-abi.ts](src/lib/registry-abi.ts) is dead code. This is the single biggest gap versus the bounty brief, which explicitly asks the app to "surface every registered ERC-20 ↔ ERC-7984 wrapper pair from Zama's on-chain Wrappers Registry." It also directly undermines two of the six judging criteria — *coverage* and *extensibility* — because any new wrapper added to the registry tomorrow will never appear without a redeploy.
+ShadowLine is a visually polished Next.js front-end for the Zama confidential wrapper flows (shield/unshield/decrypt) plus a Sepolia mint faucet. However, **the application does not actually read the on-chain Wrappers Registry**: every page renders pairs from a hardcoded list in [contracts.ts](src/config/contracts.ts), and the registry ABI in [registry-abi.ts](src/lib/registry-abi.ts) is dead code. This is the single biggest gap versus the bounty brief, which explicitly asks the app to "surface every registered ERC-20 ↔ ERC-7984 wrapper pair from Zama's on-chain Wrappers Registry." It also directly undermines two of the six judging criteria — *coverage* and *extensibility* — because any new wrapper added to the registry tomorrow will never appear without a redeploy.
 
 Other meaningful gaps: no `useResumeUnshield` (a user who closes their tab between `unwrap` and `finalizeUnwrap` has no recovery path), no `matchZamaError` classification (every failure surfaces as a raw `err.message`), no relayer-API-key plumbing for Mainnet (Mainnet decrypt/shield/unshield will silently fail — *deferred, user-handled*), no live deployed URL (*deferred, user-handled*), no tests, no CI, no `.env.example`, no error boundaries, no pagination, no detection of revoked (`isValid == false`) registry entries, and no separation between reusable SDK-layer logic and the Next.js app (the bounty's stated category goal is "templates and resources for the developer ecosystem" — a flat single-app structure does not deliver that).
 
@@ -110,7 +110,7 @@ Faucet parses with `selectedWrapper.decimals` (underlying) at [faucet/page.tsx:1
 
 **3.3.2 Hardcoded Mainnet addresses (Finding #7, Medium).** The Mainnet block in [contracts.ts:86-143](src/config/contracts.ts:86) has the same problem with extra blast radius: Mainnet pair additions cannot reach the app without a redeploy, and a wrong address there silently routes user funds to the wrong contract. I did not full-text-cross-check every Mainnet address against the official page in this session — the well-known underlyings (USDC, USDT, WETH) are correct, but the seven hardcoded ERC-7984 wrapper addresses **must** be verified against [docs.zama.org/protocol/protocol-apps/addresses/mainnet.md](https://docs.zama.org/protocol/protocol-apps/addresses/mainnet.md) before submission. Better still, eliminate them via dynamic reads (#1).
 
-**3.3.3 No logic / UI separation (Finding #18, High for differentiation).** Every wrapper-related operation is implemented inside a Next.js page component. There is no `lib/registry.ts` exporting `listPairs(client, chainId)`, no `lib/shield.ts` exporting a viem-based `shield(client, account, pair, amount)`, no CLI, no published package. The bounty's category goal is "templates and resources for the developer ecosystem" — a competing team that ships even a thin `@zamavault/sdk` npm package will out-position this submission on the extensibility axis.
+**3.3.3 No logic / UI separation (Finding #18, High for differentiation).** Every wrapper-related operation is implemented inside a Next.js page component. There is no `lib/registry.ts` exporting `listPairs(client, chainId)`, no `lib/shield.ts` exporting a viem-based `shield(client, account, pair, amount)`, no CLI, no published package. The bounty's category goal is "templates and resources for the developer ecosystem" — a competing team that ships even a thin `@shadowline/sdk` npm package will out-position this submission on the extensibility axis.
 
 **3.3.4 Chain configuration.** This is one of the better parts: [src/config/chains.ts](src/config/chains.ts) centralizes Sepolia + Mainnet config, and `SupportedChainId` is reused across files. Adding Hoodi is a 10-line change here — see Opportunities.
 

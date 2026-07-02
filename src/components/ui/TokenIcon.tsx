@@ -10,14 +10,14 @@ interface TokenIconProps {
 }
 
 const LOGO_URLS: Record<string, string> = {
-  ZAMA: 'https://assets.coingecko.com/coins/images/70921/standard/zama.png?1764591992',
+  ZAMA: '/tokens/zama.png',
   XAUT: 'https://assets.coingecko.com/coins/images/10481/large/Tether_Gold.png',
-  WETH: 'https://portfolio.zama.org/assets/weth.svg?dpl=dpl_A42M31W2J82sHH92WvFod72a3znX',
-  ETH: 'https://portfolio.zama.org/assets/weth.svg?dpl=dpl_A42M31W2J82sHH92WvFod72a3znX',
-  BRON: 'https://assets.coingecko.com/coins/images/70826/standard/Bron_logo_sq.png?1764044817',
-  USDT: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+  WETH: '/tokens/weth.png',
+  ETH: '/tokens/eth.png',
+  BRON: '/tokens/bron.png',
+  USDT: '/tokens/usdt.png',
   TGBP: 'https://assets.coingecko.com/coins/images/70647/standard/tgbp-square.png?1762953800',
-  USDC: 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png',
+  USDC: '/tokens/usdc.png',
 };
 
 const getBaseSymbol = (symbol: string): string => {
@@ -53,7 +53,7 @@ export default function TokenIcon({ symbol, size = 24, className, style }: Token
 
   if (logoUrl && !imageError) {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <img
           src={logoUrl}
           alt={symbol}
@@ -62,9 +62,10 @@ export default function TokenIcon({ symbol, size = 24, className, style }: Token
           onError={() => setImageError(true)}
           style={{
             borderRadius: '50%',
-            objectFit: 'cover',
+            objectFit: 'contain',
             width: `${size}px`,
             height: `${size}px`,
+            flexShrink: 0,
             ...style,
           }}
           className={className}
@@ -73,5 +74,9 @@ export default function TokenIcon({ symbol, size = 24, className, style }: Token
     );
   }
 
-  return <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{getFallbackIcon()}</span>;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      {getFallbackIcon()}
+    </span>
+  );
 }

@@ -9,6 +9,7 @@ export const DEFAULT_CHAIN = sepolia;
 export const CHAIN_CONFIG: Record<SupportedChainId, {
   name: string;
   shortName: string;
+  /** Blockscout explorer — supports FHE/Zama protocol decoding */
   explorerUrl: string;
   isTestnet: boolean;
   color: string;
@@ -16,14 +17,14 @@ export const CHAIN_CONFIG: Record<SupportedChainId, {
   [sepolia.id]: {
     name: 'Sepolia Testnet',
     shortName: 'Sepolia',
-    explorerUrl: 'https://sepolia.etherscan.io',
+    explorerUrl: 'https://eth-sepolia.blockscout.com',
     isTestnet: true,
     color: '#627EEA',
   },
   [mainnet.id]: {
     name: 'Ethereum Mainnet',
     shortName: 'Mainnet',
-    explorerUrl: 'https://etherscan.io',
+    explorerUrl: 'https://eth.blockscout.com',
     isTestnet: false,
     color: '#627EEA',
   },
@@ -31,5 +32,5 @@ export const CHAIN_CONFIG: Record<SupportedChainId, {
 
 export function getExplorerUrl(chainId: number): string {
   const config = CHAIN_CONFIG[chainId as SupportedChainId];
-  return config?.explorerUrl ?? 'https://etherscan.io';
+  return config?.explorerUrl ?? 'https://eth.blockscout.com';
 }

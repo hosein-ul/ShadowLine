@@ -1,6 +1,6 @@
-# ZamaVault — Developer Memory & Lessons Learned
+# ShadowLine — Developer Memory & Lessons Learned
 
-This document serves as a persistent record of the core technical insights, issues encountered, and architectural solutions discovered while building and debugging **ZamaVault** (a confidential token registry explorer and wrapping dApp utilizing Zama's Fully Homomorphic Encryption SDK).
+This document serves as a persistent record of the core technical insights, issues encountered, and architectural solutions discovered while building and debugging **ShadowLine** (a confidential token registry explorer and wrapping dApp utilizing Zama's Fully Homomorphic Encryption SDK).
 
 ---
 
@@ -118,7 +118,7 @@ See `CLAUDE.md` for full project context. See the plan file for the master check
 - Phase 4.3: Dead code cleanup (error.tsx Link fix, verified no stale KNOWN_WRAPPERS refs)
 
 ### Next Up
-- Phase 2.2: npm package `@zamavault/sdk`
+- Phase 2.2: npm package `@shadowline/sdk`
 - Phase 3: Analytics dashboard + activity feed
 - Phase 4.4: Mobile responsive test (360px)
 - Phase 5: README rewrite, final polish

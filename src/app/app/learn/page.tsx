@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import BlurIn from '@/components/ui/BlurIn';
+import confetti from 'canvas-confetti';
 import {
   BookOpen,
   Shield,
@@ -21,6 +22,7 @@ import {
   Cpu,
   ArrowRight,
   Sparkles,
+  PartyPopper,
 } from 'lucide-react';
 
 /* ─── Step definitions ──────────────────────────────────────────────────────── */
@@ -170,7 +172,7 @@ function StepFaucet() {
   return (
     <div className="learn-step-body">
       <p className="learn-lead">
-        Before you can shield tokens, you need some test tokens. ZamaVault
+        Before you can shield tokens, you need some test tokens. ShadowLine
         includes a <strong>Faucet</strong> page that lets you mint free mock
         tokens on the Sepolia testnet — no cost, no limits.
       </p>
@@ -209,10 +211,10 @@ function StepFaucet() {
       </Card>
 
       <div style={{ marginTop: 'var(--sp-6)' }}>
-        <Link href="/faucet">
-          <Button variant="primary" size="lg" style={{ gap: 'var(--sp-2)' }}>
-            <Droplets size={18} /> Go to Faucet
-            <ExternalLink size={14} style={{ opacity: 0.6 }} />
+        <Link href="/app/faucet">
+          <Button variant="secondary" size="sm" style={{ gap: 'var(--sp-2)' }}>
+            <Droplets size={14} /> Go to Faucet
+            <ExternalLink size={12} style={{ opacity: 0.6 }} />
           </Button>
         </Link>
       </div>
@@ -224,7 +226,8 @@ function StepShield() {
   return (
     <div className="learn-step-body">
       <p className="learn-lead">
-        <strong>Shielding</strong> (also called &quot;wrapping&quot;) converts your public
+        <strong>Shielding</strong>{' '}
+        (also called &quot;wrapping&quot;) converts your public
         ERC-20 tokens into confidential ERC-7984 tokens. Your balance becomes
         encrypted on-chain — invisible to everyone except you.
       </p>
@@ -282,10 +285,10 @@ function StepShield() {
       </div>
 
       <div style={{ marginTop: 'var(--sp-6)' }}>
-        <Link href="/wrap">
-          <Button variant="primary" size="lg" style={{ gap: 'var(--sp-2)' }}>
-            <Shield size={18} /> Go to Wrap / Unwrap
-            <ExternalLink size={14} style={{ opacity: 0.6 }} />
+        <Link href="/app/wrap">
+          <Button variant="secondary" size="sm" style={{ gap: 'var(--sp-2)' }}>
+            <Shield size={14} /> Go to Wrap / Unwrap
+            <ExternalLink size={12} style={{ opacity: 0.6 }} />
           </Button>
         </Link>
       </div>
@@ -297,8 +300,8 @@ function StepDecrypt() {
   return (
     <div className="learn-step-body">
       <p className="learn-lead">
-        Your confidential balance is encrypted on-chain. To view it, you need to
-        <strong> sign an EIP-712 permit</strong> — a typed off-chain signature
+        Your confidential balance is encrypted on-chain. To view it, you need to{' '}
+        <strong>sign an EIP-712 permit</strong> — a typed off-chain signature
         that authorizes the Zama Gateway to decrypt your balance and return the
         plaintext to your browser.
       </p>
@@ -314,8 +317,8 @@ function StepDecrypt() {
           title="Sign the EIP-712 permit in your wallet"
           description={
             <>
-              Your wallet will show a typed data signature request. This creates a
-              <strong> temporary session key</strong> that the Zama Gateway uses to
+              Your wallet will show a typed data signature request. This creates a{' '}
+              <strong>temporary session key</strong> that the Zama Gateway uses to
               decrypt. <em>Your private key never leaves your wallet.</em>
             </>
           }
@@ -345,7 +348,7 @@ function StepDecrypt() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
           <Badge variant="warning">Important</Badge>
           <span className="text-sm">
-            ZamaVault <strong>never</strong> auto-fires permit signatures. You
+            ShadowLine <strong>never</strong> auto-fires permit signatures. You
             always click &quot;Decrypt&quot; first — your wallet only prompts when you
             explicitly request it.
           </span>
@@ -359,7 +362,8 @@ function StepUnshield() {
   return (
     <div className="learn-step-body">
       <p className="learn-lead">
-        <strong>Unshielding</strong> (also called &quot;unwrapping&quot;) converts your
+        <strong>Unshielding</strong>{' '}
+        (also called &quot;unwrapping&quot;) converts your
         confidential ERC-7984 tokens back into public ERC-20 tokens. This is a
         two-step process: an on-chain request followed by finalization.
       </p>
@@ -410,23 +414,23 @@ function StepUnshield() {
         </h4>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           If you close your browser between the unwrap request and finalization,
-          don&apos;t worry — ZamaVault detects pending unshields automatically and
+          don&apos;t worry — ShadowLine detects pending unshields automatically and
           shows a yellow <strong>&quot;Resume Unshield&quot;</strong> banner. Click
           &quot;Resume&quot; to complete the process. Your tokens are never lost.
         </p>
       </div>
 
       <div style={{ marginTop: 'var(--sp-6)', display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-        <Link href="/wrap">
-          <Button variant="primary" size="lg" style={{ gap: 'var(--sp-2)' }}>
-            <Unlock size={18} /> Go to Wrap / Unwrap
-            <ExternalLink size={14} style={{ opacity: 0.6 }} />
+        <Link href="/app/wrap">
+          <Button variant="secondary" size="sm" style={{ gap: 'var(--sp-2)' }}>
+            <Unlock size={14} /> Go to Wrap / Unwrap
+            <ExternalLink size={12} style={{ opacity: 0.6 }} />
           </Button>
         </Link>
-        <Link href="/portfolio">
-          <Button variant="secondary" size="lg" style={{ gap: 'var(--sp-2)' }}>
+        <Link href="/app/portfolio">
+          <Button variant="ghost" size="sm" style={{ gap: 'var(--sp-2)' }}>
             View Portfolio
-            <ExternalLink size={14} style={{ opacity: 0.6 }} />
+            <ExternalLink size={12} style={{ opacity: 0.6 }} />
           </Button>
         </Link>
       </div>
@@ -493,7 +497,7 @@ function InstructionStep({
   return (
     <div className="learn-instruction">
       <div className="learn-instruction-number">{number}</div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 2 }}>
           {title}
         </div>
@@ -510,31 +514,58 @@ function InstructionStep({
 export default function LearnPage() {
   const [activeStep, setActiveStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const hasConfettiFired = useRef(false);
 
   const currentStep = STEPS.find((s) => s.id === activeStep)!;
 
   const goTo = (id: number) => {
-    // Mark current step as completed when navigating forward
-    if (id > activeStep) {
-      setCompletedSteps((prev) => new Set([...prev, activeStep]));
-    }
     setActiveStep(id);
   };
 
   const goNext = () => {
-    if (activeStep < STEPS.length) goTo(activeStep + 1);
+    if (activeStep < STEPS.length) {
+      setCompletedSteps((prev) => new Set([...prev, activeStep]));
+      setActiveStep(activeStep + 1);
+    }
   };
 
   const goPrev = () => {
     if (activeStep > 1) setActiveStep(activeStep - 1);
   };
 
-  const markComplete = () => {
-    setCompletedSteps((prev) => new Set([...prev, activeStep]));
-    if (activeStep < STEPS.length) goTo(activeStep + 1);
+  const allComplete = completedSteps.size >= STEPS.length;
+
+  const fireConfetti = useCallback(() => {
+    if (hasConfettiFired.current) return;
+    hasConfettiFired.current = true;
+    const end = Date.now() + 1500;
+    const colors = ['#ffd208', '#e6b800', '#10b981', '#a78bfa', '#f59e0b'];
+    (function frame() {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors,
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }, []);
+
+  const markAllComplete = () => {
+    setCompletedSteps(new Set(STEPS.map((s) => s.id)));
   };
 
-  const allComplete = completedSteps.size >= STEPS.length;
+  useEffect(() => {
+    if (allComplete) fireConfetti();
+  }, [allComplete, fireConfetti]);
 
   return (
     <div className="learn-page">
@@ -551,7 +582,7 @@ export default function LearnPage() {
           style={{
             fontSize: 'var(--text-lg)',
             maxWidth: 600,
-            marginTop: 'var(--sp-3)',
+            margin: 'var(--sp-3) auto 0',
             lineHeight: 'var(--lh-relaxed)',
           }}
         >
@@ -602,7 +633,7 @@ export default function LearnPage() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-3)' }}>
-            <CheckCircle2 size={32} style={{ color: 'var(--success)' }} />
+            <PartyPopper size={36} style={{ color: 'var(--success)' }} />
             <div>
               <h3 style={{ fontWeight: 700, fontSize: 'var(--text-xl)', marginBottom: 'var(--sp-1)' }}>
                 Tutorial Complete!
@@ -613,17 +644,17 @@ export default function LearnPage() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Link href="/faucet">
+              <Link href="/app/faucet">
                 <Button variant="primary" style={{ gap: 'var(--sp-2)' }}>
                   <Droplets size={16} /> Get Test Tokens
                 </Button>
               </Link>
-              <Link href="/wrap">
+              <Link href="/app/wrap">
                 <Button variant="secondary" style={{ gap: 'var(--sp-2)' }}>
                   <Shield size={16} /> Start Shielding
                 </Button>
               </Link>
-              <Link href="/">
+              <Link href="/app">
                 <Button variant="ghost" style={{ gap: 'var(--sp-2)' }}>
                   Explore Registry
                 </Button>
@@ -672,15 +703,6 @@ export default function LearnPage() {
           </Button>
 
           <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-            {!completedSteps.has(activeStep) && (
-              <Button
-                variant="secondary"
-                onClick={markComplete}
-                style={{ gap: 'var(--sp-2)' }}
-              >
-                <CheckCircle2 size={14} /> Mark as Done
-              </Button>
-            )}
             {activeStep < STEPS.length ? (
               <Button
                 variant="primary"
@@ -692,10 +714,10 @@ export default function LearnPage() {
             ) : !allComplete ? (
               <Button
                 variant="primary"
-                onClick={markComplete}
+                onClick={markAllComplete}
                 style={{ gap: 'var(--sp-2)' }}
               >
-                <CheckCircle2 size={14} /> Complete Tutorial
+                <CheckCircle2 size={14} /> Mark as Done
               </Button>
             ) : null}
           </div>
@@ -721,7 +743,7 @@ export default function LearnPage() {
           <ResourceLink
             href="/api/registry?chain=sepolia"
             title="Registry API"
-            description="ZamaVault's public REST API — query all wrapper pairs programmatically."
+            description="ShadowLine's public REST API — query all wrapper pairs programmatically."
           />
           <ResourceLink
             href="https://docs.zama.org/protocol/sdk/api-references/sdk/errors"
