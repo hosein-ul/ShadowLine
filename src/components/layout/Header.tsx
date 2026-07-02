@@ -89,8 +89,8 @@ export default function Header() {
             <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
             <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
           </svg>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Zama</span>
-          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Vault</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
         </Link>
 
         {/* Navigation */}

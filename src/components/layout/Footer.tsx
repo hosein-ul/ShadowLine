@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-              Zama<span style={{ color: 'var(--accent)' }}>Vault</span>
+              Shadow<span style={{ color: 'var(--accent)' }}>Line</span>
             </span>
             <span style={{ margin: '0 8px', opacity: 0.3 }}>·</span>
             <span>Confidential Wrapper Registry</span>

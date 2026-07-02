@@ -68,7 +68,7 @@ function Hero() {
           <motion.div whileHover={{ rotate: 12, scale: 1.1 }} style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 14px rgba(255,210,8,.5)' }}>
             <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
           </motion.div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(14px,2.5vw,32px)' }}>
           {[['How It Works', '#how'], ['App Pages', '#app'], ['Technology', '#tech']].map(([l, h]) => (
@@ -986,7 +986,7 @@ export default function LandingPage() {
               <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="14" height="14" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
               </div>
-              <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
+              <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
             </div>
             <p style={{ color: '#71717a', fontSize: '.84rem', lineHeight: 1.6, margin: 0 }}>
               ShadowLine is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
