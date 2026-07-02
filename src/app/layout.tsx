@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ZamaVault — Confidential Tokens, Made Simple',
+  title: 'ShadowLine — Confidential Tokens, Made Simple',
   description:
     "Discover, shield, and manage confidential ERC-7984 tokens on Zama's fully-homomorphic encryption protocol. The canonical interface for the Confidential Wrappers Registry.",
   keywords: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     'confidential tokens', 'wrapper registry', 'privacy', 'Ethereum', 'DeFi',
   ],
   openGraph: {
-    title: 'ZamaVault — Confidential Tokens, Made Simple',
+    title: 'ShadowLine — Confidential Tokens, Made Simple',
     description:
       "The definitive interface for managing confidential ERC-7984 tokens powered by Zama's Fully Homomorphic Encryption.",
     type: 'website',

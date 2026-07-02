@@ -475,7 +475,7 @@ const WRAPPER = '${erc7984}';
 /* ─── REST API snippet (special — framework-independent) ── */
 
 function restApiSnippet(chain: string): string {
-  return `// ZamaVault Public REST API — no SDK required!
+  return `// ShadowLine Public REST API — no SDK required!
 // Returns all registered wrapper pairs with metadata.
 
 const response = await fetch(

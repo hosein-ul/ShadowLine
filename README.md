@@ -1,20 +1,20 @@
-# ZamaVault — Confidential Asset Shielding Protocol
+# ShadowLine — Confidential Asset Shielding Protocol
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hosein-ul/zamavault)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hosein-ul/ShadowLine)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-ZamaVault is an enterprise-grade, non-custodial decentralized application (dApp) that acts as the primary gateway for Zama's FHEVM Wrappers Registry. Built entirely on Fully Homomorphic Encryption (FHE), ZamaVault enables users and institutions to seamlessly shield standard ERC-20 tokens into ERC-7984 confidential tokens (cTokens) and perform private on-chain asset transfers.
+ShadowLine is an enterprise-grade, non-custodial decentralized application (dApp) that acts as the primary gateway for Zama's FHEVM Wrappers Registry. Built entirely on Fully Homomorphic Encryption (FHE), ShadowLine enables users and institutions to seamlessly shield standard ERC-20 tokens into ERC-7984 confidential tokens (cTokens) and perform private on-chain asset transfers.
 
-With ZamaVault, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
+With ShadowLine, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
 
 ---
 
 ## Table of Contents
 
-- [1. About ZamaVault](#1-about-zamavault)
+- [1. About ShadowLine](#1-about-shadowline)
 - [2. Supported Networks](#2-supported-networks)
 - [3. Core Features Deep Dive](#3-core-features-deep-dive)
 - [4. Technical Architecture & Data Flows](#4-technical-architecture--data-flows)
@@ -30,9 +30,9 @@ With ZamaVault, transaction amounts and token balances remain completely encrypt
 
 ---
 
-## 1. About ZamaVault
+## 1. About ShadowLine
 
-Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ZamaVault addresses this challenge by utilizing Torus Fully Homomorphic Encryption (TFHE) on-chain via Zama's FHEVM. 
+Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ShadowLine addresses this challenge by utilizing Torus Fully Homomorphic Encryption (TFHE) on-chain via Zama's FHEVM. 
 
 It wraps public ERC-20 tokens into **ERC-7984 Confidential Wrappers** (cTokens), converting open balance data into cryptographic ciphertext handles (`euint64`). Transactions and balances are processed on-chain in their encrypted state, ensuring confidentiality while maintaining decentralized validation.
 
@@ -40,7 +40,7 @@ It wraps public ERC-20 tokens into **ERC-7984 Confidential Wrappers** (cTokens),
 
 ## 2. Supported Networks
 
-ZamaVault supports the following network configurations:
+ShadowLine supports the following network configurations:
 
 | Network | Chain ID | RPC Endpoint | Contract Registry Address |
 |---|---|---|---|
@@ -53,7 +53,7 @@ ZamaVault supports the following network configurations:
 
 ## 3. Core Features Deep Dive
 
-ZamaVault is divided into specialized modules tailored for retail and enterprise confidentiality management:
+ShadowLine is divided into specialized modules tailored for retail and enterprise confidentiality management:
 
 ### 3.1 Registry Browser (`/app`)
 Displays a live list of registered public-to-confidential token pairs fetched directly from the on-chain registry contract.
@@ -70,7 +70,7 @@ Facilitates the conversion between public assets (ERC-20) and confidential asset
 ### 3.3 Portfolio Manager & Decrypter (`/app/portfolio`)
 A dashboard displaying all user balance details. Balances remain securely locked and hidden by default.
 * **Batch Decryption:** Leverages EIP-712 permits to batch-decrypt all registry balances simultaneously, reducing user interaction overhead.
-* **Arbitrary Token Scanner:** Allows developers to input any ERC-7984 contract address. ZamaVault scans the address, queries metadata, and adds it to the user's dashboard.
+* **Arbitrary Token Scanner:** Allows developers to input any ERC-7984 contract address. ShadowLine scans the address, queries metadata, and adds it to the user's dashboard.
 * **My Recent Activity:** A personal ledger displaying historical transactions (shields, unwraps, faucet claims) made by the active wallet.
 
 ### 3.4 DeFi Analytics Dashboard (`/app/analytics`)
@@ -103,7 +103,7 @@ An in-app documentation portal explaining technical architecture, decimal scalin
 
 ## 4. Technical Architecture & Data Flows
 
-ZamaVault's architecture decouples public blockchain logic, local cryptographic calculations, and decentralized key management:
+ShadowLine's architecture decouples public blockchain logic, local cryptographic calculations, and decentralized key management:
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -164,7 +164,7 @@ sequenceDiagram
 
 ### 4.2 FHE Decryption Flow (Confidential to Plaintext)
 
-To query and view confidential balances, ZamaVault uses EIP-712 permits. The process prevents gas consumption and ensures the plaintext is only visible to the user:
+To query and view confidential balances, ShadowLine uses EIP-712 permits. The process prevents gas consumption and ensures the plaintext is only visible to the user:
 
 ```mermaid
 sequenceDiagram
@@ -191,7 +191,7 @@ sequenceDiagram
 
 ## 5. Security & Cryptographic Trust Model
 
-ZamaVault's privacy architecture relies on the following security properties:
+ShadowLine's privacy architecture relies on the following security properties:
 
 * **Lattice-Based Cryptography:** FHE is built on Ring Learning With Errors (LWE) lattice assumptions, which are mathematically recognized as secure against quantum computer attacks.
 * **Session Key Decryption:** Plaintext values are never transmitted across the network or stored on servers. Decryption occurs strictly inside the local browser context using ephemeral session keys.
@@ -202,11 +202,11 @@ ZamaVault's privacy architecture relies on the following security properties:
 
 ## 6. Hybrid Registry Sourcing Strategy
 
-To guarantee uptime and developer flexibility, ZamaVault merges token information from three layers:
+To guarantee uptime and developer flexibility, ShadowLine merges token information from three layers:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                 ZamaVault Client                       │
+│                 ShadowLine Client                       │
 ├────────────────────────────────────────────────────────┤
 │ 1. Reads On-Chain WrappersRegistry                     │
 │ 2. Merges local JSON snapshot (Disconnect Fallback)    │
@@ -218,10 +218,10 @@ To guarantee uptime and developer flexibility, ZamaVault merges token informatio
 1. **Layer 1: On-Chain WrappersRegistry (Canonical Source)**
    Reads official token pairs directly from the Zama WrappersRegistry contract on Ethereum Sepolia or Mainnet. This is the canonical source of truth.
 2. **Layer 2: Local Snapshot Fallback (`src/config/contracts.ts`)**
-   If the user's wallet is disconnected or the RPC connection fails, ZamaVault falls back to a local JSON snapshot of known wrappers. This allows visitors to browse the catalog offline.
+   If the user's wallet is disconnected or the RPC connection fails, ShadowLine falls back to a local JSON snapshot of known wrappers. This allows visitors to browse the catalog offline.
 3. **Layer 3: Local Custom Configuration (`src/config/custom-pairs.ts`)**
    Allows developers to add custom token wrappers (e.g., local development pairs or tokens awaiting official registration) by adding them to a local configuration file.
-   * **De-duplication Logic:** If a custom token pair is subsequently registered on-chain, ZamaVault automatically prioritizes the canonical on-chain record and drops the local duplicate.
+   * **De-duplication Logic:** If a custom token pair is subsequently registered on-chain, ShadowLine automatically prioritizes the canonical on-chain record and drops the local duplicate.
 
 ---
 
@@ -279,8 +279,8 @@ Run the development server. The custom pair will immediately populate across all
 
 ```bash
 # Clone the repository
-git clone https://github.com/hosein-ul/zamavault.git
-cd zamavault
+git clone https://github.com/hosein-ul/ShadowLine.git
+cd ShadowLine
 
 # Install dependencies
 npm install

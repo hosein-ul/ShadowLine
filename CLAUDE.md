@@ -1,10 +1,10 @@
-# ZamaVault — CLAUDE.md
+# ShadowLine — CLAUDE.md
 
 ## Project Overview
 
-ZamaVault is an all-in-one interface for Zama's confidential token ecosystem: live WrappersRegistry discovery, ERC-20 shield/unshield, encrypted portfolio decryption, and a Sepolia faucet. Built for the **Zama Developer Program Mainnet Season 3 Bounty Track** (deadline: 2026-07-07 AOE).
+ShadowLine is an all-in-one interface for Zama's confidential token ecosystem: live WrappersRegistry discovery, ERC-20 shield/unshield, encrypted portfolio decryption, and a Sepolia faucet. Built for the **Zama Developer Program Mainnet Season 3 Bounty Track** (deadline: 2026-07-07 AOE).
 
-**Repository:** https://github.com/hosein-ul/zamavault
+**Repository:** https://github.com/hosein-ul/ShadowLine
 **Branch:** `feat/dynamic-registry-finding-1` (PR #1 against `main`)
 **Stack:** Next.js 16 (App Router, Turbopack), React 19, Wagmi 3, Viem 2, @zama-fhe/react-sdk 3, TypeScript 5 (strict mode)
 

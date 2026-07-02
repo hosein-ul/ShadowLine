@@ -1,132 +1,132 @@
-# ZamaVault — Master Reference Document for AI Agents
+# ShadowLine — Master Reference Document for AI Agents
 
-> این فایل یک راهنمای کامل برای هر agent هوش مصنوعی است که روی پروژه ZamaVault کار می‌کند.
-> شامل همه جزئیات معماری، قوانین حیاتی، اشتباهات رایج، و تجربیات کسب‌شده است.
+> This file is a complete guide for any AI agent working on the ShadowLine project.
+> It includes all architecture details, critical rules, common mistakes, and lessons learned.
 
 ---
 
-## ۱. بستر پروژه
+## 1. Project Context
 
-**ZamaVault** یک رابط کاربری برای اکوسیستم توکن محرمانه Zama است:  
-ثبت‌نام پویای Registry، wrap/unwrap ERC-20، رمزگشایی پورتفولیوی رمزنگاری‌شده، و فاست Sepolia.
+**ShadowLine** is a frontend interface for the Zama confidential token ecosystem:  
+Dynamic Registry registration, ERC-20 wrap/unwrap, decryption of encrypted portfolios, and a Sepolia faucet.
 
-- **مخزن:** https://github.com/hosein-ul/zamavault
-- **شاخه:** `feat/dynamic-registry-finding-1` (PR #1 → main)
+- **Repository:** https://github.com/hosein-ul/ShadowLine
+- **Branch:** `feat/dynamic-registry-finding-1` (PR #1 → main)
 - **Stack:** Next.js 16 (App Router, Turbopack), React 19, Wagmi 3, Viem 2, @zama-fhe/react-sdk 3.0.1, TypeScript 5
-- **هدف:** Zama Developer Program Mainnet Season 3 Bounty Track (deadline: 2026-07-07 AOE)
-- **دایرکتوری:** `C:\NEW work\`
+- **Goal:** Zama Developer Program Mainnet Season 3 Bounty Track (deadline: 2026-07-07 AOE)
+- **Directory:** `C:\NEW work\`
 
 ---
 
-## ۲. قوانین حیاتی — هرگز نقض نشوند
+## 2. Critical Rules — Never Be Broken
 
-### 🚨 قانون ۱: هیچ اشاره‌ای به Claude/Anthropic
-هرگز نام Claude، Claude Code، Anthropic، یا هر چیز مشابه را در کد، commit‌ها، PR، README، یا هر فایل قابل مشاهده توسط داوران قرار ندهید. هیچ `Co-Authored-By` header نزنید. این یک ارسال مسابقه است.
+### 🚨 Rule 1: No Mentions of Claude/Anthropic
+Never place the name Claude, Claude Code, Anthropic, or anything similar in code, commits, PRs, READMEs, or any files visible to the judges. Do not add any `Co-Authored-By` headers. This is a competition submission.
 
-### 🚨 قانون ۲: هرگز permit EIP-712 را auto-fire نکنید
-هر decrypt/permit باید پشت یک کلیک صریح کاربر باشد. الگوی `decryptRequested` در `wrap/page.tsx` دقیقاً برای این است:
-- `decryptRequested` به طور پیش‌فرض `false` است
-- فقط وقتی کاربر روی "Decrypt" کلیک می‌کند `true` می‌شود
-- **سورس باگ رایج:** صدا زدن `refetch()` مستقیم روی `useConfidentialBalance` — TanStack Query متد `refetch()` را از `enabled: false` bypass می‌کند!
-- **راه‌حل:** بعد از هر shield/unshield موفق، `setDecryptRequested(false)` صدا بزنید
-- Reset را **به صورت synchronous** در `onChange` کنید، نه در `useEffect` (race condition یک فریمی)
+### 🚨 Rule 2: Never Auto-fire EIP-712 Permits
+Every decryption/permit must be triggered by an explicit user click. The `decryptRequested` pattern in `wrap/page.tsx` is exactly for this:
+- `decryptRequested` is `false` by default
+- It only becomes `true` when the user explicitly clicks "Decrypt"
+- **Common Bug Source:** Calling `refetch()` directly on `useConfidentialBalance` — TanStack Query's `refetch()` method bypasses the `enabled: false` setting!
+- **Solution:** Call `setDecryptRequested(false)` after every successful shield/unshield operation
+- Reset the state **synchronously** in the `onChange` handler, not in `useEffect` (prevents a one-frame race condition)
 
-### 🚨 قانون ۳: Decimal Scaling بار حیاتی دارد
+### 🚨 Rule 3: Decimal Scaling is Extremely Critical
 ```
-wrapper decimals: همیشه 6 (محدودیت euint64 FHE)
-underlying decimals: 6 یا 18
+wrapper decimals: always 6 (euint64 FHE limit)
+underlying decimals: 6 or 18
 
-Shield (wrap):   parseAmount(input, underlyingDecimals)   ← دسیمال underlying
-Unshield:        parseAmount(input, 6)                    ← همیشه 6
-Display:         formatAmount(balance, 6)                 ← همیشه 6
+Shield (wrap):   parseAmount(input, underlyingDecimals)   ← underlying decimals
+Unshield:        parseAmount(input, 6)                    ← always 6
+Display:         formatAmount(balance, 6)                 ← always 6
 
-⚠️ اشتباه رایج: formatAmount(balance, 18) → نمایش صفر برای توکن‌های 18 دسیمال
+⚠️ Common Mistake: formatAmount(balance, 18) → displays zero for 18-decimal tokens
 ```
 
-### 🚨 قانون ۴: هرگز secret commit نکنید
-فایل‌های `.env` در `.gitignore` هستند. از `.env.example` برای مستندسازی استفاده کنید.
+### 🚨 Rule 4: Never Commit Secrets
+The `.env` files are in `.gitignore`. Use `.env.example` for documentation.
 
-### 🚨 قانون ۵: Blocklist را بدون تأیید تیم حذف نکنید
-`BLOCKLISTED_WRAPPERS` در `registry.ts` دارای مستندات است. `cbbqTGBP` (Mainnet) آدرس vanity مشکوک دارد.
+### 🚨 Rule 5: Do Not Remove Blocklisted Items Without Team Approval
+`BLOCKLISTED_WRAPPERS` in `registry.ts` is documented. `cbbqTGBP` (Mainnet) has a suspicious vanity address.
 
 ---
 
-## ۳. معماری و ساختار فایل
+## 3. Architecture and File Structure
 
 ```
 C:\NEW work\
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                   ← جدول Registry (صفحه اصلی)
-│   │   ├── wrap/page.tsx              ← Shield/Unshield (مهم‌ترین صفحه)
-│   │   ├── portfolio/page.tsx         ← پورتفولیو محرمانه با batch decrypt
-│   │   ├── faucet/page.tsx            ← فاست توکن mock سپولیا
-│   │   ├── analytics/page.tsx         ← داشبورد TVL و activity
-│   │   ├── learn/page.tsx             ← آموزش تعاملی ۵ مرحله‌ای FHE
-│   │   ├── developers/page.tsx        ← مولد کد snippet
-│   │   ├── docs/page.tsx              ← مستندات developer
-│   │   ├── error.tsx                  ← مرز خطای Next.js
-│   │   ├── api/registry/route.ts      ← REST API عمومی
-│   │   ├── ClientLayout.tsx           ← provider‌های context (theme/network)
-│   │   ├── layout.tsx                 ← layout ریشه با تزریق theme SSR
-│   │   └── globals.css                ← سیستم طراحی (4 تم Nordic)
+│   │   ├── page.tsx                   ← Registry table (Main page)
+│   │   ├── wrap/page.tsx              ← Shield/Unshield (Most critical page)
+│   │   ├── portfolio/page.tsx         ← Confidential portfolio with batch decrypt
+│   │   ├── faucet/page.tsx            ← Sepolia mock token faucet
+│   │   ├── analytics/page.tsx         ← TVL and activity dashboard
+│   │   ├── learn/page.tsx             ← 5-step interactive FHE tutorial
+│   │   ├── developers/page.tsx        ← Code snippet generator
+│   │   ├── docs/page.tsx              ← Developer documentation
+│   │   ├── error.tsx                  ← Next.js error boundary
+│   │   ├── api/registry/route.ts      ← Public REST API
+│   │   ├── ClientLayout.tsx           ← Context providers (theme/network)
+│   │   ├── layout.tsx                 ← Root layout with SSR theme injection
+│   │   └── globals.css                ← Design system (4 Nordic themes)
 │   ├── components/
-│   │   ├── ui/                        ← 13 کامپوننت UI قابل استفاده مجدد
-│   │   │   ├── Badge.tsx              ← ⚠️ text-transform:uppercase حذف شد (باگ fix)
+│   │   ├── ui/                        ← 13 reusable UI components
+│   │   │   ├── Badge.tsx              ← ⚠️ text-transform:uppercase removed (bug fix)
 │   │   │   ├── Button.tsx             ← forwardRef, variants: primary/secondary/ghost/danger
 │   │   │   ├── Card.tsx               ← variants: default/glass/outlined/accent
-│   │   │   ├── CopyButton.tsx         ← کپی clipboard با بازخورد چک‌مارک
-│   │   │   ├── Skeleton.tsx           ← props: width, height, variant (نه style!)
+│   │   │   ├── CopyButton.tsx         ← Clipboard copy with checkmark feedback
+│   │   │   ├── Skeleton.tsx           ← props: width, height, variant (not style!)
 │   │   │   ├── Toast.tsx              ← ToastProvider + useToast() hook
 │   │   │   ├── Modal.tsx
-│   │   │   ├── Tooltip.tsx            ← Portal-based, HelpCircle پیش‌فرض trigger
-│   │   │   ├── TokenIcon.tsx          ← نقشه symbol→لوگو، حذف prefix "c" و suffix "Mock"
-│   │   │   ├── BlurIn.tsx             ← انیمیشن blur-in
+│   │   │   ├── Tooltip.tsx            ← Portal-based, HelpCircle as default trigger
+│   │   │   ├── TokenIcon.tsx          ← Symbol-to-logo map, removes "c" prefix and "Mock" suffix
+│   │   │   ├── BlurIn.tsx             ← Blur-in animation
 │   │   │   ├── TypingAnimation.tsx
 │   │   │   ├── Spinner.tsx
 │   │   │   └── TransactionSuccessModal.tsx
 │   │   ├── layout/
-│   │   │   ├── Header.tsx             ← ۸ مسیر nav، wallet connect، network switcher
+│   │   │   ├── Header.tsx             ← 8 nav paths, wallet connect, network switcher
 │   │   │   └── Footer.tsx
-│   │   └── PendingUnshieldBanner.tsx  ← recovery برای unshield قطع‌شده
+│   │   └── PendingUnshieldBanner.tsx  ← Recovery for interrupted unshields
 │   ├── config/
-│   │   ├── contracts.ts               ← WrapperPair، KNOWN_WRAPPERS (fallback)، REGISTRY_ADDRESSES
-│   │   ├── chains.ts                  ← SupportedChainId، explorer Blockscout
-│   │   └── tokens.ts                  ← متادیتای نمایش توکن (لوگو، رنگ)
+│   │   ├── contracts.ts               ← WrapperPair, KNOWN_WRAPPERS (fallback), REGISTRY_ADDRESSES
+│   │   ├── chains.ts                  ← SupportedChainId, explorer Blockscout
+│   │   └── tokens.ts                  ← Token display metadata (logo, color)
 │   ├── lib/
-│   │   ├── registry.ts                ← useRegistryPairs، isMintablePair، blocklist
-│   │   ├── errors.ts                  ← classifyError با 16 کد خطا
-│   │   ├── utils.ts                   ← formatAmount، parseAmount، formatAddress، cn
-│   │   ├── wrapper-abi.ts             ← WRAPPER_ABI، ERC20_ABI
-│   │   └── __tests__/utils.test.ts    ← 30 تست Vitest
+│   │   ├── registry.ts                ← useRegistryPairs, isMintablePair, blocklist
+│   │   ├── errors.ts                  ← classifyError with 16 error codes
+│   │   ├── utils.ts                   ← formatAmount, parseAmount, formatAddress, cn
+│   │   ├── wrapper-abi.ts             ← WRAPPER_ABI, ERC20_ABI
+│   │   └── __tests__/utils.test.ts    ← 30 Vitest tests
 │   └── providers/
-│       └── Providers.tsx              ← Wagmi + Zama + TanStack Query (⚠️ بسیار حساس)
+│       └── Providers.tsx              ← Wagmi + Zama + TanStack Query (⚠️ Extremely sensitive)
 ├── .github/workflows/ci.yml           ← TypeScript → Vitest → Build
-├── .env.example                       ← همه متغیرهای محیطی اختیاری هستند
+├── .env.example                       ← All environment variables are optional
 ├── vitest.config.ts                   ← alias @/ → src/
-├── CLAUDE.md                          ← مستندات پروژه
-└── memory.md                          ← درس‌های آموخته‌شده
+├── CLAUDE.md                          ← Project documentation
+└── memory.md                          ← Lessons learned / Memory
 ```
 
 ---
 
-## ۴. چرخه SDK Zama (از دیدگاه flow)
+## 4. Zama SDK Cycle (Flow Perspective)
 
 ### Shield (Wrap)
 ```
 useShield({ tokenAddress: erc7984Address })
 → mutateAsync({ amount, onApprovalSubmitted, onShieldSubmitted })
-→ اگر allowance < amount: approve ERC-20 → onApprovalSubmitted(txHash) → setTxStep(2)
+→ If allowance < amount: approve ERC-20 → onApprovalSubmitted(txHash) → setTxStep(2)
 → shield tx → onShieldSubmitted(txHash) → setTxStep(4)
 → res.txHash → setTxStep(5), setDecryptRequested(false)
 ```
 
-### Unshield (Unwrap) — دو مرحله‌ای
+### Unshield (Unwrap) — Two-Step Process
 ```
-useUnshield(erc7984Address)  ← positional در v3.0.1
+useUnshield(erc7984Address)  ← positional in v3.0.1
 → mutateAsync({ amount, onUnwrapSubmitted, onFinalizing, onFinalizeSubmitted })
 → unwrap tx on-chain → onUnwrapSubmitted(txHash) → setTxStep(4)
-→ Gateway اثبات رمزگشایی تولید می‌کند → onFinalizing() → toast "15-40s"
+→ Gateway generates decryption proof → onFinalizing() → toast "15-40s"
 → finalize tx → onFinalizeSubmitted(txHash) → setTxStep(5)
 ```
 
@@ -139,14 +139,14 @@ useConfidentialBalance(
   { enabled: decryptRequested && !!address }
 )
 
-// ✅ درست: فقط روی کلیک صریح
+// ✅ Correct: Only on explicit click
 <button onClick={() => setDecryptRequested(true)}>Decrypt</button>
 
-// ❌ غلط: refetch() مستقیم enabled را bypass می‌کند!
-refetchWrapperBalance()  ← هرگز در success handler نزنید
+// ❌ Incorrect: direct refetch() bypasses enabled setting!
+refetchWrapperBalance()  ← Never call in success handlers
 
-// ✅ بعد از هر tx موفق:
-setDecryptRequested(false)  ← جلوگیری از refetchOnWindowFocus
+// ✅ After every successful tx:
+setDecryptRequested(false)  ← Prevents refetchOnWindowFocus
 ```
 
 ### Batch Decrypt (Portfolio)
@@ -155,16 +155,16 @@ useConfidentialBalances(
   { tokenAddresses: requestedAddresses },
   { enabled: isConnected && requestedAddresses.length > 0 }
 )
-// یک EIP-712 permit، همه توکن‌ها را decrypt می‌کند
+// A single EIP-712 permit decrypts all tokens
 ```
 
 ---
 
-## ۵. الگوهای کلیدی React
+## 5. Key React Patterns
 
-### الگوی تشخیص Registry
+### Registry Detection Pattern
 ```typescript
-// useRegistryPairs محاسبه می‌کند
+// useRegistryPairs calculates
 const isChainAligned = isConnected && chain?.id === chainId
 
 if (isChainAligned && sdkResult.data?.items?.length > 0) → live data
@@ -172,130 +172,130 @@ else if (isChainAligned && sdkResult.isLoading) → loading + fallback
 else → KNOWN_WRAPPERS fallback (isFromCache: true)
 ```
 
-### الگوی جایگزینی Tooltip
+### Tooltip Replacement Pattern
 ```tsx
-// ✅ درست: ? icon جداگانه
+// ✅ Correct: Separate ? icon
 <Badge>Confidential</Badge>
-<Tooltip content="متن کوتاه" />   {/* HelpCircle پیش‌فرض نشان می‌دهد */}
+<Tooltip content="Short text" />   {/* Defaults to showing HelpCircle */}
 
-// ❌ غلط: badge به‌عنوان trigger
+// ❌ Incorrect: Badge as trigger
 <Tooltip content="..."><Badge>Confidential</Badge></Tooltip>
 ```
 
-### اشتباه Skeleton Props
+### Skeleton Props Mistake
 ```tsx
-// ✅ درست
+// ✅ Correct
 <Skeleton height={48} width={80} />
 
-// ❌ غلط — Skeleton prop style ندارد!
+// ❌ Incorrect — Skeleton does not have a style prop!
 <Skeleton style={{ height: 48, width: 80 }} />
 ```
 
-### Badge — text-transform حذف شد
+### Badge — text-transform Removed
 ```css
-/* ❌ قبلاً وجود داشت — باگ cZAMA → CZAMA */
+/* ❌ Previously existed — bug cZAMA → CZAMA */
 .badge { text-transform: uppercase; }
 
-/* ✅ الان — متن دقیقاً همان‌طور که هست نمایش داده می‌شود */
-/* text-transform حذف شد — cZAMA همیشه cZAMA می‌ماند */
+/* ✅ Now — text displays exactly as it is */
+/* text-transform removed — cZAMA always remains cZAMA */
 ```
 
 ---
 
-## ۶. درس‌های آموخته‌شده (از اشتباهات گذشته)
+## 6. Lessons Learned (From Past Mistakes)
 
-### ۶.۱ باگ Auto-Permit (بارها رخ داد)
-**علت اصلی:** TanStack Query's `refetch()` از `enabled: false` bypass می‌کند.  
-بعد از shield موفق، `refetchWrapperBalance()` صدا می‌زدیم → permit بدون کلیک کاربر fire می‌شد → کیف پول ۳ بار prompt می‌داد.  
-**راه‌حل:** هرگز `refetchWrapperBalance()` در handler‌های موفقیت صدا نزنید. فقط `refetchPublicBalance()` و `refetchAllowance()` مجاز است.
+### 6.1 Auto-Permit Bug (Occurred multiple times)
+**Root Cause:** TanStack Query's `refetch()` bypasses `enabled: false`.  
+After a successful shield, we were calling `refetchWrapperBalance()` → permit fired without user interaction → wallet prompted 3 times.  
+**Solution:** Never call `refetchWrapperBalance()` in success handlers. Only `refetchPublicBalance()` and `refetchAllowance()` are allowed.
 
-### ۶.۲ باگ Display صفر برای توکن‌های ۱۸ دسیمال
-**علت:** `formatAmount(balance, 18)` روی موجودی FHE با ۶ دسیمال → مقدار نزدیک به صفر.  
-**راه‌حل:** همیشه `formatAmount(balance, 6)` برای موجودی‌های FHE confidential.
+### 6.2 Zero Display Bug for 18-Decimal Tokens
+**Cause:** `formatAmount(balance, 18)` on 6-decimal FHE balance → value close to zero.  
+**Solution:** Always use `formatAmount(balance, 6)` for FHE confidential balances.
 
-### ۶.۳ باگ Race Condition برای Token Select
-**علت:** `setDecryptRequested(false)` فقط در `useEffect` → یک فریم delay → درخواست قدیمی `true` با آدرس توکن جدید trigger می‌شد.  
-**راه‌حل:** reset را **synchronously** در `onChange` handler انجام دهید.
+### 6.3 Race Condition Bug for Token Select
+**Cause:** `setDecryptRequested(false)` only in `useEffect` → one-frame delay → old `true` request triggered with new token address.  
+**Solution:** Perform the reset **synchronously** in the `onChange` handler.
 
-### ۶.۴ Tooltip چه‌طور باید باشد
-**علت:** Tooltip کل button را wrap می‌کرد → کلیک روی Tooltip کار نمی‌کرد.  
-**راه‌حل:** همیشه `<Tooltip />` بدون children (→ ? icon) را **بعد از** button/badge قرار دهید.
+### 6.4 How Tooltips Should Be Handled
+**Cause:** Tooltip wrapped the entire button → click on Tooltip did not work.  
+**Solution:** Always place `<Tooltip />` without children (defaults to a ? icon) **after** the button/badge.
 
-### ۶.۵ باگ TVL Ranking
-**علت:** Sort روی raw bigint — ZAMA با ۱۸ دسیمال raw value بزرگتری از USDC با ۶ دسیمال داشت.  
-**راه‌حل:** `tvlHuman` (float نرمال‌شده) را محاسبه کنید و برای sort و عرض bar استفاده کنید.
+### 6.5 TVL Ranking Bug
+**Cause:** Sorting on raw bigint — ZAMA with 18 decimals had a larger raw value than USDC with 6 decimals.  
+**Solution:** Calculate `tvlHuman` (normalized float) and use it for sorting and progress bar widths.
 
-### ۶.۶ CZAMA بجای cZAMA
-**علت:** `.badge { text-transform: uppercase }` در CSS.  
-**راه‌حل:** `text-transform` از `.badge` حذف شد. نام‌گذاری: همیشه lowercase `c` — `cZAMA`، `cUSDC`، `cWETH`.
+### 6.6 CZAMA Instead of cZAMA
+**Cause:** `.badge { text-transform: uppercase }` in CSS.  
+**Solution:** Removed `text-transform` from `.badge`. Naming convention: Always lowercase `c` — `cZAMA`, `cUSDC`, `cWETH`.
 
-### ۶.۷ API Domain هاردکد
-**علت:** `zamavault.xyz` مستقیم در کد نوشته شد.  
-**راه‌حل:** از `process.env.NEXT_PUBLIC_APP_URL` استفاده کنید. در Vercel: Settings → Environment Variables.
+### 6.7 Hardcoded API Domain
+**Cause:** `shadowline.xyz` was written directly in code.  
+**Solution:** Use `process.env.NEXT_PUBLIC_APP_URL`. In Vercel: Settings → Environment Variables.
 
-### ۶.۸ useCallback در PendingUnshieldBanner
-**علت:** `useCallback` با `sdk?.storage` dependency مشکل react-hooks lint داشت.  
-**راه‌حل:** از plain async functions به جای `useCallback` استفاده کنید.
+### 6.8 useCallback in PendingUnshieldBanner
+**Cause:** `useCallback` with `sdk?.storage` dependency had a react-hooks lint issue.  
+**Solution:** Use plain async functions instead of `useCallback`.
 
-### ۶.۹ Unshield step indicator
-**علت:** UI همیشه Approve step نشان می‌داد حتی وقتی allowance کافی بود.  
-**راه‌حل:** `setTxStep(needsApproval ? 1 : 3)` — Approve step فقط وقتی `needsApproval === true` نشان داده می‌شود.
+### 6.9 Unshield Step Indicator
+**Cause:** UI always showed the Approve step even when allowance was sufficient.  
+**Solution:** `setTxStep(needsApproval ? 1 : 3)` — The Approve step is only shown if `needsApproval === true`.
 
-### ۶.۱۰ اسکرول CSS بدون `margin: auto`
-**علت:** `maxWidth: 640` بدون `margin: '... auto 0'` → متن به چپ می‌رفت.  
-**راه‌حل:** همیشه `margin: 'var(--sp-3) auto 0'` برای centered containers با max-width.
+### 6.10 CSS Scroll Without `margin: auto`
+**Cause:** `maxWidth: 640` without `margin: '... auto 0'` → text aligned to the left.  
+**Solution:** Always use `margin: 'var(--sp-3) auto 0'` for centered containers with a max-width.
 
 ---
 
-## ۷. قراردادها و استانداردها
+## 7. Conventions and Standards
 
-### نام‌گذاری توکن‌ها
+### Token Naming
 ```
-ERC-20 عمومی:          ZAMA، USDC، USDT، WETH، BRON، tGBP، XAUt
-ERC-7984 محرمانه:      cZAMA، cUSDC، cUSDT، cWETH، cBRON، ctGBP، cXAUt
-                       ↑ همیشه lowercase c
-توکن‌های mock:         نمایش: "ZAMA" + badge "Mock" (نه "ZAMAMock")
+Public ERC-20:         ZAMA, USDC, USDT, WETH, BRON, tGBP, XAUt
+Confidential ERC-7984: cZAMA, cUSDC, cUSDT, cWETH, cBRON, ctGBP, cXAUt
+                       ↑ Always lowercase c
+Mock tokens:           Display: "ZAMA" + "Mock" badge (not "ZAMAMock")
 ```
 
 ### Tooltip
-- متن کوتاه: ۱-۲ خط حداکثر
-- هیچ‌وقت badge/button را به‌عنوان trigger tooltip wrap نکنید
-- همیشه `<Tooltip content="..." />` standalone (→ ? icon)
+- Short text: 1-2 lines maximum
+- Never wrap a badge/button as a tooltip trigger
+- Always use standalone `<Tooltip content="..." />` (renders as a ? icon)
 
 ### Explorer
-- **Blockscout** (نه Etherscan) — چون FHE/Zama protocol decode را پشتیبانی می‌کند
+- **Blockscout** (not Etherscan) — because it supports FHE/Zama protocol decoding
 - Sepolia: `https://eth-sepolia.blockscout.com`
 - Mainnet: `https://eth.blockscout.com`
 
 ### Commit Messages
-- هیچ اشاره‌ای به AI یا Claude
-- format: `fix(scope): description`، `feat: description`
+- No mentions of AI or Claude
+- Format: `fix(scope): description`, `feat: description`
 
 ### CSS Variables
 ```css
---text-xs، --text-sm، --text-base، --text-lg، --text-xl، --text-2xl، --text-3xl
---sp-1 (4px)، --sp-2 (8px)، --sp-3 (12px)، --sp-4 (16px)، --sp-6 (24px)، --sp-8 (32px)
---accent، --success، --warning، --error، --info
---bg-base، --bg-surface، --bg-elevated، --bg-card
---border، --border-hover، --border-accent
---radius-sm، --radius-md، --radius-lg، --radius-xl
+--text-xs, --text-sm, --text-base, --text-lg, --text-xl, --text-2xl, --text-3xl
+--sp-1 (4px), --sp-2 (8px), --sp-3 (12px), --sp-4 (16px), --sp-6 (24px), --sp-8 (32px)
+--accent, --success, --warning, --error, --info
+--bg-base, --bg-surface, --bg-elevated, --bg-card
+--border, --border-hover, --border-accent
+--radius-sm, --radius-md, --radius-lg, --radius-xl
 ```
 
 ---
 
-## ۸. SDK Zama — مرجع سریع
+## 8. Zama SDK — Quick Reference
 
-### نسخه و API
-- **نسخه:** `@zama-fhe/react-sdk@3.0.1` — هنوز v2 TypeScript API
-- Migration guide برای ۳.۱.x است — تا وقتی از `@^3.0` استفاده می‌کنیم، نیازی به migration نیست
-- `WagmiSigner`، `RelayerWeb`، `indexedDBStorage` هنوز در v3.0.1 export می‌شوند
+### Version and API
+- **Version:** `@zama-fhe/react-sdk@3.0.1` — still uses the v2 TypeScript API
+- The migration guide is for 3.1.x — as long as we use `@^3.0`, migration is not required
+- `WagmiSigner`, `RelayerWeb`, and `indexedDBStorage` are still exported in v3.0.1
 
-### Hook‌های مهم
-| Hook | Package | نحوه فراخوانی |
+### Important Hooks
+| Hook | Package | Invocation Format |
 |------|---------|-------------|
 | `useListPairs({ page, pageSize, metadata })` | react-sdk | config object |
 | `useShield({ tokenAddress })` | react-sdk | config object |
-| `useUnshield(tokenAddress)` | react-sdk | positional در v3! |
+| `useUnshield(tokenAddress)` | react-sdk | positional in v3! |
 | `useConfidentialBalance({ tokenAddress }, { enabled })` | react-sdk | 2 arg |
 | `useConfidentialBalances({ tokenAddresses }, { enabled })` | react-sdk | 2 arg |
 | `useResumeUnshield({ tokenAddress })` | react-sdk | config object |
@@ -305,18 +305,18 @@ ERC-7984 محرمانه:      cZAMA، cUSDC، cUSDT، cWETH، cBRON، ctGBP، cX
 | `clearPendingUnshield(storage, addr)` | react-sdk | function |
 | `matchZamaError(err, handlers)` | @zama-fhe/sdk | function |
 
-### کدهای خطا
-`SIGNING_REJECTED`، `SIGNING_FAILED`، `ENCRYPTION_FAILED`، `DECRYPTION_FAILED`، `TRANSACTION_REVERTED`، `INVALID_KEYPAIR`، `KEYPAIR_EXPIRED`، `NO_CIPHERTEXT`، `RELAYER_REQUEST_FAILED`، `CONFIGURATION`، `INSUFFICIENT_CONFIDENTIAL_BALANCE`، `INSUFFICIENT_ERC20_BALANCE`، `BALANCE_CHECK_UNAVAILABLE`، `ERC20_READ_FAILED`، `ACL_PAUSED`، `APPROVAL_FAILED`
+### Error Codes
+`SIGNING_REJECTED`, `SIGNING_FAILED`, `ENCRYPTION_FAILED`, `DECRYPTION_FAILED`, `TRANSACTION_REVERTED`, `INVALID_KEYPAIR`, `KEYPAIR_EXPIRED`, `NO_CIPHERTEXT`, `RELAYER_REQUEST_FAILED`, `CONFIGURATION`, `INSUFFICIENT_CONFIDENTIAL_BALANCE`, `INSUFFICIENT_ERC20_BALANCE`, `BALANCE_CHECK_UNAVAILABLE`, `ERC20_READ_FAILED`, `ACL_PAUSED`, `APPROVAL_FAILED`
 
 ---
 
-## ۹. آدرس‌های قرارداد
+## 9. Contract Addresses
 
 ### WrappersRegistry
 - Sepolia: `0x2f0750Bbb0A246059d80e94c454586a7F27a128e`
 - Mainnet: `0xeb5015fF021DB115aCe010f23F55C2591059bBA0`
 
-### Sepolia — ۸ pair (۷ mock + ۱ restricted)
+### Sepolia — 8 Pairs (7 mock + 1 restricted)
 | Symbol | ERC-20 | ERC-7984 | Decimals |
 |--------|--------|----------|---------|
 | USDC | 0x9b5C...FfFF | 0x7c5B...3639 | 6/6 |
@@ -328,7 +328,7 @@ ERC-7984 محرمانه:      cZAMA، cUSDC، cUSDT، cWETH، cBRON، ctGBP، cX
 | XAUt | 0x2437...940 | 0xe4Fc...0C7 | 6/6 |
 | ctGBP (restricted) | 0x167D...A208 | — | 18/6 |
 
-### Mainnet — ۷ pair + ۱ blocklisted
+### Mainnet — 7 Pairs + 1 Blocklisted
 | Symbol | ERC-20 | ERC-7984 | Decimals |
 |--------|--------|----------|---------|
 | USDC | 0xa0b8...48 | 0xe978...2B2 | 6/6 |
@@ -338,69 +338,69 @@ ERC-7984 محرمانه:      cZAMA، cUSDC، cUSDT، cWETH، cBRON، ctGBP، cX
 | BRON | 0xBA2C...83 | 0x85dE...bc | 18/6 |
 | tGBP | 0x27f6...87 | 0xa873...DD9 | 18/6 |
 | XAUt | 0x6874...38 | 0x73cc...Ef1 | 6/6 |
-| cbbqTGBP | **BLOCKLISTED** | آدرس vanity مشکوک | — |
+| cbbqTGBP | **BLOCKLISTED** | Suspicious vanity address | — |
 
 ---
 
-## ۱۰. صفحات و routing
+## 10. Pages and Routing
 
-| مسیر | فایل | توضیح |
+| Path | File | Description |
 |------|------|-------|
-| `/` | `app/page.tsx` | جدول Registry با موجودی‌های live |
-| `/wrap` | `app/wrap/page.tsx` | Shield/Unshield با query `?token=SYMBOL&action=wrap` |
-| `/portfolio` | `app/portfolio/page.tsx` | batch decrypt، activity feed |
-| `/faucet` | `app/faucet/page.tsx` | فقط Sepolia، فقط mock token‌ها |
-| `/analytics` | `app/analytics/page.tsx` | TVL، ratio، activity (24h) |
-| `/learn` | `app/learn/page.tsx` | ۵ مرحله تعاملی |
+| `/` | `app/page.tsx` | Registry table with live balances |
+| `/wrap` | `app/wrap/page.tsx` | Shield/Unshield with query `?token=SYMBOL&action=wrap` |
+| `/portfolio` | `app/portfolio/page.tsx` | batch decrypt, activity feed |
+| `/faucet` | `app/faucet/page.tsx` | Sepolia only, mock tokens only |
+| `/analytics` | `app/analytics/page.tsx` | TVL, ratio, activity (24h) |
+| `/learn` | `app/learn/page.tsx` | 5 interactive steps |
 | `/developers` | `app/developers/page.tsx` | snippet generator |
-| `/docs` | `app/docs/page.tsx` | مستندات کامل |
+| `/docs` | `app/docs/page.tsx` | Complete documentation |
 | `/api/registry` | `app/api/registry/route.ts` | `?chain=sepolia\|mainnet` |
 
-**Nav items در Header (به ترتیب):**  
+**Nav items in Header (in order):**  
 Registry → Wrap → Portfolio → Faucet (TESTNET) → Learn → Dev Tools → Analytics → Docs
 
 ---
 
-## ۱۱. متغیرهای محیطی
+## 11. Environment Variables
 
-همه اختیاری هستند — app fallback عمومی دارد:
+All are optional — the app has public fallbacks:
 
 ```env
-NEXT_PUBLIC_SEPOLIA_RPC=        # Alchemy یا RPC دیگر (پیش‌فرض: publicnode)
-NEXT_PUBLIC_MAINNET_RPC=        # Alchemy یا RPC دیگر (پیش‌فرض: publicnode)
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=  # اگر نبود، فقط injected wallets
-NEXT_PUBLIC_APP_URL=            # URL deployment برای docs/API (مثال: https://zamavault.vercel.app)
+NEXT_PUBLIC_SEPOLIA_RPC=        # Alchemy or other RPC (default: publicnode)
+NEXT_PUBLIC_MAINNET_RPC=        # Alchemy or other RPC (default: publicnode)
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=  # If missing, only injected wallets
+NEXT_PUBLIC_APP_URL=            # Deployment URL for docs/API (example: https://shadowline.vercel.app)
 ```
 
-**تنظیم در Vercel:** Settings → Environment Variables → Add → Deploy دوباره
+**Setting in Vercel:** Settings → Environment Variables → Add → Redeploy
 
 ---
 
-## ۱۲. CI/CD و دستورات
+## 12. CI/CD and Commands
 
 ```bash
-# توسعه
-npm run dev          # سرور dev روی localhost:3000
+# Development
+npm run dev          # Dev server on localhost:3000
 
-# بررسی کیفیت
-npm test             # Vitest — 30 تست
-npx tsc --noEmit     # TypeScript type-check (باید clean باشد)
-npm run lint         # ESLint (advisory — برخی خطاهای pre-existing وجود دارند)
+# Quality Assurance
+npm test             # Vitest — 30 tests
+npx tsc --noEmit     # TypeScript type-check (must be clean)
+npm run lint         # ESLint (advisory — some pre-existing errors exist)
 
-# تولید
-npx next build       # باید موفق باشد
+# Production
+npx next build       # Must succeed
 ```
 
-**GitHub Actions:** Push به `main` یا `feat/**` → TypeScript → Vitest → Next build  
-ESLint advisory است (نه blocking) — برخی خطاهای pre-existing در AUDIT_REPORT.md ردیابی شده‌اند.
+**GitHub Actions:** Push to `main` or `feat/**` → TypeScript → Vitest → Next build  
+ESLint is advisory (non-blocking) — some pre-existing errors are tracked in AUDIT_REPORT.md.
 
 ---
 
-## ۱۳. الگوهای Error Handling
+## 13. Error Handling Patterns
 
-### در هر catch block
+### In Every Catch Block
 ```typescript
-} catch (err: unknown) {  // ← نه err: any
+} catch (err: unknown) {  // ← not err: any
   const classified = classifyError(err);
   addToast({
     variant: classified.retryable ? 'warning' : 'error',
@@ -410,46 +410,46 @@ ESLint advisory است (نه blocking) — برخی خطاهای pre-existing د
 }
 ```
 
-### در REST API
+### In REST API
 ```typescript
 } catch (err) {
-  // fallback به KNOWN_WRAPPERS
+  // fallback to KNOWN_WRAPPERS
   return NextResponse.json({ pairs: fallback, source: 'cached-snapshot', warning: '...' })
 }
 ```
 
 ---
 
-## ۱۴. تم‌ها و طراحی
+## 14. Themes and Design
 
-**۴ تم dark Nordic:**
-- Charcoal (پیش‌فرض): accent `#38bdf8` (sky blue)
+**4 dark Nordic themes:**
+- Charcoal (default): accent `#38bdf8` (sky blue)
 - Midnight: accent `#f4f4f5` (white)
 - Frost: accent `#60a5fa` (ice blue)
 - Aurora: accent `#2dd4bf` (teal)
 
 **Light mode:** accent `#09090b` (black/inverse)
 
-**فونت‌ها:**
+**Fonts:**
 - Sans: Plus Jakarta Sans
 - Mono: JetBrains Mono
 
 ---
 
-## ۱۵. کارهای باقی‌مانده
+## 15. Remaining Tasks
 
-### کاربر باید انجام دهد
-- D1: Deploy Vercel + تنظیم `NEXT_PUBLIC_APP_URL`
-- D2: Mainnet Relayer API key (اختیاری، برای بهتر شدن UX)
+### Required User Action
+- D1: Deploy to Vercel + configure `NEXT_PUBLIC_APP_URL`
+- D2: Mainnet Relayer API key (optional, for enhanced UX)
 
-### کارهای آینده
-- Phase 2.2: npm package `@zamavault/sdk`
-- Phase 5.1: README rewrite کامل
-- Phase 4.4: تست mobile responsive در 360px
+### Future Tasks
+- Phase 2.2: npm package `@shadowline/sdk`
+- Phase 5.1: Complete README rewrite
+- Phase 4.4: Mobile responsive testing at 360px
 
 ---
 
-## ۱۶. URL های مهم مستندات Zama
+## 16. Important Zama Documentation URLs
 
 - SDK overview: https://docs.zama.org/protocol/sdk/overview
 - useShield: https://docs.zama.org/protocol/sdk/api-references/react/useshield
@@ -465,4 +465,4 @@ ESLint advisory است (نه blocking) — برخی خطاهای pre-existing د
 
 ---
 
-*آخرین بروزرسانی: 2026-06-24 | branch: feat/dynamic-registry-finding-1*
+*Last updated: 2026-06-24 | branch: feat/dynamic-registry-finding-1*

@@ -172,7 +172,7 @@ function StepFaucet() {
   return (
     <div className="learn-step-body">
       <p className="learn-lead">
-        Before you can shield tokens, you need some test tokens. ZamaVault
+        Before you can shield tokens, you need some test tokens. ShadowLine
         includes a <strong>Faucet</strong> page that lets you mint free mock
         tokens on the Sepolia testnet — no cost, no limits.
       </p>
@@ -348,7 +348,7 @@ function StepDecrypt() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
           <Badge variant="warning">Important</Badge>
           <span className="text-sm">
-            ZamaVault <strong>never</strong> auto-fires permit signatures. You
+            ShadowLine <strong>never</strong> auto-fires permit signatures. You
             always click &quot;Decrypt&quot; first — your wallet only prompts when you
             explicitly request it.
           </span>
@@ -414,7 +414,7 @@ function StepUnshield() {
         </h4>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           If you close your browser between the unwrap request and finalization,
-          don&apos;t worry — ZamaVault detects pending unshields automatically and
+          don&apos;t worry — ShadowLine detects pending unshields automatically and
           shows a yellow <strong>&quot;Resume Unshield&quot;</strong> banner. Click
           &quot;Resume&quot; to complete the process. Your tokens are never lost.
         </p>
@@ -743,7 +743,7 @@ export default function LearnPage() {
           <ResourceLink
             href="/api/registry?chain=sepolia"
             title="Registry API"
-            description="ZamaVault's public REST API — query all wrapper pairs programmatically."
+            description="ShadowLine's public REST API — query all wrapper pairs programmatically."
           />
           <ResourceLink
             href="https://docs.zama.org/protocol/sdk/api-references/sdk/errors"

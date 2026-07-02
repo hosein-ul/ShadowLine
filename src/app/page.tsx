@@ -116,7 +116,7 @@ function Hero() {
 
         <BlurFade delay={0.32} inView>
           <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.1rem)', lineHeight: 1.7, color: '#52525b', maxWidth: '600px', margin: '0 auto 24px' }}>
-            ZamaVault converts public ERC-20 tokens into{' '}
+            ShadowLine converts public ERC-20 tokens into{' '}
             <strong style={{ color: '#000' }}>ERC-7984 confidential cTokens</strong>{' '}
             via Zama&apos;s Fully Homomorphic Encryption. Balances are stored as on-chain ciphertexts — computable without decrypting.
           </p>
@@ -127,7 +127,7 @@ function Hero() {
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
             <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
               <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', boxShadow: '0 4px 28px rgba(255,210,8,.5)' }}>
-                <Shield size={18} /> Launch ZamaVault
+                <Shield size={18} /> Launch ShadowLine
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
@@ -179,7 +179,7 @@ function PinnedStory() {
     { label: 'The Problem', icon: Eye, color: '#ef4444', title: 'Ethereum has zero financial privacy.', body: 'Every balance, transfer amount, and token holding is visible on block explorers. Your DeFi activity is permanently public by default — anyone can trace your portfolio.' },
     { label: 'The Protocol', icon: Cpu, color: '#3b82f6', title: 'Fully Homomorphic Encryption on-chain.', body: "Zama's FHEVM lets smart contracts compute on encrypted integers (euint64) without ever decrypting them. Balances remain ciphertexts — arithmetic happens over encrypted data." },
     { label: 'Privacy Boundary', icon: Lock, color: '#FFD208', title: 'Amounts private. Addresses visible.', body: 'FHE is a value-privacy model. Transfer amounts and balances are encrypted. Sender and recipient addresses remain public — observable on the blockchain.' },
-    { label: 'ZamaVault', icon: Shield, color: '#10b981', title: 'Shield, transfer, decrypt — self-custodial.', body: 'Wrap ERC-20 into ERC-7984 cTokens. Transfer confidentially. Decrypt your balance with a read-only EIP-712 permit — no gas, no approval, plaintext never leaves your browser.' },
+    { label: 'ShadowLine', icon: Shield, color: '#10b981', title: 'Shield, transfer, decrypt — self-custodial.', body: 'Wrap ERC-20 into ERC-7984 cTokens. Transfer confidentially. Decrypt your balance with a read-only EIP-712 permit — no gas, no approval, plaintext never leaves your browser.' },
   ];
 
   return (
@@ -530,7 +530,7 @@ function FragmentationSection() {
             <AlertTriangle size={10} style={{ color: '#f59e0b' }} /> Why This Matters
           </div>
           <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '16px' }}>Fragmentation is killing<br />developer composability.</h2>
-          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Every team spinning up their own ERC-7984 wrapper creates isolated liquidity pools and incompatible tooling. ZamaVault is the canonical interface — not one of many.</p>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>Every team spinning up their own ERC-7984 wrapper creates isolated liquidity pools and incompatible tooling. ShadowLine is the canonical interface — not one of many.</p>
         </BlurFade>
         {/* Comparison table */}
         <BlurFade inView delay={0.1}>
@@ -562,7 +562,7 @@ function FragmentationSection() {
                 <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CheckCircle2 size={14} style={{ color: '#166534' }} />
                 </div>
-                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#166534' }}>ZamaVault · Official Registry</span>
+                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#166534' }}>ShadowLine · Official Registry</span>
               </div>
               {[
                 'Canonical registry — one source of truth for all wallets',
@@ -674,7 +674,7 @@ export const CUSTOM_PAIRS: CustomPair[] = [
         {/* Links */}
         <BlurFade inView delay={0.2} style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '48px', flexWrap: 'wrap' }}>
           {[
-            { label: 'View on GitHub', href: 'https://github.com/hosein-ul/zamavault', icon: Globe },
+            { label: 'View on GitHub', href: 'https://github.com/hosein-ul/ShadowLine', icon: Globe },
             { label: 'Zama SDK Docs', href: 'https://docs.zama.org/protocol/sdk', icon: BookOpen },
             { label: 'Developer Tools', href: '/app/developers', icon: Wrench },
           ].map(link => (
@@ -717,7 +717,7 @@ function CTA() {
         <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
             <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '18px 36px', background: '#FFD208', color: '#000', fontWeight: 800, fontSize: '1.05rem', borderRadius: '12px', textDecoration: 'none', boxShadow: '0 8px 40px rgba(255,210,8,.35)' }}>
-              <Shield size={20} /> Launch ZamaVault <ArrowRight size={18} />
+              <Shield size={20} /> Launch ShadowLine <ArrowRight size={18} />
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
@@ -807,7 +807,7 @@ function SecurityCompliance() {
           <BlurFade inView delay={0}>
             <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Security & Compliance</span>
             <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '20px', lineHeight: 1.15 }}>Cryptographic Safety & Non-Custodial Design</h2>
-            <p style={{ color: '#52525b', fontSize: '.95rem', lineHeight: 1.7, marginBottom: '24px' }}>ZamaVault operates on a purely non-custodial basis. Tokens are locked inside the open-source ERC-7984 wrapper contracts. Private keys never leave your browser, and decrypted values are only accessible via EIP-712 cryptographic permit requests.</p>
+            <p style={{ color: '#52525b', fontSize: '.95rem', lineHeight: 1.7, marginBottom: '24px' }}>ShadowLine operates on a purely non-custodial basis. Tokens are locked inside the open-source ERC-7984 wrapper contracts. Private keys never leave your browser, and decrypted values are only accessible via EIP-712 cryptographic permit requests.</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
@@ -858,7 +858,7 @@ function FaqAccordions() {
     },
     {
       q: 'How does decryption work? Is my private key exposed?',
-      a: 'No, your private key is never exposed. Decryption uses EIP-712 permits. When you click "Decrypt", your wallet signs a structured message. This signed permit authorizes ZamaVault\'s frontend to retrieve the decryption credentials from Zama\'s Key Management System (KMS), which decrypts the ciphertext handle and displays it locally. This is non-custodial and secure.'
+      a: 'No, your private key is never exposed. Decryption uses EIP-712 permits. When you click "Decrypt", your wallet signs a structured message. This signed permit authorizes ShadowLine\'s frontend to retrieve the decryption credentials from Zama\'s Key Management System (KMS), which decrypts the ciphertext handle and displays it locally. This is non-custodial and secure.'
     },
     {
       q: 'Is Fully Homomorphic Encryption (FHE) secure against quantum computers?',
@@ -866,7 +866,7 @@ function FaqAccordions() {
     },
     {
       q: 'Are there gas fee differences when using cTokens?',
-      a: 'Yes, because FHE arithmetic and zero-knowledge proof verifications are computationally heavy. However, ZamaVault routes computationally intense operations off-chain to a Zama Coprocessor. The coprocessor processes the FHE logic and returns a verified state update, keeping gas fees comparable to standard public token transactions.'
+      a: 'Yes, because FHE arithmetic and zero-knowledge proof verifications are computationally heavy. However, ShadowLine routes computationally intense operations off-chain to a Zama Coprocessor. The coprocessor processes the FHE logic and returns a verified state update, keeping gas fees comparable to standard public token transactions.'
     }
   ];
 
@@ -876,7 +876,7 @@ function FaqAccordions() {
         <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '60px' }}>
           <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '100px', border: '1px solid rgba(255,210,8,.3)', background: 'rgba(255,210,8,.08)', fontSize: '.75rem', fontWeight: 700, color: '#b45309', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>FAQ</span>
           <h2 style={{ fontSize: 'clamp(1.8rem,4vw,2.8rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>Frequently Asked Questions</h2>
-          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '500px', margin: '0 auto', lineHeight: 1.6 }}>Find answers to common technical and architectural questions about ZamaVault.</p>
+          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '500px', margin: '0 auto', lineHeight: 1.6 }}>Find answers to common technical and architectural questions about ShadowLine.</p>
         </BlurFade>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -980,7 +980,7 @@ export default function LandingPage() {
       
       <footer style={{ background: '#000', color: '#fff', borderTop: '1px solid rgba(255,255,255,.06)', padding: '80px clamp(24px,6vw,80px) 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', marginBottom: '60px' }}>
-          {/* Column 1: About ZamaVault */}
+          {/* Column 1: About ShadowLine */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -989,7 +989,7 @@ export default function LandingPage() {
               <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
             </div>
             <p style={{ color: '#71717a', fontSize: '.84rem', lineHeight: 1.6, margin: 0 }}>
-              ZamaVault is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
+              ShadowLine is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
             </p>
           </div>
 
@@ -1018,7 +1018,7 @@ export default function LandingPage() {
                 { l: 'Developer Docs', h: '/app/docs' },
                 { l: 'Zama Protocol', h: 'https://docs.zama.org/protocol' },
                 { l: 'Security Model', h: 'https://docs.zama.org/protocol/sdk/concepts/security-model' },
-                { l: 'GitHub Repository', h: 'https://github.com/hosein-ul/zamavault' }
+                { l: 'GitHub Repository', h: 'https://github.com/hosein-ul/ShadowLine' }
               ].map(link => {
                 if (link.h.startsWith('http')) {
                   return (
@@ -1067,7 +1067,7 @@ export default function LandingPage() {
 
         {/* Footer bottom bar */}
         <div style={{ maxWidth: '1100px', margin: '0 auto', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '.78rem', color: '#52525b' }}>
-          <span>© {new Date().getFullYear()} ZamaVault. All rights reserved. Built on Zama FHEVM.</span>
+          <span>© {new Date().getFullYear()} ShadowLine. All rights reserved. Built on Zama FHEVM.</span>
           <span>Released under the MIT License.</span>
         </div>
       </footer>

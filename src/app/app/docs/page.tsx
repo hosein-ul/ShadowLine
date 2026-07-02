@@ -334,7 +334,7 @@ export default function DocsPage() {
       <aside className={`docs-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="docs-sidebar-title">
           <BookOpen size={16} />
-          ZamaVault Docs
+          ShadowLine Docs
         </div>
 
         <nav className="docs-sidebar-nav">
@@ -365,7 +365,7 @@ export default function DocsPage() {
             <ExternalLink size={12} /> Zama Official Docs
           </a>
           <a
-            href="https://github.com/hosein-ul/zamavault"
+            href="https://github.com/hosein-ul/ShadowLine"
             target="_blank"
             rel="noopener noreferrer"
             className="docs-ext-link"
@@ -386,7 +386,7 @@ export default function DocsPage() {
         {/* ════════════════════════════════════════════════════════════════ */}
         <Section id="overview" title="Overview">
           <p className="docs-lead">
-            ZamaVault is the canonical interface and developer toolkit for
+            ShadowLine is the canonical interface and developer toolkit for
             Zama&apos;s confidential token ecosystem. It lets users and developers
             discover, wrap, unwrap, and decrypt ERC-20 tokens that have been
             converted into confidential ERC-7984 wrappers using{' '}
@@ -448,7 +448,7 @@ export default function DocsPage() {
 
           <SubSection id="qs-providers" title="2. Wrap your app with providers">
             <p className="docs-p">
-              ZamaVault uses Wagmi for wallet connections and the Zama React SDK for FHE operations.
+              ShadowLine uses Wagmi for wallet connections and the Zama React SDK for FHE operations.
               Both must be initialized at the root of your app.
             </p>
             <CodeBlock
@@ -522,7 +522,7 @@ function ShieldButton() {
         {/* ════════════════════════════════════════════════════════════════ */}
         <Section id="rest-api" title="REST API">
           <p className="docs-lead">
-            ZamaVault exposes a public REST API for querying the on-chain registry.
+            ShadowLine exposes a public REST API for querying the on-chain registry.
             No SDK, no wallet, no authentication — just a <code>fetch()</code> call.
           </p>
 
@@ -1052,7 +1052,7 @@ const { data: balance } = useConfidentialBalance({
         <Section id="errors" title="Error Reference">
           <p className="docs-lead">
             Use <code>matchZamaError</code> from <code>@zama-fhe/sdk</code> to classify SDK
-            errors into user-friendly messages. ZamaVault re-exports this via the{' '}
+            errors into user-friendly messages. ShadowLine re-exports this via the{' '}
             <code>classifyError(err)</code> utility in <code>src/lib/errors.ts</code>.
           </p>
 
@@ -1122,7 +1122,7 @@ try {
               <ExternalLink size={13} /> Zama SDK Docs
             </a>
             <a
-              href="https://github.com/hosein-ul/zamavault"
+              href="https://github.com/hosein-ul/ShadowLine"
               target="_blank"
               rel="noopener noreferrer"
               className="docs-ext-link"

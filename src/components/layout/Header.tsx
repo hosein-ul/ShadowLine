@@ -288,7 +288,7 @@ export default function Header() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
             <div className="text-sm text-muted" style={{ marginBottom: 'var(--sp-2)' }}>
-              Choose a wallet provider to connect to ZamaVault.
+              Choose a wallet provider to connect to ShadowLine.
             </div>
             {connectors.map((c) => (
               <button
