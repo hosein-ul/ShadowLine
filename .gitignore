@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# internal working notes — not part of the published app
+.claude/
+CLAUDE.md
+memory.md
+AGENT_GUIDE.md
+AUDIT_REPORT.md
