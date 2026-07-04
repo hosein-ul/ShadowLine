@@ -237,35 +237,73 @@ Confidential ERC-7984 wrapper standard implementations enable several corporate 
 
 ## 8. How to Configure a New Token Pair
 
-Developers can register custom wrappers immediately without submitting on-chain governance proposals.
+Two paths, no on-chain governance required. Both flow the pair through the exact same shield / unshield / decrypt code paths as an Official registry pair — the only difference is which section lists it (**Official — Zama Registry** vs **Custom / Dev-only Tokens**).
 
-### Step 1: Open the configuration file
-Edit the custom pairs file: [`src/config/custom-pairs.ts`](file:///C:/Users/hashe/Documents/antigravity/adventurous-lavoisier/src/config/custom-pairs.ts)
+The on-chain Wrappers Registry is owned by the Zama Protocol DAO — calling `registerPair` from ShadowLine reverts. So ShadowLine declares custom pairs **locally**: either seeded in the repo (path A, ships with the app) or added at runtime in the browser (path B, per-user).
 
-### Step 2: Add your contract details
-Insert an entry into the `CUSTOM_PAIRS` array:
+Resolution order at read time: **on-chain registry (primary) → `CUSTOM_PAIRS` config → browser localStorage → hardcoded offline snapshot**. On-chain always wins on any address conflict.
 
-```typescript
+### Path A — Seeded custom pair in the repo (persists across users)
+
+**Step 1:** Open [`src/config/custom-pairs.ts`](src/config/custom-pairs.ts).
+
+**Step 2:** Insert a `CustomPair` entry:
+
+```ts
 import type { CustomPair } from '@/config/contracts';
 
 export const CUSTOM_PAIRS: CustomPair[] = [
   {
-    erc20Address:    '0xYourERC20TokenAddress',    // Public underlying token
-    erc7984Address:  '0xYourERC7984WrapperAddress', // Confidential wrapper contract
+    erc20Address:    '0xYourERC20TokenAddress',    // public underlying
+    erc7984Address:  '0xYourERC7984WrapperAddress', // confidential wrapper
     symbol:          'MYT',
     name:            'My Test Token',
-    decimals:        18,                           // Decimals of public token
-    wrapperDecimals: 6,                            // Decimals of confidential token (typically 6)
+    decimals:        18,                            // underlying decimals
+    wrapperDecimals: 6,                             // wrapper decimals (FHE euint64 = 6)
     source:          'custom',
-    note:            'Deployed for local staging — awaiting on-chain registration',
+    note:            'Local staging pair — not registered on-chain yet.',
   },
 ];
 ```
 
-### Step 3: Run the local build
-Run the development server. The custom pair will immediately populate across all interface modules (Registry, Wrap/Unwrap dropdowns, Portfolio Decrypter).
+**Step 3:** `npm run dev`. The pair appears everywhere immediately.
 
-*Note: The target `erc7984Address` must implement the ERC-165 interface standard and return `true` for interface ID `0x4958f2a4`.*
+**Requirement:** `erc7984Address` must implement ERC-165 and return `true` for interface id `0x4958f2a4`. If it doesn't, ShadowLine's Add-Custom-Pair form rejects it — see path B.
+
+### Path B — Add a pair from the UI (persists only in this browser)
+
+**Step 1:** Open the dApp at `/app` and connect a wallet on the target network (Sepolia or Mainnet). The wallet is used for chain resolution — validation itself runs against a public RPC and doesn't require a signature.
+
+**Step 2:** Scroll to the **Custom / Dev-only Tokens** section and paste the ERC-7984 wrapper address into the **ERC-7984 Wrapper Address** input.
+
+**Step 3:** After ~500ms of debounce, the form runs the following checks against the on-chain wrapper. All must pass:
+1. Address is a contract on the current chain (`getCode` non-empty).
+2. `supportsInterface(0x4958f2a4)` returns `true`.
+3. `underlying()` returns a non-zero address (fallback: legacy `underlyingToken()`).
+4. Wrapper and underlying metadata (`name`, `symbol`, `decimals`) all read successfully.
+5. Neither address collides with an existing on-chain registry pair, a config-file custom pair, an already-added local pair, or a scanner-detected token.
+6. If the wrapper *is* in the on-chain registry with `isValid: true`, the form refuses to add a duplicate and tells the user "already Official"; if `isValid: false`, it rejects as "revoked".
+
+On success, a green preview card appears — `Wrapper c<sym> ↔ Underlying <sym>` — with both addresses and decimals. Click **Add Pair**.
+
+**Step 4:** The pair is persisted to `localStorage` under key `shadowline.customPairs.v1.<chainId>` (chain-scoped, not wallet-scoped — reconnecting a different wallet on the same chain keeps the list). It now shows under **Custom / Dev-only Tokens** and is immediately usable in Shield / Unshield / Decrypt / Transfer.
+
+**Step 5 (optional):** Use the section's **Export** button to download your custom pairs as JSON, and **Import** to restore them — this survives a browser-cache wipe or moves the list to another machine.
+
+### Worked example — using the "Restricted" ctGBP on Sepolia
+
+Sepolia's on-chain registry contains a second, non-mintable `tGBP` wrapper deployed for real-money integration testing. It's already Official, so we use it here to demonstrate the *rejection* path: pasting it into the form should return a friendly "already Official" hint rather than silently adding a duplicate.
+
+- **Wrapper (ERC-7984, `ctGBP`):** `0x167DC962808B32CFFFc7e14B5018c0bE06A3A208`
+- **Underlying (ERC-20, `tGBP`):** `0xf6Ef9ADB61A48E29E36bc873070A46A3D2667ff3` — discovered on-chain via the wrapper's `underlying()`, no need to paste it.
+
+(Both addresses read live from the Sepolia registry at `0x2f0750Bbb0A246059d80e94c454586a7F27a128e` via `getTokenConfidentialTokenPairsSlice`.)
+
+1. Connect a wallet on Sepolia at `/app`.
+2. Paste `0x167DC962808B32CFFFc7e14B5018c0bE06A3A208` into the Wrapper Address field.
+3. After ~500ms, the form shows an info line: *"This pair is already Official (tGBP (Restricted)) — no need to add it."* — and the **Add Pair** button stays disabled.
+
+To demonstrate the *success* path, deploy any ERC-7984 wrapper of your own on Sepolia, paste that wrapper address, and click **Add Pair** — the row will appear under **Custom / Dev-only Tokens** and route through the same shield/unshield/decrypt code paths as any official pair.
 
 ---
 
@@ -304,6 +342,16 @@ npx tsc --noEmit
 npm run build
 ```
 
+### Deployment
+
+ShadowLine is a standard Next.js application and deploys unmodified to any Node.js host.
+The recommended path is [Vercel](https://vercel.com): import the GitHub repository,
+keep the default build settings (`next build`), and deploy — no environment variables
+are required (the app falls back to public RPC endpoints; see `.env.example` for
+optional custom RPC overrides).
+
+**Live URL:** _deployment pending — will be published here before submission._
+
 ---
 
 ## 10. Repository Structure
@@ -336,6 +384,26 @@ src/
 
 ---
 
-## 11. License
+## 11. Zama SDK 3.0.1 — methods used
+
+ShadowLine is pinned to `@zama-fhe/sdk` + `@zama-fhe/react-sdk` **3.0.1** (verified against installed `.d.ts`, which is treated as ground truth over the docs site). The build uses only what exists in that release:
+
+| Purpose | Symbol | Package |
+|---|---|---|
+| List every registered wrapper pair | `getTokenConfidentialTokenPairsLength`, `getTokenConfidentialTokenPairsSlice` (direct viem read against the on-chain `WrappersRegistry`, wallet-free) | — |
+| Discover a wrapper's underlying ERC-20 | `underlying()` (canonical) with `underlyingToken()` fallback for legacy wrappers | on-chain ABI |
+| ERC-165 pre-flight for custom pairs | `ERC7984_INTERFACE_ID = 0x4958f2a4` + `supportsInterface` | `@zama-fhe/sdk` (exported), `WRAPPER_ABI`/`ERC165_ABI` |
+| Shield ERC-20 → ERC-7984 | `useShield({ tokenAddress })` | `@zama-fhe/react-sdk` |
+| Unshield (two-phase) | `useUnshield({ tokenAddress })`, `useResumeUnshield({ tokenAddress })`, `loadPendingUnshield`, `clearPendingUnshield`, `savePendingUnshield` | `@zama-fhe/react-sdk` / `@zama-fhe/sdk` |
+| Single-balance decrypt | `useConfidentialBalance({ tokenAddress }, options)` | `@zama-fhe/react-sdk` |
+| **Batch decrypt (one signature for many contracts)** | `useConfidentialBalances({ tokenAddresses }, options)` — used for `/app` **Decrypt All** and `/app/portfolio` batch reveal | `@zama-fhe/react-sdk` |
+| Confidential transfer | `useConfidentialTransfer({ tokenAddress })` | `@zama-fhe/react-sdk` |
+| SDK instance (storage, credentials) | `useZamaSDK` | `@zama-fhe/react-sdk` |
+| Full FHE credential wipe (app-wide) | `sdk.credentials.clear()` (CredentialsManager → BaseCredentialsManager `clearAll`) — used by the header "Reset Decryption Session" button and the shared `SessionResetProvider` | `@zama-fhe/sdk` |
+| Error classification | `matchZamaError` | `@zama-fhe/sdk` |
+
+---
+
+## 12. License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.

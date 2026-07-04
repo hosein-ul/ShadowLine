@@ -149,29 +149,36 @@ const total = await client.readContract({
   functionName: 'getTokenConfidentialTokenPairsLength',
 });
 
-// 2. Fetch all pairs
-const [tokens, wrappers] = await client.readContract({
+// 2. Fetch all pairs (fromIndex inclusive, toIndex exclusive)
+const pairs = await client.readContract({
   address: REGISTRY,
   abi: [{
-    name: 'listPairs',
+    name: 'getTokenConfidentialTokenPairsSlice',
     type: 'function',
     stateMutability: 'view',
     inputs: [
-      { name: 'start', type: 'uint256' },
-      { name: 'count', type: 'uint256' },
+      { name: 'fromIndex', type: 'uint256' },
+      { name: 'toIndex', type: 'uint256' },
     ],
     outputs: [
-      { name: 'tokens', type: 'address[]' },
-      { name: 'confidentialTokens', type: 'address[]' },
+      {
+        type: 'tuple[]',
+        components: [
+          { name: 'tokenAddress', type: 'address' },
+          { name: 'confidentialTokenAddress', type: 'address' },
+          { name: 'isValid', type: 'bool' },
+        ],
+      },
     ],
   }],
-  functionName: 'listPairs',
+  functionName: 'getTokenConfidentialTokenPairsSlice',
   args: [0n, total],
 });
 
-console.log('Pairs:', tokens.map((t, i) => ({
-  underlying: t,
-  wrapper: wrappers[i],
+console.log('Pairs:', pairs.map((p) => ({
+  underlying: p.tokenAddress,
+  wrapper: p.confidentialTokenAddress,
+  isValid: p.isValid,
 })));`;
   }
 
@@ -185,17 +192,17 @@ const provider = new ethers.JsonRpcProvider(RPC);
 
 const registry = new ethers.Contract(REGISTRY, [
   'function getTokenConfidentialTokenPairsLength() view returns (uint256)',
-  'function listPairs(uint256 start, uint256 count) view returns (address[], address[])',
+  'function getTokenConfidentialTokenPairsSlice(uint256 fromIndex, uint256 toIndex) view returns (tuple(address tokenAddress, address confidentialTokenAddress, bool isValid)[])',
 ], provider);
 
 // 1. Get total count
 const total = await registry.getTokenConfidentialTokenPairsLength();
 
-// 2. Fetch all pairs
-const [tokens, wrappers] = await registry.listPairs(0, total);
+// 2. Fetch all pairs (fromIndex inclusive, toIndex exclusive)
+const pairs = await registry.getTokenConfidentialTokenPairsSlice(0, total);
 
-tokens.forEach((token, i) => {
-  console.log(\`Pair \${i}: \${token} ↔ \${wrappers[i]}\`);
+pairs.forEach((p, i) => {
+  console.log(\`Pair \${i}: \${p.tokenAddress} ↔ \${p.confidentialTokenAddress} (valid=\${p.isValid})\`);
 });`;
 }
 
@@ -257,18 +264,22 @@ const approveHash = await walletClient.writeContract({
 
 await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-// 2. Call wrap() on the ERC-7984 wrapper
+// 2. Call wrap(to, amount) on the ERC-7984 wrapper.
+//    The first arg is the recipient — usually msg.sender.
 const wrapHash = await walletClient.writeContract({
   address: WRAPPER,
   abi: [{
     name: 'wrap',
     type: 'function',
     stateMutability: 'nonpayable',
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    outputs: [],
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bytes32' }],
   }],
   functionName: 'wrap',
-  args: [parseUnits('100', 6)],
+  args: [walletClient.account.address, parseUnits('100', 6)],
 });
 
 console.log('Wrap tx:', wrapHash);`;
@@ -292,12 +303,12 @@ const amount = ethers.parseUnits('100', 6); // underlying decimals
 const approveTx = await erc20Contract.approve(WRAPPER, amount);
 await approveTx.wait();
 
-// 2. Wrap (shield)
+// 2. Wrap (shield) — wrap(to, amount)
 const wrapperContract = new ethers.Contract(WRAPPER, [
-  'function wrap(uint256 amount)',
+  'function wrap(address to, uint256 amount) returns (bytes32)',
 ], signer);
 
-const wrapTx = await wrapperContract.wrap(amount);
+const wrapTx = await wrapperContract.wrap(await signer.getAddress(), amount);
 console.log('Wrap tx:', wrapTx.hash);`;
 }
 
@@ -335,56 +346,32 @@ function Unshield${sym}() {
   }
 
   if (fw === 'viem') {
-    return `import { parseUnits } from 'viem';
+    return `// NOTE: Raw viem cannot practically perform unshield end-to-end because
+// the on-chain \`unwrap\` takes an FHE-encrypted amount (euint64 handle),
+// which requires client-side FHE encryption from @zama-fhe/sdk. The two
+// on-chain functions for reference are:
+//
+//   unwrap(address from, address to, bytes32 encryptedAmount, bytes inputProof) returns (bytes32 unwrapRequestId)
+//   finalizeUnwrap(bytes32 unwrapRequestId, uint64 cleartextAmount, bytes decryptionProof)
+//
+// The Zama SDK's useUnshield hook orchestrates: encrypt → unwrap → wait
+// for Gateway proof → finalizeUnwrap. If you must build against raw viem,
+// import { web } from '@zama-fhe/sdk/web' and use its encrypt primitives.
 
-const WRAPPER = '${erc7984}';
-
-// Note: Unshielding with raw viem requires two steps:
-// 1. Call unwrap() to initiate
-// 2. Wait for the Zama Gateway to process, then call finalizeUnwrap()
-// The Zama React SDK handles step 2 automatically.
-
-// Step 1: Initiate unwrap
-const unwrapHash = await walletClient.writeContract({
-  address: WRAPPER,
-  abi: [{
-    name: 'unwrap',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    outputs: [],
-  }],
-  functionName: 'unwrap',
-  args: [parseUnits('50', 6)], // wrapper decimals (always 6)
-});
-
-console.log('Unwrap initiated:', unwrapHash);
-
-// Step 2: Finalization happens via the Zama Gateway.
-// For production apps, use the SDK's useResumeUnshield
-// to handle this automatically.`;
+// See the React tab for the recommended integration path.`;
   }
 
   // ethers
-  return `import { ethers } from 'ethers';
-
-const WRAPPER = '${erc7984}';
-
-const provider = new ethers.BrowserProvider(window.ethereum);
-const signer = await provider.getSigner();
-
-const wrapper = new ethers.Contract(WRAPPER, [
-  'function unwrap(uint256 amount)',
-], signer);
-
-// Step 1: Initiate unwrap (wrapper decimals = 6)
-const amount = ethers.parseUnits('50', 6);
-const tx = await wrapper.unwrap(amount);
-console.log('Unwrap initiated:', tx.hash);
-
-// Step 2: Finalization is handled by the Zama Gateway.
-// For production usage, use the Zama React SDK's
-// useResumeUnshield hook to handle interrupted flows.`;
+  return `// NOTE: Raw ethers cannot practically perform unshield end-to-end because
+// the on-chain \`unwrap\` takes an FHE-encrypted amount (euint64 handle),
+// which requires client-side FHE encryption from @zama-fhe/sdk. The two
+// on-chain functions for reference are:
+//
+//   unwrap(address from, address to, bytes32 encryptedAmount, bytes inputProof) returns (bytes32 unwrapRequestId)
+//   finalizeUnwrap(bytes32 unwrapRequestId, uint64 cleartextAmount, bytes decryptionProof)
+//
+// Use the Zama React SDK's useUnshield hook — it handles both phases plus
+// the Gateway proof wait. See the React tab.`;
 }
 
 function decryptSnippet(fw: Framework, sym: string, erc7984: string): string {

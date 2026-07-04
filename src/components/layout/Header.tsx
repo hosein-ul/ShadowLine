@@ -11,6 +11,7 @@ import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
+import { useSessionReset } from '@/lib/reset-session';
 import {
   Sun,
   Moon,
@@ -19,19 +20,40 @@ import {
   Check,
   Copy,
   Palette,
+  Menu,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Home' },
+interface NavItem {
+  href: string;
+  label: string;
+  badge?: string;
+}
+
+/**
+ * Core product flows — always visible in the desktop nav bar.
+ * Kept short deliberately: the header must never overflow at common
+ * desktop widths (1280px+). Everything else lives in the "More" dropdown.
+ */
+const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app', label: 'Registry' },
   { href: '/app/wrap', label: 'Wrap' },
+  { href: '/app/transfer', label: 'Transfer' },
   { href: '/app/portfolio', label: 'Portfolio' },
-  { href: '/app/faucet', label: 'Faucet' },
+  { href: '/app/faucet', label: 'Faucet', badge: 'TESTNET' },
+];
+
+/** Secondary / informational routes — grouped into the "More" dropdown. */
+const SECONDARY_NAV_ITEMS: NavItem[] = [
   { href: '/app/learn', label: 'Learn' },
   { href: '/app/developers', label: 'Dev Tools' },
   { href: '/app/analytics', label: 'Analytics' },
   { href: '/app/docs', label: 'Docs' },
+  { href: '/', label: 'Marketing Site' },
 ];
+
+const ALL_NAV_ITEMS: NavItem[] = [...PRIMARY_NAV_ITEMS, ...SECONDARY_NAV_ITEMS];
 
 const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
   { value: 'charcoal', label: 'Nordic Charcoal' },
@@ -52,11 +74,18 @@ export default function Header() {
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
 
+  // App-wide FHE credential reset (wired via SessionResetProvider in ClientLayout).
+  const { reset: resetSession, isResetting } = useSessionReset();
+
   // Local state for modals & dropdowns
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isDesignDropdownOpen, setIsDesignDropdownOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const isSecondaryActive = SECONDARY_NAV_ITEMS.some((item) => item.href === pathname);
 
   const handleCopy = async () => {
     if (!address) return;
@@ -93,9 +122,9 @@ export default function Header() {
           <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
         </Link>
 
-        {/* Navigation */}
+        {/* Navigation — desktop only; mobile uses the hamburger drawer below */}
         <nav className="header-nav">
-          {NAV_ITEMS.map((item) => (
+          {PRIMARY_NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -103,14 +132,58 @@ export default function Header() {
               style={{ display: 'inline-flex', alignItems: 'center' }}
             >
               {item.label}
-              {item.label === 'Faucet' && (
+              {item.badge && (
                 <Badge variant="default" size="sm" style={{ marginLeft: '6px', fontSize: '9px', color: 'var(--text-secondary)' }}>
-                  TESTNET
+                  {item.badge}
                 </Badge>
               )}
             </Link>
           ))}
+
+          {/* "More" dropdown — secondary/informational routes */}
+          <div className="nav-more-wrapper">
+            <button
+              className={cn('header-link nav-more-trigger', isSecondaryActive && 'active')}
+              onClick={() => setIsMoreOpen((prev) => !prev)}
+              aria-haspopup="true"
+              aria-expanded={isMoreOpen}
+            >
+              More
+              <ChevronDown size={14} style={{ marginLeft: 4 }} />
+            </button>
+
+            {isMoreOpen && (
+              <>
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                  onClick={() => setIsMoreOpen(false)}
+                />
+                <div className="nav-more-menu animate-slide-up">
+                  {SECONDARY_NAV_ITEMS.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn('nav-more-item', pathname === item.href && 'active')}
+                      onClick={() => setIsMoreOpen(false)}
+                    >
+                      {item.label}
+                      {pathname === item.href && <Check size={14} />}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </nav>
+
+        {/* Mobile hamburger — shown only below the tablet breakpoint */}
+        <button
+          className="btn btn-secondary btn-icon nav-hamburger"
+          onClick={() => setIsMobileMenuOpen(true)}
+          aria-label="Open navigation menu"
+        >
+          <Menu size={18} />
+        </button>
 
         {/* Actions */}
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
@@ -261,6 +334,18 @@ export default function Header() {
                           Disconnect
                         </Button>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        isLoading={isResetting}
+                        onClick={() => { void resetSession(); }}
+                        title="Wipes cached FHE decrypt permits — next decrypt prompts for a fresh wallet signature."
+                        style={{ gap: 6, justifyContent: 'center' }}
+                      >
+                        <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
+                        Reset Decryption Session
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -271,9 +356,10 @@ export default function Header() {
               className="btn btn-primary btn-sm"
               onClick={() => setIsConnectModalOpen(true)}
               style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+              title="Connect Wallet"
             >
               <Wallet size={16} />
-              Connect Wallet
+              <span className="btn-connect-label">Connect Wallet</span>
             </button>
           )}
         </div>
@@ -315,6 +401,52 @@ export default function Header() {
             )}
           </div>
         </Modal>
+      )}
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="mobile-nav-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="mobile-nav-panel animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-nav-header">
+              <Link
+                href="/app"
+                className="header-logo"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
+                  <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
+                </svg>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
+              </Link>
+              <button
+                className="btn btn-secondary btn-icon"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close navigation menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <nav className="mobile-nav-list">
+              {ALL_NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn('mobile-nav-link', pathname === item.href && 'active')}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                  {item.badge && (
+                    <Badge variant="default" size="sm" style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
       )}
     </header>
   );

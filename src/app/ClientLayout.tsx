@@ -8,6 +8,7 @@ import Footer from '@/components/layout/Footer';
 import { useAccount } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { type SupportedChainId } from '@/config/chains';
+import { SessionResetProvider } from '@/lib/reset-session';
 
 type Theme = 'dark' | 'light';
 export type DesignTheme = 'charcoal' | 'midnight' | 'frost' | 'aurora';
@@ -82,13 +83,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <NetworkContext.Provider value={{ isTestnet, setIsTestnet: handleSetIsTestnet, activeChainId }}>
       <ToastProvider>
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)' }}>
-          <Header />
-          <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 1, paddingBottom: 'var(--sp-12)' }}>
-            {children}
-          </main>
-          <Footer />
-        </div>
+        <SessionResetProvider>
+          <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', transition: 'background var(--t-normal), color var(--t-normal)' }}>
+            <Header />
+            <main style={{ minHeight: 'calc(100vh - var(--header-h) - 120px)', position: 'relative', zIndex: 1, paddingBottom: 'var(--sp-12)' }}>
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </SessionResetProvider>
       </ToastProvider>
     </NetworkContext.Provider>
   );

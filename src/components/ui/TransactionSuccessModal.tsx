@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Modal from './Modal';
 import Button from './Button';
 import Badge from './Badge';
-import { ExternalLink, Check, Copy, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Check, Copy, Sparkles, ArrowRight, ShieldCheck, Send, Droplets } from 'lucide-react';
 import { formatAddress } from '@/lib/utils';
 import { CHAIN_CONFIG } from '@/config/chains';
 import { useActiveNetwork } from '@/app/ClientLayout';
@@ -13,7 +13,7 @@ import confetti from 'canvas-confetti';
 interface TransactionSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
-  action: 'wrap' | 'unwrap' | 'faucet';
+  action: 'wrap' | 'unwrap' | 'faucet' | 'transfer';
   amount: string;
   tokenSymbol: string;
   txHash: string;
@@ -77,11 +77,13 @@ export default function TransactionSuccessModal({
   };
 
   // Action text mapping
-  const actionLabel = 
-    action === 'wrap' 
-      ? 'Shielding Completed' 
-      : action === 'unwrap' 
-      ? 'Unshielding Completed' 
+  const actionLabel =
+    action === 'wrap'
+      ? 'Shielding Completed'
+      : action === 'unwrap'
+      ? 'Unshielding Completed'
+      : action === 'transfer'
+      ? 'Confidential Transfer Confirmed'
       : 'Faucet Receipt Confirmed';
 
   const actionSub =
@@ -89,6 +91,8 @@ export default function TransactionSuccessModal({
       ? 'Your assets are now securely encrypted on-chain'
       : action === 'unwrap'
       ? 'Your assets have been converted back to public forms'
+      : action === 'transfer'
+      ? 'The transferred amount stays encrypted end-to-end'
       : 'Mock test tokens have been minted to your wallet';
 
   return (
@@ -210,7 +214,10 @@ export default function TransactionSuccessModal({
         {/* Amount Box */}
         <div className="modal-success-card animate-fade-in">
           <div className="text-xs text-muted" style={{ marginBottom: 'var(--sp-1.5)', fontWeight: 500 }}>
-            {action === 'wrap' ? 'Confidential Amount Generated' : action === 'unwrap' ? 'Underlying Amount Released' : 'Minted Amount'}
+            {action === 'wrap' ? 'Confidential Amount Generated'
+              : action === 'unwrap' ? 'Underlying Amount Released'
+              : action === 'transfer' ? 'Transferred Amount'
+              : 'Minted Amount'}
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-3)' }}>
@@ -222,10 +229,10 @@ export default function TransactionSuccessModal({
                 </div>
                 <ArrowRight size={14} className="text-muted" />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                  <span style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--accent)' }}>
+                  <span style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--success)' }}>
                     {amount}
                   </span>
-                  <Badge variant="accent" style={{ gap: '2px', fontSize: 'var(--text-xs)' }}>
+                  <Badge variant="success" style={{ gap: '2px', fontSize: 'var(--text-xs)' }}>
                     c{tokenSymbol}
                   </Badge>
                 </div>
@@ -234,13 +241,13 @@ export default function TransactionSuccessModal({
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
                   <span className="text-muted" style={{ fontSize: 'var(--text-sm)' }}>{amount}</span>
-                  <Badge variant="accent" style={{ gap: '2px', fontSize: 'var(--text-xs)' }}>
+                  <Badge variant="default" style={{ gap: '2px', fontSize: 'var(--text-xs)' }}>
                     c{tokenSymbol}
                   </Badge>
                 </div>
                 <ArrowRight size={14} className="text-muted" />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                  <span style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--accent)' }}>
+                  <span style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--success)' }}>
                     {amount}
                   </span>
                   <span className="text-xs text-muted" style={{ fontWeight: 600 }}>{tokenSymbol}</span>
@@ -248,7 +255,7 @@ export default function TransactionSuccessModal({
               </>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--accent)' }}>
+                <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--success)' }}>
                   {amount}
                 </span>
                 <span style={{ fontWeight: 600, fontSize: 'var(--text-lg)' }}>{tokenSymbol}</span>
@@ -319,7 +326,13 @@ export default function TransactionSuccessModal({
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2.5)' }}>
           <Button variant="primary" fullWidth size="lg" onClick={onClose} style={{ gap: '6px' }}>
-            <Sparkles size={16} /> Great! Wrap More
+            {action === 'transfer' ? (
+              <><Send size={16} /> Send Another Transfer</>
+            ) : action === 'faucet' ? (
+              <><Droplets size={16} /> Get More Tokens</>
+            ) : (
+              <><Sparkles size={16} /> Great! Wrap More</>
+            )}
           </Button>
           {txHash && (
             <a 

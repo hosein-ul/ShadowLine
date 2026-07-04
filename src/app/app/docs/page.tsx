@@ -1021,13 +1021,15 @@ const { data: balance } = useConfidentialBalance({
                 { symbol: 'BRON', erc20: '0xFf021fB13cA64e5354c62c954b949a88cfDEb25E', wrapper: '0xaa5612FA27c927a0c7961f5AEFEE5ba3A0F9C891', decimals: 18 },
                 { symbol: 'tGBP', erc20: '0x93c931278A2aad1916783F952f94276eA5111442', wrapper: '0xfCE5c7069c5525eF6c8C2b2E35A745bA20a2F7CC', decimals: 18 },
                 { symbol: 'XAUt', erc20: '0x24377AE4AA0C45ecEe71225007f17c5D423dd940', wrapper: '0xe4FcF848739845BC81Dee1d5352cf3844F0a60C7', decimals: 6 },
-                { symbol: 'ctGBP (restricted)', erc20: '0x167D...A208', wrapper: '0x167D...A208', decimals: 18 },
+                { symbol: 'tGBP (restricted)', erc20: '0xf6Ef9ADB61A48E29E36bc873070A46A3D2667ff3', wrapper: '0x167DC962808B32CFFFc7e14B5018c0bE06A3A208', decimals: 18 },
+                { symbol: 'steakcUSDC', erc20: '0x6AB54988261AEC573a2CA13cF802d3B1114f864C', wrapper: '0x13F7d34A4f0102734F19E3Ff16e068Fe194B28c4', decimals: 6 },
               ]}
             />
             <p className="docs-p text-sm text-muted" style={{ marginTop: 8 }}>
               The first 7 pairs are <strong>mock tokens</strong> with a public <code>mint()</code>.
-              The 8th (<code>ctGBP</code> restricted) is a non-mintable pair — it does not have
-              a public mint function.
+              The restricted <code>ctGBP</code> is a non-mintable pair — it does not have
+              a public mint function. Addresses read live from the on-chain registry; the
+              list above is a snapshot and may lag new registrations.
             </p>
           </SubSection>
 

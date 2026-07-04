@@ -1,26 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
-import Skeleton from '@/components/ui/Skeleton';
+import WalletActivityFeed from '@/components/WalletActivityFeed';
 import { type WrapperPair } from '@/config/contracts';
+import { type CustomPairRecord } from '@/lib/registry';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { classifyError } from '@/lib/errors';
 import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs } from '@/lib/registry';
-import { useAccount, useConnect, usePublicClient, useReadContract } from 'wagmi';
-import { useConfidentialBalances, useConfidentialBalance, useRevokeSession } from '@zama-fhe/react-sdk';
+import { useAccount, useConnect } from 'wagmi';
+import { useConfidentialBalances, useConfidentialBalance } from '@zama-fhe/react-sdk';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/Toast';
+import { useSessionReset } from '@/lib/reset-session';
 import BlurIn from '@/components/ui/BlurIn';
-import { isAddress, parseAbiItem, formatUnits } from 'viem';
-import { CHAIN_CONFIG } from '@/config/chains';
-import { ERC20_ABI } from '@/lib/wrapper-abi';
 import {
   Lock,
   Unlock,
@@ -28,19 +27,11 @@ import {
   Shield,
   Wallet,
   RefreshCw,
-  Clock,
-  ArrowUpRight,
-  ArrowDownLeft,
-  BarChart2,
-  ExternalLink,
   AlertTriangle,
-  Search,
-  Plus,
+  Settings2,
 } from 'lucide-react';
 
-const TRANSFER_ABI = parseAbiItem(
-  'event Transfer(address indexed from, address indexed to, uint256 value)',
-);
+// ── Official wrapper card ────────────────────────────────────────────────────
 
 interface TokenPositionProps {
   wrapper: WrapperPair;
@@ -50,6 +41,8 @@ interface TokenPositionProps {
   decryptedBalance: bigint | undefined;
   decryptError: Error | null;
   onDecrypt: () => void;
+  /** When true, shows Unshield + Decrypt Again; when false only Decrypt. */
+  isConfidentialOnly?: boolean;
 }
 
 function TokenPositionCard({
@@ -60,21 +53,26 @@ function TokenPositionCard({
   decryptedBalance,
   decryptError,
   onDecrypt,
+  isConfidentialOnly = false,
 }: TokenPositionProps) {
   return (
     <Card variant="glass" padding="md" hover>
-      {/* Token Header */}
-      <div className="flex items-center gap-3" style={{ marginBottom: 'var(--sp-5)' }}>
-        <TokenIcon symbol={wrapper.symbol} size={32} />
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--text-lg)' }}>{wrapper.name}</div>
+      <div className="flex items-center gap-3" style={{ marginBottom: 'var(--sp-4)' }}>
+        <TokenIcon symbol={wrapper.symbol} size={30} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 'var(--text-md)' }}>{wrapper.name}</div>
           <div className="text-xs text-muted">
             c{wrapper.symbol} · {formatAddress(wrapper.erc7984Address)}
           </div>
         </div>
-        <Badge variant="accent" style={{ marginLeft: 'auto' }}>
-          ERC-7984
-        </Badge>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <Badge variant="default" style={{ fontSize: 10 }}>ERC-7984</Badge>
+          {isConfidentialOnly && (
+            <Badge variant="default" style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              Decrypt only
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Balance Display */}
@@ -82,8 +80,8 @@ function TokenPositionCard({
         style={{
           background: 'var(--bg-input)',
           borderRadius: 'var(--radius-lg)',
-          padding: 'var(--sp-4) var(--sp-5)',
-          marginBottom: 'var(--sp-4)',
+          padding: 'var(--sp-3) var(--sp-4)',
+          marginBottom: 'var(--sp-3)',
           border: '1px solid var(--border)',
         }}
       >
@@ -93,42 +91,30 @@ function TokenPositionCard({
         {isDecrypting ? (
           <div className="flex items-center gap-3">
             <div className="spinner spinner-sm" />
-            <span className="text-xs text-muted">Awaiting Permit...</span>
+            <span className="text-xs text-muted">Awaiting permit…</span>
           </div>
         ) : decryptError ? (
-          <div className="text-xs text-danger" style={{ wordBreak: 'break-word' }}>
-            Error: {decryptError.message || 'Decryption failed. Ensure the wrapper is deployed.'}
+          <div className="text-xs" style={{ color: 'var(--color-danger, #ef4444)', wordBreak: 'break-word' }}>
+            {decryptError.message || 'Decryption failed.'}
           </div>
         ) : isDecrypted ? (
           <div className="flex items-end gap-2">
             <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 700 }}>
               {formatAmount(decryptedBalance ?? 0n, wrapper.wrapperDecimals)}
             </span>
-            <span className="text-muted" style={{ marginBottom: '3px' }}>
-              c{wrapper.symbol}
-            </span>
+            <span className="text-muted" style={{ marginBottom: 3 }}>c{wrapper.symbol}</span>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontSize: 'var(--text-2xl)',
-                  letterSpacing: '2px',
-                  color: 'var(--text-muted)',
-                  fontWeight: 800,
-                  transform: 'translateY(2px)',
-                }}
-              >
+              <span style={{ fontSize: 'var(--text-xl)', letterSpacing: '2px', color: 'var(--text-muted)', fontWeight: 800 }}>
                 ••••••
               </span>
-              <Badge variant="default" style={{ gap: '4px' }}>
-                <Lock size={10} /> Encrypted
+              <Badge variant="default" style={{ gap: 4 }}>
+                <Lock size={9} /> Encrypted
               </Badge>
             </div>
-            <span className="text-xs text-muted">
-              Decrypt to View
-            </span>
+            <span className="text-xs text-muted">Click to decrypt</span>
           </div>
         )}
       </div>
@@ -142,22 +128,24 @@ function TokenPositionCard({
             isLoading={isDecrypting}
             disabled={!isConnected}
             onClick={onDecrypt}
-            style={{ gap: '6px' }}
+            style={{ gap: 6 }}
           >
-            <Unlock size={14} /> Decrypt Balance
+            <Unlock size={13} /> Decrypt Balance
           </Button>
         ) : (
           <>
-            <Button
-              variant="secondary"
-              fullWidth
-              size="sm"
-              onClick={() => (window.location.href = `/app/wrap?token=${wrapper.symbol}&action=unwrap`)}
-            >
-              Unshield
-            </Button>
-            <Button variant="ghost" fullWidth size="sm" onClick={onDecrypt} style={{ gap: '4px' }}>
-              <Unlock size={12} /> Decrypt Again
+            {!isConfidentialOnly && (
+              <Button
+                variant="secondary"
+                fullWidth
+                size="sm"
+                onClick={() => (window.location.href = `/app/wrap?token=${wrapper.symbol}&action=unwrap`)}
+              >
+                Unshield
+              </Button>
+            )}
+            <Button variant="ghost" fullWidth size="sm" onClick={onDecrypt} style={{ gap: 4 }}>
+              <Unlock size={11} /> Refresh
             </Button>
           </>
         )}
@@ -166,484 +154,421 @@ function TokenPositionCard({
   );
 }
 
-/* ─── Wallet Activity Feed ─────────────────────────────────────────────────── */
+// ── Confidential-only per-row decrypt (singular hook, one per card) ──────────
 
-interface WalletEvent {
-  type: 'shield' | 'unshield';
-  symbol: string;
-  amount: bigint;
-  decimals: number;
-  counterpart: string;
-  txHash: string;
-  blockNumber: bigint;
-}
-
-function WalletActivityFeed({
-  address,
-  wrappers,
-  chainId,
+function ConfidentialOnlyCard({
+  record,
+  isConnected,
+  resetToken,
 }: {
-  address: `0x${string}`;
-  wrappers: WrapperPair[];
-  chainId: number;
+  record: CustomPairRecord;
+  isConnected: boolean;
+  resetToken: number;
 }) {
-  const client = usePublicClient({ chainId });
-  const [events, setEvents] = useState<WalletEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const explorerBase = CHAIN_CONFIG[chainId as keyof typeof CHAIN_CONFIG]?.explorerUrl ?? 'https://eth.blockscout.com';
+  const [decryptRequested, setDecryptRequested] = useState(false);
 
-  const fetchActivity = useCallback(async () => {
-    if (!client || wrappers.length === 0 || !address) return;
-    setLoading(true);
-    try {
-      const latestBlock = await client.getBlockNumber();
-      // Use fromBlock: 0n (genesis) so the feed shows the wallet's complete
-      // history. Most RPC providers handle address-filtered getLogs from block 0
-      // efficiently because the address index keeps the result set small.
-      // If the provider rejects with a "block range too large" error we fall
-      // back to the last 500,000 blocks (~69 days on 12s chains) in the catch.
-      const fromBlock = 0n;
+  const {
+    data: balance,
+    isLoading,
+    error,
+  } = useConfidentialBalance(
+    { tokenAddress: record.erc7984Address as `0x${string}` },
+    {
+      enabled: decryptRequested && isConnected,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  );
 
-      const allEvents: WalletEvent[] = [];
-      await Promise.all(
-        wrappers.filter((p) => p.isValid !== false).map(async (pair) => {
-          try {
-            // Shield: ERC-20 Transfer from user to wrapper
-            const shields = await client.getLogs({
-              address: pair.erc20Address,
-              event: TRANSFER_ABI,
-              args: { from: address, to: pair.erc7984Address },
-              fromBlock,
-              toBlock: latestBlock,
-            });
-            // Unshield: ERC-20 Transfer from wrapper to user
-            const unshields = await client.getLogs({
-              address: pair.erc20Address,
-              event: TRANSFER_ABI,
-              args: { from: pair.erc7984Address, to: address },
-              fromBlock,
-              toBlock: latestBlock,
-            });
-            for (const log of shields) {
-              allEvents.push({
-                type: 'shield',
-                symbol: pair.symbol,
-                amount: (log.args?.value as bigint) ?? 0n,
-                decimals: pair.decimals,
-                counterpart: pair.erc7984Address,
-                txHash: log.transactionHash ?? '',
-                blockNumber: log.blockNumber ?? 0n,
-              });
-            }
-            for (const log of unshields) {
-              allEvents.push({
-                type: 'unshield',
-                symbol: pair.symbol,
-                amount: (log.args?.value as bigint) ?? 0n,
-                decimals: pair.decimals,
-                counterpart: pair.erc7984Address,
-                txHash: log.transactionHash ?? '',
-                blockNumber: log.blockNumber ?? 0n,
-              });
-            }
-          } catch { /* skip failed token */ }
-        }),
-      );
-      allEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-      setEvents(allEvents.slice(0, 100));
-    } catch (err: unknown) {
-      // Some public RPC nodes reject unlimited block ranges even with an
-      // address filter. Fall back to last 500 000 blocks (~69 days).
-      const msg = err instanceof Error ? err.message : String(err);
-      const isRangeError = /block range|range too large|too many results/i.test(msg);
-      if (isRangeError) {
-        try {
-          const latestBlock = await client!.getBlockNumber();
-          const fallbackFrom = latestBlock > 500_000n ? latestBlock - 500_000n : 0n;
-          const fallbackEvents: WalletEvent[] = [];
-          await Promise.all(
-            wrappers.filter((p) => p.isValid !== false).map(async (pair) => {
-              try {
-                const [shields, unshields] = await Promise.all([
-                  client!.getLogs({ address: pair.erc20Address, event: TRANSFER_ABI, args: { from: address, to: pair.erc7984Address }, fromBlock: fallbackFrom, toBlock: latestBlock }),
-                  client!.getLogs({ address: pair.erc20Address, event: TRANSFER_ABI, args: { from: pair.erc7984Address, to: address }, fromBlock: fallbackFrom, toBlock: latestBlock }),
-                ]);
-                for (const log of shields) fallbackEvents.push({ type: 'shield', symbol: pair.symbol, amount: (log.args?.value as bigint) ?? 0n, decimals: pair.decimals, counterpart: pair.erc7984Address, txHash: log.transactionHash ?? '', blockNumber: log.blockNumber ?? 0n });
-                for (const log of unshields) fallbackEvents.push({ type: 'unshield', symbol: pair.symbol, amount: (log.args?.value as bigint) ?? 0n, decimals: pair.decimals, counterpart: pair.erc7984Address, txHash: log.transactionHash ?? '', blockNumber: log.blockNumber ?? 0n });
-              } catch { /* skip */ }
-            }),
-          );
-          fallbackEvents.sort((a, b) => Number(b.blockNumber - a.blockNumber));
-          setEvents(fallbackEvents);
-        } catch { /* ignore */ }
-      }
-    }
-    finally { setLoading(false); }
-  }, [client, wrappers, address]);
+  // Reset on app-wide session reset
+  useEffect(() => {
+    if (resetToken > 0) setDecryptRequested(false);
+  }, [resetToken]);
 
-  useEffect(() => { fetchActivity(); }, [fetchActivity]);
+  const wrapper: WrapperPair = {
+    erc20Address: record.erc20Address as `0x${string}`,
+    erc7984Address: record.erc7984Address as `0x${string}`,
+    symbol: record.symbol,
+    name: record.name,
+    decimals: record.decimals,
+    wrapperDecimals: record.wrapperDecimals,
+    source: 'custom',
+    isWrapper: false,
+  };
 
   return (
-    <Card variant="default" padding="lg" style={{ marginTop: 'var(--sp-8)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-5)', flexWrap: 'wrap', gap: 8 }}>
-        <h3 style={{ fontWeight: 700, fontSize: 'var(--text-lg)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Clock size={18} style={{ color: 'var(--accent)' }} />
-          My Recent Activity
-        </h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button variant="ghost" size="sm" onClick={fetchActivity} isLoading={loading} style={{ gap: 6 }}>
-            <RefreshCw size={12} /> Refresh
-          </Button>
-          <Link href="/app/analytics">
-            <Button variant="secondary" size="sm" style={{ gap: 6 }}>
-              <BarChart2 size={12} /> Protocol Analytics
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {loading && events.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-          {[1, 2, 3].map((i) => <Skeleton key={i} height={52} />)}
-        </div>
-      ) : events.length === 0 ? (
-        <p className="text-sm text-muted" style={{ padding: 'var(--sp-6) 0', textAlign: 'center' }}>
-          No shield or unshield events found for this wallet.
-        </p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-          {events.map((ev, i) => {
-            const isShield = ev.type === 'shield';
-            const color = isShield ? 'var(--success)' : 'var(--warning)';
-            const Icon = isShield ? ArrowUpRight : ArrowDownLeft;
-            return (
-              <div key={`${ev.txHash}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: `color-mix(in srgb, ${color} 12%, transparent)`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={15} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{isShield ? 'Shield' : 'Unshield'}</span>
-                    <Badge variant={isShield ? 'success' : 'warning'} size="sm">
-                      {formatUnits(ev.amount, ev.decimals)} {ev.symbol}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted" style={{ marginTop: 2 }}>
-                    Wrapper: <code style={{ fontSize: 11 }}>{formatAddress(ev.counterpart)}</code>
-                  </div>
-                </div>
-                <a href={`${explorerBase}/tx/${ev.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: 'var(--accent)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  Tx <ExternalLink size={11} />
-                </a>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Card>
+    <TokenPositionCard
+      wrapper={wrapper}
+      isConnected={isConnected}
+      isDecrypted={balance !== undefined && balance !== null}
+      isDecrypting={isLoading}
+      decryptedBalance={balance ?? undefined}
+      decryptError={error as Error | null}
+      onDecrypt={() => setDecryptRequested(true)}
+      isConfidentialOnly
+    />
   );
 }
 
+// ── Main page ────────────────────────────────────────────────────────────────
+
 export default function PortfolioPage() {
   const { activeChainId } = useActiveNetwork();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain: walletChain } = useAccount();
   const { connect, connectors } = useConnect();
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const { reset: resetSession, isResetting: isRevoking, resetToken } = useSessionReset();
 
-  // Block explorer base URL for the active chain
-  const explorerBase = CHAIN_CONFIG[activeChainId as keyof typeof CHAIN_CONFIG]?.explorerUrl ?? 'https://eth-sepolia.blockscout.com';
+  const { pairs, localRecords } = useRegistryPairs(activeChainId);
 
-  // Live registry read with hardcoded fallback. We deliberately keep
-  // revoked pairs OUT of the portfolio: a revoked wrapper cannot accept new
-  // shields, but a user may still hold a non-zero confidential balance in
-  // one and need to decrypt + unshield it. We include all pairs and let
-  // the per-card UI reflect the revoked state.
-  const { pairs: wrappers } = useRegistryPairs(activeChainId);
+  // Official pairs = registry + config-file (never localStorage custom)
+  const officialWrappers = useMemo(() => pairs.filter((p) => p.source !== 'custom'), [pairs]);
+  // Custom wrapper pairs (isWrapper:true — has ERC-20 underlying, can unshield)
+  const customWrapperPairs = useMemo(() => pairs.filter((p) => p.source === 'custom'), [pairs]);
+  // Confidential-only custom pairs (isWrapper:false — no underlying, decrypt only)
+  const customConfOnly = useMemo(() => localRecords.filter((r) => r.isWrapper === false), [localRecords]);
+
+  // All pairs passed to the activity feed (official + custom wrappers)
+  const allWrappers = useMemo(() => pairs, [pairs]);
 
   const [requestedAddresses, setRequestedAddresses] = useState<`0x${string}`[]>([]);
   const [resolvedBalances, setResolvedBalances] = useState<Record<string, bigint>>({});
   const [resolvedErrors, setResolvedErrors] = useState<Record<string, Error>>({});
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [fheWorkerFailed, setFheWorkerFailed] = useState(false);
 
-  // Zama Official useConfidentialBalances hook (plural)
+  const resolvedBalancesRef = useRef(resolvedBalances);
+  useEffect(() => { resolvedBalancesRef.current = resolvedBalances; }, [resolvedBalances]);
+
+  const lastHandledErrorMsgRef = useRef<string | null>(null);
+  const autoRevokedForMsgRef = useRef<string | null>(null);
+  const revokeSessionRef = useRef<(() => void) | null>(null);
+
+  const supportedChain =
+    !isConnected || !walletChain || walletChain.id === 11155111 || walletChain.id === 1;
+
   const {
     data: decryptedBalances,
     isLoading: isDecryptingAll,
     error: globalError,
   } = useConfidentialBalances(
     { tokenAddresses: requestedAddresses },
-    { enabled: isConnected && requestedAddresses.length > 0 }
+    {
+      enabled: isConnected && supportedChain && requestedAddresses.length > 0,
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
   );
 
-  // Sync resolved balances and errors case-insensitively
   useEffect(() => {
-    if (decryptedBalances) {
-      const nextBalances = { ...resolvedBalances };
-      const nextErrors = { ...resolvedErrors };
-
-      if (decryptedBalances.results) {
-        if (decryptedBalances.results instanceof Map) {
-          for (const [key, val] of decryptedBalances.results.entries()) {
-            if (val !== undefined && val !== null) {
-              nextBalances[key.toLowerCase()] = val;
-              // Clear error if successfully resolved now
-              delete nextErrors[key.toLowerCase()];
-            }
-          }
-        } else {
-          for (const [key, val] of Object.entries(decryptedBalances.results)) {
-            if (val !== undefined && val !== null) {
-              nextBalances[key.toLowerCase()] = val as bigint;
-              delete nextErrors[key.toLowerCase()];
-            }
-          }
+    if (!decryptedBalances) return;
+    setResolvedBalances((prev) => {
+      const next = { ...prev };
+      if (decryptedBalances.results instanceof Map) {
+        for (const [key, val] of decryptedBalances.results.entries()) {
+          if (val != null) next[key.toLowerCase()] = val;
+        }
+      } else if (decryptedBalances.results) {
+        for (const [key, val] of Object.entries(decryptedBalances.results)) {
+          if (val != null) next[key.toLowerCase()] = val as bigint;
         }
       }
-
-      if (decryptedBalances.errors) {
-        if (decryptedBalances.errors instanceof Map) {
-          for (const [key, val] of decryptedBalances.errors.entries()) {
-            if (val) {
-              nextErrors[key.toLowerCase()] = val;
-            }
-          }
-        } else {
-          for (const [key, val] of Object.entries(decryptedBalances.errors)) {
-            if (val) {
-              nextErrors[key.toLowerCase()] = val as Error;
-            }
-          }
+      return next;
+    });
+    setResolvedErrors((prev) => {
+      const next = { ...prev };
+      if (decryptedBalances.results instanceof Map) {
+        for (const [key] of decryptedBalances.results.entries()) delete next[key.toLowerCase()];
+      }
+      if (decryptedBalances.errors instanceof Map) {
+        for (const [key, val] of decryptedBalances.errors.entries()) {
+          if (val) next[key.toLowerCase()] = val;
         }
       }
-
-      setResolvedBalances(nextBalances);
-      setResolvedErrors(nextErrors);
-    }
+      return next;
+    });
   }, [decryptedBalances]);
 
-  // Handle global permit signing errors
   useEffect(() => {
-    if (globalError) {
-      console.error('Batch decryption error:', globalError);
-      addToast({
-        variant: 'error',
-        title: 'Decryption Failed',
-        message: globalError.message || 'The permit signature request was rejected or failed.',
-      });
-      // Clear out requested addresses that weren't successfully resolved
-      setRequestedAddresses(prev =>
-        prev.filter(addr => resolvedBalances[addr.toLowerCase()] !== undefined)
-      );
+    if (!globalError) { lastHandledErrorMsgRef.current = null; return; }
+    const msg = globalError.message ?? '';
+    if (msg === lastHandledErrorMsgRef.current) return;
+    lastHandledErrorMsgRef.current = msg;
+    const classified = classifyError(globalError);
+    const isStalePermit =
+      classified.title === 'Decryption Failed' ||
+      classified.title === 'Session Expired' ||
+      classified.title === 'Session Key Rejected' ||
+      classified.title === 'Balance Check Unavailable';
+
+    if (classified.title === 'Configuration Error' || classified.title === 'Relayer Unavailable') {
+      setFheWorkerFailed(true);
+      addToast({ variant: 'error', title: classified.title, message: classified.message });
+    } else if (isStalePermit && autoRevokedForMsgRef.current !== msg) {
+      autoRevokedForMsgRef.current = msg;
+      try { revokeSessionRef.current?.(); } catch { /* best-effort */ }
+      addToast({ variant: 'info', title: 'Session Permit Refreshed', message: 'Cached permit was stale — cleared. Click Decrypt again.' });
+    } else {
+      addToast({ variant: 'error', title: classified.title, message: classified.message });
     }
-  }, [globalError, resolvedBalances, addToast]);
+    queryClient.removeQueries({ queryKey: ['zama.confidentialBalances'] });
+    queryClient.removeQueries({ queryKey: ['zama.confidentialBalance'] });
+    setRequestedAddresses((prev) =>
+      prev.filter((addr) => resolvedBalancesRef.current[addr.toLowerCase()] !== undefined),
+    );
+  }, [globalError, addToast, queryClient]);
 
   const handleDecryptToken = (tokenAddress: `0x${string}`, symbol: string) => {
-    const lowerAddress = tokenAddress.toLowerCase();
-    if (!requestedAddresses.some(addr => addr.toLowerCase() === lowerAddress)) {
-      setRequestedAddresses(prev => [...prev, tokenAddress]);
-      addToast({
-        variant: 'info',
-        title: `Decrypting ${symbol}`,
-        message: 'Requesting decryption permit. Please sign in your wallet if prompted.',
-      });
+    const lower = tokenAddress.toLowerCase();
+    setResolvedErrors((prev) => { const n = { ...prev }; delete n[lower]; return n; });
+    setFheWorkerFailed(false);
+    lastHandledErrorMsgRef.current = null;
+    queryClient.resetQueries({ queryKey: ['zama.confidentialBalances'] });
+    if (!requestedAddresses.some((a) => a.toLowerCase() === lower)) {
+      setRequestedAddresses((prev) => [...prev, tokenAddress]);
+      addToast({ variant: 'info', title: `Decrypting ${symbol}`, message: 'Sign the EIP-712 permit in your wallet.' });
     }
   };
 
   const handleDecryptAll = () => {
     if (!address) return;
-    const allAddresses = wrappers.map(w => w.erc7984Address);
+    setResolvedErrors({});
+    setFheWorkerFailed(false);
+    lastHandledErrorMsgRef.current = null;
+    queryClient.resetQueries({ queryKey: ['zama.confidentialBalances'] });
+    // Batch includes official + custom wrapper pairs (conf-only have their own per-card hook)
+    const allAddresses = [...officialWrappers, ...customWrapperPairs].map((w) => w.erc7984Address);
     setRequestedAddresses(allAddresses);
-    addToast({
-      variant: 'info',
-      title: 'Decrypting Portfolio',
-      message: 'Requesting batch permit signature. All assets will be decrypted in a single prompt.',
-    });
+    addToast({ variant: 'info', title: 'Decrypting Portfolio', message: 'One batch EIP-712 permit for all assets.' });
   };
 
-  // Revoke session/clear permit signatures from the Zama SDK's cache
-  const { mutate: revokeSession, isPending: isRevoking } = useRevokeSession({
-    onSuccess: () => {
-      setRequestedAddresses([]);
-      setResolvedBalances({});
-      setResolvedErrors({});
-      addToast({
-        variant: 'success',
-        title: 'Decryption Session Reset',
-        message: 'All cached FHE permits have been cleared. Future decryptions will prompt for wallet signatures.',
-      });
-    },
-    onError: (err: unknown) => {
-      console.error('Error revoking session:', err);
-      const classified = classifyError(err);
-      addToast({
-        variant: 'error',
-        title: classified.title,
-        message: classified.message,
-      });
-    },
-  });
+  useEffect(() => {
+    revokeSessionRef.current = () => { void resetSession({ silent: true }); };
+  }, [resetSession]);
+
+  useEffect(() => {
+    if (resetToken === 0) return;
+    setRequestedAddresses([]);
+    setResolvedBalances({});
+    setResolvedErrors({});
+    setFheWorkerFailed(false);
+    autoRevokedForMsgRef.current = null;
+    lastHandledErrorMsgRef.current = null;
+  }, [resetToken]);
 
   const totalDecrypted = Object.keys(resolvedBalances).length;
+  const batchableCount = officialWrappers.length + customWrapperPairs.length;
+
+  function rowProps(wrapper: WrapperPair) {
+    const lower = wrapper.erc7984Address.toLowerCase();
+    return {
+      isDecrypted: resolvedBalances[lower] !== undefined,
+      decryptError: resolvedErrors[lower] || null,
+      isDecrypting:
+        requestedAddresses.some((a) => a.toLowerCase() === lower) &&
+        resolvedBalances[lower] === undefined &&
+        !resolvedErrors[lower],
+      decryptedBalance: resolvedBalances[lower],
+      onDecrypt: () => handleDecryptToken(wrapper.erc7984Address, wrapper.symbol),
+    };
+  }
 
   return (
     <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 2 }}>
       <div className="page-header">
         <div className="flex justify-between items-start" style={{ flexWrap: 'wrap', gap: 'var(--sp-4)' }}>
           <div>
-            <h1>
-              <BlurIn text="Confidential Portfolio" duration={600} />
-            </h1>
+            <h1><BlurIn text="Confidential Portfolio" duration={600} /></h1>
             <p style={{ marginTop: 'var(--sp-2)' }}>
-              <BlurIn
-                text="View and securely decrypt your on-chain ERC-7984 confidential balances using cryptographic permits."
-                duration={800}
-                delay={200}
-              />
+              <BlurIn text="View and decrypt your ERC-7984 encrypted balances with cryptographic permits." duration={800} delay={200} />
             </p>
           </div>
           <div className="flex gap-2">
-            {isConnected && totalDecrypted > 0 && (
-              <Button
-                variant="secondary"
-                onClick={() => revokeSession()}
-                isLoading={isRevoking}
-                style={{ gap: '6px' }}
-              >
-                <RefreshCw size={14} className={isRevoking ? 'animate-spin' : ''} /> Reset Session
+            {isConnected && (
+              <Button variant="secondary" onClick={() => { void resetSession(); }} isLoading={isRevoking} style={{ gap: 6 }}>
+                <RefreshCw size={13} className={isRevoking ? 'animate-spin' : ''} /> Reset Session
               </Button>
             )}
-            {isConnected && wrappers.length > 0 && totalDecrypted < wrappers.length && (
-              <Button variant="primary" onClick={handleDecryptAll} isLoading={isDecryptingAll} style={{ gap: '6px' }}>
-                <Unlock size={14} /> Decrypt All
+            {isConnected && batchableCount > 0 && totalDecrypted < batchableCount && (
+              <Button variant="primary" onClick={handleDecryptAll} isLoading={isDecryptingAll} style={{ gap: 6 }}>
+                <Unlock size={13} /> Decrypt All
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Summary Card */}
+      {/* Summary */}
       {isConnected && totalDecrypted > 0 && (
         <Card variant="accent" padding="lg" style={{ marginBottom: 'var(--sp-8)' }} className="animate-slide-up">
-          <div className="text-sm text-muted" style={{ marginBottom: 'var(--sp-2)' }}>
-            Decrypted Balances
-          </div>
+          <div className="text-sm text-muted" style={{ marginBottom: 'var(--sp-2)' }}>Decrypted Balances</div>
           <div className="flex items-end gap-3">
             <span style={{ fontSize: 'var(--text-4xl)', fontWeight: 800 }} className="text-gradient">
               {totalDecrypted}
             </span>
-            <span className="text-muted" style={{ marginBottom: '6px' }}>
-              / {wrappers.length} assets decrypted
-            </span>
+            <span className="text-muted" style={{ marginBottom: 6 }}>/ {batchableCount} assets decrypted</span>
           </div>
         </Card>
       )}
 
-      {/* Wallet Not Connected State */}
+      {/* Not connected */}
       {!isConnected ? (
         <div className="empty-state card" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
-          <div className="empty-state-icon" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)' }}>
+          <div className="empty-state-icon" style={{ display: 'inline-flex', color: 'var(--text-muted)' }}>
             <Wallet size={48} />
           </div>
           <h3 style={{ marginBottom: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>Connect Wallet</h3>
-          <p className="text-muted" style={{ maxWidth: '400px', margin: '0 auto var(--sp-6)' }}>
-            Please connect your Web3 wallet to read on-chain balances and request cryptographic decryption permits.
+          <p className="text-muted" style={{ maxWidth: 400, margin: '0 auto var(--sp-6)' }}>
+            Connect your Web3 wallet to view and decrypt confidential balances.
           </p>
-          <Button variant="primary" onClick={() => setIsConnectModalOpen(true)}>
-            Connect Wallet
-          </Button>
+          <Button variant="primary" onClick={() => setIsConnectModalOpen(true)}>Connect Wallet</Button>
         </div>
       ) : (
         <>
-        {/* Pending unshield banners — one per wrapper token */}
-        {wrappers.map((w) => (
-          <PendingUnshieldBanner
-            key={`pending-${w.erc7984Address}`}
-            tokenAddress={w.erc7984Address}
-            symbol={`c${w.symbol}`}
-          />
-        ))}
+          {/* Pending unshield banners */}
+          {officialWrappers.map((w) => (
+            <PendingUnshieldBanner key={`pending-${w.erc7984Address}`} tokenAddress={w.erc7984Address} symbol={`c${w.symbol}`} />
+          ))}
 
-        {/* Token Positions Grid */}
-        <div className="grid grid-2 gap-4">
-          {wrappers.map((wrapper) => {
-            const wrapperAddressLower = wrapper.erc7984Address.toLowerCase();
-            const isDecrypted = resolvedBalances[wrapperAddressLower] !== undefined;
-            const isDecrypting = requestedAddresses.some(addr => addr.toLowerCase() === wrapperAddressLower) && !isDecrypted;
-            const decryptedBalance = resolvedBalances[wrapperAddressLower];
-            const decryptError = resolvedErrors[wrapperAddressLower] || null;
+          {/* Unsupported chain */}
+          {!supportedChain && (
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', padding: 'var(--sp-4)', borderRadius: 'var(--radius-md)', background: 'color-mix(in srgb, var(--warning) 10%, var(--bg-surface))', border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)', marginBottom: 'var(--sp-6)' }}>
+              <AlertTriangle size={16} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--warning)', marginBottom: 4 }}>Unsupported Chain</div>
+                <div className="text-xs text-muted">Switch your wallet to Sepolia or Mainnet.</div>
+              </div>
+            </div>
+          )}
 
-            return (
-              <TokenPositionCard
-                key={wrapper.symbol}
-                wrapper={wrapper}
-                isConnected={isConnected}
-                isDecrypted={isDecrypted}
-                isDecrypting={isDecrypting}
-                decryptedBalance={decryptedBalance}
-                decryptError={decryptError}
-                onDecrypt={() => handleDecryptToken(wrapper.erc7984Address, wrapper.symbol)}
-              />
-            );
-          })}
-        </div>
+          {/* FHE worker error */}
+          {fheWorkerFailed && (
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', padding: 'var(--sp-4)', borderRadius: 'var(--radius-md)', background: 'color-mix(in srgb, var(--warning) 10%, var(--bg-surface))', border: '1px solid color-mix(in srgb, var(--warning) 40%, transparent)', marginBottom: 'var(--sp-6)' }}>
+              <AlertTriangle size={16} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--warning)', marginBottom: 4 }}>Zama Relayer Unavailable</div>
+                <div className="text-xs text-muted">FHE network temporarily unreachable. Wait and try again.</div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Official — Zama Registry ────────────────────────────────── */}
+          {officialWrappers.length > 0 && (
+            <div style={{ marginBottom: 'var(--sp-8)' }}>
+              <div style={{ marginBottom: 'var(--sp-4)' }}>
+                <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, margin: 0 }}>
+                  Official Registry
+                </h2>
+                <p className="text-xs text-muted" style={{ marginTop: 2 }}>
+                  Verified on-chain ERC-20 ↔ ERC-7984 wrapper pairs. Supports shield, unshield, and decrypt.
+                </p>
+              </div>
+              <div className="grid grid-2 gap-4">
+                {officialWrappers.map((wrapper) => (
+                  <TokenPositionCard
+                    key={wrapper.erc7984Address}
+                    wrapper={wrapper}
+                    isConnected={isConnected}
+                    {...rowProps(wrapper)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Custom wrapper pairs ────────────────────────────────────── */}
+          {customWrapperPairs.length > 0 && (
+            <div style={{ marginBottom: 'var(--sp-8)' }}>
+              <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Settings2 size={15} style={{ color: 'var(--text-secondary)' }} />
+                <div>
+                  <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 700, margin: 0 }}>
+                    Custom Wrappers
+                  </h2>
+                  <p className="text-xs text-muted" style={{ marginTop: 2 }}>
+                    Locally-added wrapper pairs. Supports shield, unshield, and decrypt.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-2 gap-4">
+                {customWrapperPairs.map((wrapper) => (
+                  <TokenPositionCard
+                    key={wrapper.erc7984Address}
+                    wrapper={wrapper}
+                    isConnected={isConnected}
+                    {...rowProps(wrapper)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Custom confidential-only tokens ────────────────────────── */}
+          {customConfOnly.length > 0 && (
+            <div style={{ marginBottom: 'var(--sp-8)' }}>
+              <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Settings2 size={15} style={{ color: 'var(--text-secondary)' }} />
+                <div>
+                  <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 700, margin: 0 }}>
+                    Custom Decrypt-Only
+                  </h2>
+                  <p className="text-xs text-muted" style={{ marginTop: 2 }}>
+                    Confidential tokens with no ERC-20 underlying. Decrypt only — no shield/unshield.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-2 gap-4">
+                {customConfOnly.map((record) => (
+                  <ConfidentialOnlyCard
+                    key={record.erc7984Address}
+                    record={record}
+                    isConnected={isConnected}
+                    resetToken={resetToken}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No tokens at all */}
+          {officialWrappers.length === 0 && customWrapperPairs.length === 0 && customConfOnly.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon" style={{ display: 'inline-flex', color: 'var(--text-muted)' }}>
+                <Shield size={48} />
+              </div>
+              <h3 style={{ marginBottom: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>No Tokens</h3>
+              <p className="text-muted">No registered tokens on this chain. Try switching to Sepolia.</p>
+            </div>
+          )}
         </>
       )}
 
-      {/* Empty State */}
-      {isConnected && wrappers.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-state-icon" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-            <Shield size={48} />
-          </div>
-          <h3 style={{ marginBottom: 'var(--sp-2)', marginTop: 'var(--sp-4)' }}>No Registered Tokens</h3>
-          <p className="text-muted">
-            There are no wrappers registered on this chain yet. Try switching to Sepolia.
-          </p>
-        </div>
-      )}
-
-      {/* Wallet Activity Feed */}
-      {isConnected && address && wrappers.length > 0 && (
-        <WalletActivityFeed
-          address={address}
-          wrappers={wrappers}
-          chainId={activeChainId}
-        />
+      {/* Activity feed */}
+      {isConnected && address && supportedChain && allWrappers.length > 0 && (
+        <WalletActivityFeed address={address} wrappers={allWrappers} chainId={activeChainId} variant="full" />
       )}
 
       {/* Info */}
       <Card variant="glass" padding="sm" style={{ marginTop: 'var(--sp-8)' }}>
         <div className="flex items-start gap-3 text-xs text-muted">
-          <div style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', marginTop: '2px' }}>
-            <Info size={16} />
+          <div style={{ color: 'var(--accent)', display: 'inline-flex', marginTop: 2 }}>
+            <Info size={15} />
           </div>
-          <span style={{ lineHeight: '1.4' }}>
-            Decrypting balances requires an EIP-712 signature (permit) to verify you are the account owner. 
-            This creates an ephemeral session key that decrypts the on-chain ciphertext handle. 
-            Your private key never leaves your device, and cleartext balances are never transmitted.
-            Permits are securely cached in your browser; use the <strong>Reset Session</strong> button to clear cached permits and force wallet signature prompts.
+          <span style={{ lineHeight: 1.5 }}>
+            Decrypting balances requires an EIP-712 permit — a read-only off-chain signature that authorises the Zama Gateway to decrypt your balance for this session.
+            Your private key never leaves your device. Use <strong>Reset Session</strong> to clear cached permits and force fresh signatures.
           </span>
         </div>
       </Card>
 
-      {/* Connect Wallet Modal */}
+      {/* Connect modal */}
       {isConnectModalOpen && (
-        <Modal
-          isOpen={isConnectModalOpen}
-          onClose={() => setIsConnectModalOpen(false)}
-          title="Connect Wallet"
-        >
+        <Modal isOpen title="Connect Wallet" onClose={() => setIsConnectModalOpen(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
             <div className="text-sm text-muted">Select a wallet:</div>
             {connectors.map((c) => (
-              <button
-                key={c.id}
-                className="btn btn-secondary btn-full"
-                onClick={() => {
-                  connect({ connector: c });
-                  setIsConnectModalOpen(false);
-                }}
-              >
+              <button key={c.id} className="btn btn-secondary btn-full" onClick={() => { connect({ connector: c }); setIsConnectModalOpen(false); }}>
                 {c.name}
               </button>
             ))}

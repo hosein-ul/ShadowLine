@@ -1112,6 +1112,7 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 var(--sp-6);
+  gap: var(--sp-4);
 }
 
 .header-logo {
@@ -1121,9 +1122,20 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.03em;
+  flex-shrink: 0;
 }
 
-.header-nav { display: flex; align-items: center; gap: var(--sp-1); }
+/* Nav sits between the logo and the actions cluster. `min-width: 0` lets it
+   shrink instead of forcing header-inner to overflow the viewport; the item
+   count is kept short (5 primary + 1 "More" trigger) specifically so it
+   fits without wrapping at common desktop widths (1280px+). */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  flex-shrink: 1;
+}
 .header-link {
   padding: var(--sp-2) var(--sp-3);
   font-size: var(--text-sm);
@@ -1136,7 +1148,97 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 
 .header-link:hover { color: var(--text-primary); background: var(--bg-elevated); }
 .header-link.active { color: var(--text-primary) !important; background: var(--bg-elevated) !important; }
-.header-actions { display: flex; align-items: center; gap: var(--sp-3); }
+.header-actions { display: flex; align-items: center; gap: var(--sp-3); flex-shrink: 0; }
+
+/* ---------- "More" nav dropdown ---------- */
+.nav-more-wrapper { position: relative; }
+.nav-more-trigger {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.nav-more-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--sp-2));
+  width: 200px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  z-index: 200;
+}
+.nav-more-item {
+  width: 100%;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all var(--t-fast);
+}
+.nav-more-item:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.nav-more-item.active { color: var(--accent); background: var(--accent-subtle); }
+
+/* ---------- Mobile hamburger + drawer ---------- */
+.nav-hamburger { display: none; }
+
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.mobile-nav-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(320px, 85vw);
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-2);
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+
+.mobile-nav-link:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.mobile-nav-link.active { color: var(--text-primary); background: var(--bg-elevated); }
 
 .btn-primary-black {
   background: var(--text-primary) !important;
@@ -2392,6 +2494,18 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
 }
 
 /* ==========================================================================
+   TABLET — trim non-essential header chrome before the hamburger kicks in
+   ========================================================================== */
+
+@media (max-width: 1100px) {
+  .header-inner { padding: 0 var(--sp-4); }
+  /* Design theme swapper is a nice-to-have — first thing to go under
+     pressure so Registry/Wrap/.../Faucet + network switcher + wallet
+     always have room. */
+  .theme-selector-dropdown { display: none; }
+}
+
+/* ==========================================================================
    MOBILE RESPONSIVE — Global fixes for 360px–768px
    ========================================================================== */
 
@@ -2403,7 +2517,15 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   }
 
   .header-nav {
-    display: none; /* hidden on mobile — user scrolls or uses links */
+    display: none; /* replaced by the hamburger drawer below this width */
+  }
+
+  .nav-hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
   }
 
   .header-actions {
@@ -2452,9 +2574,32 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   }
 }
 
+/* ── Mobile: hide registry address columns ─────────────────────────── */
+@media (max-width: 768px) {
+  .registry-addr-col { display: none; }
+
+  /* Prevent iOS auto-zoom on inputs inside swap/transfer panels */
+  .swap-panel select,
+  .swap-panel input[type="text"],
+  .swap-panel input[type="number"] {
+    font-size: 16px;
+  }
+}
+
+/* ── Grid-3: responsive breakpoints (previously missing) ───────────── */
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 480px) {
   .header-logo span { display: none; } /* hide text, keep logo icon */
   .header-logo svg { margin: 0; }
+
+  /* Collapse "Connect Wallet" to icon-only so header fits in 375px */
+  .btn-connect-label { display: none; }
 
   /* Network switcher: compact */
   .network-switcher {
