@@ -378,6 +378,33 @@ function WrapPageContent() {
         if (needsApproval) {
           if (!publicClient) throw new Error('No RPC client available for the active network.');
           setTxStep(1); // Approve pending (awaiting signature)
+
+          // Some ERC-20s (notably real USDT, and this app's USDTMock which
+          // deliberately replicates it — verified on-chain: USDTMock.approve
+          // has `require(!(value != 0 && allowance(...) != 0))`) revert an
+          // approve() call that changes a non-zero allowance directly to a
+          // different non-zero value. The wallet's pre-flight simulation
+          // catches this and blocks confirmation ("Third-party contract
+          // execution error") before the user can even sign. Zero the
+          // allowance first when one is already outstanding, then approve
+          // the real amount — this is required by USDT-style tokens and a
+          // harmless no-op extra tx for standard ERC-20s.
+          if (hasAllowance > 0n) {
+            const zeroHash = await writeContractAsync({
+              abi: ERC20_ABI,
+              address: selectedWrapper.erc20Address,
+              functionName: 'approve',
+              args: [selectedWrapper.erc7984Address, 0n],
+            });
+            addToast({
+              variant: 'info',
+              title: 'Resetting Allowance',
+              message: 'This token requires clearing the existing approval before setting a new one.',
+            });
+            await publicClient.waitForTransactionReceipt({ hash: zeroHash });
+            await refetchAllowance();
+          }
+
           const approveHash = await writeContractAsync({
             abi: ERC20_ABI,
             address: selectedWrapper.erc20Address,
