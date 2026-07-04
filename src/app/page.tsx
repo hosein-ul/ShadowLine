@@ -696,6 +696,74 @@ export const CUSTOM_PAIRS: CustomPair[] = [
   );
 }
 
+function PoweredBy() {
+  const partners = [
+    {
+      name: 'Zama',
+      logo: '/brands/zama-logo.svg',
+      desc: 'FHE confidential computing protocol',
+      cardBg: '#FFD208',
+      href: 'https://www.zama.org',
+    },
+    {
+      name: 'Blockscout',
+      logo: '/brands/blockscout-logo.svg',
+      desc: 'Open-source block explorer',
+      cardBg: '#fff',
+      href: 'https://www.blockscout.com',
+    },
+    {
+      name: 'OpenZeppelin',
+      logo: '/brands/openzeppelin-logo.svg',
+      desc: 'Audited smart contract standards',
+      cardBg: '#fff',
+      href: 'https://www.openzeppelin.com',
+    },
+  ];
+
+  return (
+    <section style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
+      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+        <BlurFade inView delay={0}>
+          <p style={{ textAlign: 'center', fontSize: '.78rem', fontWeight: 700, color: '#71717a', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '32px' }}>
+            Built on Trusted Infrastructure
+          </p>
+        </BlurFade>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+          {partners.map((p, i) => (
+            <BlurFade key={p.name} inView delay={i * 0.1}>
+              <a
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  padding: '36px 24px',
+                  borderRadius: '20px',
+                  border: '1px solid #e4e4e7',
+                  background: p.cardBg,
+                  textDecoration: 'none',
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,.02)',
+                }}
+              >
+                <img src={p.logo} alt={`${p.name} logo`} style={{ height: '32px', width: 'auto', maxWidth: '160px' }} />
+                <span style={{ fontSize: '.8rem', color: p.cardBg === '#FFD208' ? 'rgba(0,0,0,.7)' : '#71717a', textAlign: 'center' }}>
+                  {p.desc}
+                </span>
+              </a>
+            </BlurFade>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CTA() {
   return (
     <section style={{ padding: 'clamp(80px,12vw,160px) clamp(24px,6vw,80px)', background: '#000', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -976,8 +1044,10 @@ export default function LandingPage() {
       {/* 3. FAQs */}
       <FaqAccordions />
 
+      <PoweredBy />
+
       <CTA />
-      
+
       <footer style={{ background: '#000', color: '#fff', borderTop: '1px solid rgba(255,255,255,.06)', padding: '80px clamp(24px,6vw,80px) 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', marginBottom: '60px' }}>
           {/* Column 1: About ShadowLine */}
