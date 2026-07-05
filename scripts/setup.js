@@ -9,11 +9,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 const readline = require('readline');
-
-// Bug fix: on Windows npm is npm.cmd — using shell:true triggers DEP0190 security warning
-const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const ENV_LOCAL_PATH = path.join(ROOT_DIR, '.env.local');
@@ -81,32 +78,13 @@ function hasTurbopackNativeBindings() {
   return fs.existsSync(pkgDir);
 }
 
-// Bug fix: open stdin stream once and reuse — avoids multiple /dev/tty handles and leaks
-let _stdinStream = null;
-function getInputStream() {
-  if (process.stdin.isTTY) return process.stdin;
-  if (_stdinStream) return _stdinStream;
-  try {
-    if (process.platform === 'win32') {
-      _stdinStream = fs.createReadStream('\\\\.\\CON');
-    } else if (fs.existsSync('/dev/tty')) {
-      _stdinStream = fs.openSync('/dev/tty', 'r');
-      _stdinStream = fs.createReadStream(null, { fd: _stdinStream });
-    }
-  } catch (e) {
-    // Fallback to stdin
-  }
-  return _stdinStream || process.stdin;
-}
-
-// Bug fix: create rl once and pass it around instead of recreating in each function
+// Single shared readline interface — created once, reused across all questions
 let _rl = null;
 function getRl() {
   if (!_rl || _rl.closed) {
     _rl = readline.createInterface({
-      input: getInputStream(),
+      input: process.stdin,
       output: process.stdout,
-      terminal: true,
     });
   }
   return _rl;
@@ -195,11 +173,20 @@ async function presentMenu() {
   switch (choice.trim()) {
     case '1':
       console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}\n`);
-      execSync('npm run dev', { stdio: 'inherit', cwd: ROOT_DIR });
+      try {
+        execSync('npm run dev', { stdio: 'inherit', cwd: ROOT_DIR });
+      } catch (e) {
+        // Ctrl+C or dev server exit — not a fatal error, just exit cleanly
+        process.exit(0);
+      }
       break;
     case '2':
       console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}\n`);
-      execSync('npm run start', { stdio: 'inherit', cwd: ROOT_DIR });
+      try {
+        execSync('npm run start', { stdio: 'inherit', cwd: ROOT_DIR });
+      } catch (e) {
+        process.exit(0);
+      }
       break;
     case '3':
       console.log(`\n${colors.cyan}☁️  Deploying to Netlify...${colors.reset}`);
