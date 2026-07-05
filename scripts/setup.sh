@@ -118,6 +118,8 @@ if [ ! -f "package.json" ] || ! grep -q '"name": "shadowline"' package.json 2>/d
     fi
 fi
 
-# 4. Launch the cross-platform Node.js Setup Wizard
-echo -e "${GREEN}✔ Environment ready! Launching interactive setup wizard...${NC}"
-node scripts/setup.js
+if [ -e /dev/tty ]; then
+    node scripts/setup.js < /dev/tty
+else
+    node scripts/setup.js
+fi

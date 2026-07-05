@@ -50,9 +50,25 @@ function checkNodeVersion() {
   console.log(`${colors.green}✔ Node.js version check passed (${process.version})${colors.reset}`);
 }
 
+function getInputStream() {
+  if (process.stdin.isTTY) {
+    return process.stdin;
+  }
+  try {
+    if (process.platform === 'win32') {
+      return fs.createReadStream('CONIN$');
+    } else if (fs.existsSync('/dev/tty')) {
+      return fs.createReadStream('/dev/tty');
+    }
+  } catch (e) {
+    // Ignore and fallback
+  }
+  return process.stdin;
+}
+
 function createRl() {
   return readline.createInterface({
-    input: process.stdin,
+    input: getInputStream(),
     output: process.stdout,
   });
 }
