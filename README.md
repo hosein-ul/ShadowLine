@@ -307,50 +307,70 @@ To demonstrate the *success* path, deploy any ERC-7984 wrapper of your own on Se
 
 ---
 
-## 9. Local Development & Setup
+## 9. Local Development & Setup (0-to-100 DevOps Suite)
 
-### Prerequisites
-* **Node.js:** v18.17.0 or higher
-* **Package Manager:** npm / yarn
+Want to run ShadowLine locally or deploy to a cloud node / VPS in under 1 minute? We built an automated, zero-friction **0-to-100 DevOps Wizard** that handles prerequisite checking (Git, Node.js v18+), environment configuration (`.env.local`), production build verification, and server launching.
 
-### Installation
+### 🚀 1-Line Auto-Installers (with Automatic Prerequisite Installation)
+If your system lacks Git or Node.js, these scripts automatically detect and install them in the background (via `apt-get`/NodeSource on Linux, `brew` on macOS, and `winget`/`choco` on Windows):
 
+**Linux Ubuntu & macOS:**
 ```bash
-# Clone the repository
-git clone https://github.com/hosein-ul/ShadowLine.git
-cd ShadowLine
+curl -sSL https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.sh | bash
+```
 
+**Windows PowerShell:**
+```powershell
+irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex
+```
+
+---
+
+### 🛠️ Manual Clone & Setup Command by OS
+
+**Linux Ubuntu & macOS (Bash / Zsh):**
+```bash
+git clone https://github.com/hosein-ul/ShadowLine.git && cd ShadowLine && npm run setup
+```
+
+**Windows (PowerShell & CMD):**
+*(Note: Windows PowerShell does not use `&&`; use semicolons `;` as shown below)*
+```powershell
+git clone https://github.com/hosein-ul/ShadowLine.git; cd ShadowLine; npm run setup
+```
+
+---
+
+### 🐳 Docker & VPS Self-Hosting
+To spin up ShadowLine in an isolated container on an Ubuntu server or VPS:
+```bash
+docker compose up -d --build
+```
+Or via npm script alias:
+```bash
+npm run docker:up
+```
+
+---
+
+### 📋 Manual Commands
+If you prefer running individual commands manually:
+```bash
 # Install dependencies
 npm install
-```
 
-### Running the Application
-
-```bash
-# Run the Next.js Turbopack development server
+# Run development server (Turbopack)
 npm run dev
-```
-Open `http://localhost:3000` to interact with the application.
-
-### Compilation & Build Verification
-
-```bash
-# Run TypeScript compilation checks
-npx tsc --noEmit
 
 # Compile production bundle
 npm run build
+
+# Start production server
+npm run start
 ```
+Open `http://localhost:3000` to interact with the application.
 
-### Deployment
-
-ShadowLine is a standard Next.js application and deploys unmodified to any Node.js host.
-The recommended path is [Vercel](https://vercel.com): import the GitHub repository,
-keep the default build settings (`next build`), and deploy — no environment variables
-are required (the app falls back to public RPC endpoints; see `.env.example` for
-optional custom RPC overrides).
-
-**Live URL:** _deployment pending — will be published here before submission._
+**Live URL:** https://shadow-line.netlify.app/
 
 ---
 
