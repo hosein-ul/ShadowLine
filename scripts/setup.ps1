@@ -7,9 +7,16 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "====================================================================" -ForegroundColor Cyan
-Write-Host "🚀 SHADOWLINE 0-TO-100 WINDOWS LAUNCHER & AUTO-INSTALLER" -ForegroundColor Cyan
-Write-Host "====================================================================" -ForegroundColor Cyan
+Write-Host '   ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗██╗     ██╗███╗   ██╗███████╗' -ForegroundColor Cyan
+Write-Host '   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║██║     ██║████╗  ██║██╔════╝' -ForegroundColor Cyan
+Write-Host '   ███████╗███████║███████║██║  ██║██║   ██║██║ █╗ ██║██║     ██║██╔██╗ ██║█████╗  ' -ForegroundColor Cyan
+Write-Host '   ╚════██║██╔══██║██╔══██║██║  ██║██║   ██║██║███╗██║██║     ██║██║╚██╗██║██╔══╝  ' -ForegroundColor Cyan
+Write-Host '   ███████║██║  ██║██║  ██║██████╔╝╚██████╔╝╚███╔███╔╝███████╗██║██║ ╚████║███████╗' -ForegroundColor Cyan
+Write-Host '   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝' -ForegroundColor Cyan
+Write-Host '      🔒 Confidential Asset Shielding Protocol  |  ⚡ Powered by Zama FHEVM' -ForegroundColor Green
+Write-Host '      🌐 Open-Source Protocol (MIT License)     |  💎 Powered by x.com/andy1eth' -ForegroundColor Magenta
+Write-Host '   ────────────────────────────────────────────────────────────────────────────────────' -ForegroundColor Cyan
+Write-Host ""
 
 # Helper to refresh path
 function Refresh-Path {

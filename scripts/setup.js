@@ -29,11 +29,16 @@ const colors = {
 function printBanner() {
   console.clear();
   console.log(`${colors.cyan}${colors.bold}`);
-  console.log('█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█');
-  console.log('█   🚀 SHADOWLINE 0-TO-100 AUTOMATED SETUP & DEVOPS LAUNCHER               █');
-  console.log('█   Privacy-first asset shielding protocol built on Zama FHEVM              █');
-  console.log('█▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█');
-  console.log(`${colors.reset}\n`);
+  console.log('   ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗██╗     ██╗███╗   ██╗███████╗');
+  console.log('   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║██║     ██║████╗  ██║██╔════╝');
+  console.log('   ███████╗███████║███████║██║  ██║██║   ██║██║ █╗ ██║██║     ██║██╔██╗ ██║█████╗  ');
+  console.log('   ╚════██║██╔══██║██╔══██║██║  ██║██║   ██║██║███╗██║██║     ██║██║╚██╗██║██╔══╝  ');
+  console.log('   ███████║██║  ██║██║  ██║██████╔╝╚██████╔╝╚███╔███╔╝███████╗██║██║ ╚████║███████╗');
+  console.log('   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝');
+  console.log(`${colors.reset}`);
+  console.log(`${colors.green}${colors.bold}      🔒 Confidential Asset Shielding Protocol  |  ⚡ Powered by Zama FHEVM${colors.reset}`);
+  console.log(`${colors.magenta}      🌐 Open-Source Protocol (MIT License)     |  💎 Powered by x.com/andy1eth${colors.reset}`);
+  console.log(`${colors.cyan}   ────────────────────────────────────────────────────────────────────────────────────${colors.reset}\n`);
 }
 
 function checkNodeVersion() {
