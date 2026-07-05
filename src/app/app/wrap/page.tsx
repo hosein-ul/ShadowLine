@@ -145,6 +145,8 @@ function WrapPageContent() {
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  // Bumped after each completed wrap/unshield so the activity feed auto-refreshes.
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
   const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
@@ -454,6 +456,7 @@ function WrapPageContent() {
         setDecryptRequested(false);
         refetchPublicBalance();
         refetchAllowance();
+        setFeedRefreshKey((k) => k + 1); // auto-refresh the activity feed
       } else {
         setTxStep(3); // Unshield pending
         const wrapperAddress = selectedWrapper.erc7984Address;
@@ -517,6 +520,7 @@ function WrapPageContent() {
         // Reset decrypt gate — same reason as wrap path above.
         setDecryptRequested(false);
         refetchPublicBalance();
+        setFeedRefreshKey((k) => k + 1); // auto-refresh the activity feed
       }
     } catch (err: unknown) {
       console.error(err);
@@ -998,7 +1002,8 @@ function WrapPageContent() {
             wrappers={wrappers}
             chainId={activeChainId}
             variant="compact"
-            maxRows={5}
+            maxRows={25}
+            refreshKey={feedRefreshKey}
           />
         )}
       </div>

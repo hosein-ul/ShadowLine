@@ -13,7 +13,6 @@ import { formatAddress, formatAmount } from '@/lib/utils';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import {
   useRegistryPairs,
-  isMintablePair,
   loadCustomPairs,
   saveCustomPairs,
   type RegistryPairsResult,
@@ -53,13 +52,7 @@ import {
 
 const TIP = {
   erc7984: 'ERC-7984 wrapper stores your balance as on-chain ciphertext via FHE — unreadable by anyone without your cryptographic permit.',
-  confidentialBadge: 'Balances are encrypted on-chain via FHE. Only you can decrypt them by signing an EIP-712 permit.',
-  publicBalance: 'Your unencrypted ERC-20 balance, visible to anyone on-chain. Shield it to make it private.',
   confidentialBalance: 'Encrypted balance. Click Decrypt to sign a read-only EIP-712 permit — no tokens are spent, your private key stays in your wallet.',
-  mockBadge: 'Testnet mock token deployed by Zama. Has a public mint() — get free tokens from the Faucet page.',
-  shield: (sym: string) => `Convert public ${sym} into encrypted c${sym}. Requires ERC-20 approval then the shield transaction.`,
-  unshield: (sym: string) => `Burn encrypted c${sym} and retrieve public ${sym}. Two-step: on-chain unwrap + Gateway proof finalization.`,
-  permit: 'Read-only off-chain signature (EIP-712). Authorises Zama Gateway to decrypt your balance for this session. Does not spend tokens or approve contracts.',
 };
 
 // ─── Per-row component ────────────────────────────────────────────────────────
@@ -68,7 +61,6 @@ function shortName(name: string, maxLen = 24): string {
   if (name.length <= maxLen) return name;
   return name.slice(0, maxLen).trimEnd() + '…';
 }
-
 
 function RegistryTokenRow({
   wrapper,
@@ -130,7 +122,11 @@ function RegistryTokenRow({
 
   const isRevoked = wrapper.isValid === false;
   const cleanName = shortName(wrapper.name.replace(/\s*\(Mock\)\s*/gi, '').trim());
-  const isMock = isMintablePair(wrapper) && isTestnet;
+  // Every Sepolia registry pair is a Zama-deployed testnet mock — real mainnet
+  // assets don't exist on Sepolia. (isMintablePair's on-chain symbol() check is
+  // kept for the Faucet's actual mint-button gating, a separate concern; it's
+  // unreliable as a *label* since some mocks' symbol() doesn't end in "Mock".)
+  const isMock = isTestnet;
   const confidentialSymbol = `c${wrapper.symbol}`;
 
   // App-wide session reset — re-arm the button so the next click prompts for
@@ -161,61 +157,38 @@ function RegistryTokenRow({
     void refetchConfidential();
   };
 
-  return (
-    <tr style={isRevoked ? { opacity: 0.55 } : undefined}>
+  const rowOpacity = isRevoked ? { opacity: 0.55 } : undefined;
 
-      {/* ── Token ─────────────────────────────────────────────────────────── */}
-      <td>
+  return (
+    <div className="registry-pair-card" style={rowOpacity}>
+      {/* ── Public token row ──────────────────────────────────────────────── */}
+      <div className="registry-pair-row registry-pair-columns">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <TokenIcon symbol={wrapper.symbol} size={28} />
           <div style={{ minWidth: 0 }}>
-            {/* Symbol (short) is the primary label + badges on one line — using
-                the full token name here overflowed and pushed the action
-                buttons off-screen for long names (e.g. "Steakhouse Confidential
-                Prime USDC"). The full name moves to the muted subtitle below. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
               {wrapper.symbol}
-              {/* Testnet marker: Mock (public faucet mint) on all Sepolia mocks,
-                  Restricted on the non-mintable Sepolia pairs. */}
-              {isMock && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                  <Badge variant="default" size="sm" style={{ fontSize: 9 }}>Mock</Badge>
-                  <Tooltip content={TIP.mockBadge} />
-                </div>
-              )}
-              {!isMock && isTestnet && wrapper.source !== 'custom' && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                  <Badge variant="default" size="sm" style={{ fontSize: 9 }}>Restricted</Badge>
-                  <Tooltip content="No public mint — this pair's underlying is a real asset, not a faucet mock." />
-                </div>
-              )}
+              {isMock && <Badge variant="default" size="sm" style={{ fontSize: 9 }}>Mock</Badge>}
               {isRevoked && (
                 <Badge variant="error" size="sm" style={{ gap: 3 }}>
                   <AlertTriangle size={9} /> Revoked
                 </Badge>
               )}
               {wrapper.unverified && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                  <Badge variant="warning" size="sm" style={{ fontSize: 9, gap: 2 }}>
-                    <AlertTriangle size={8} /> Unverified
-                  </Badge>
-                  <Tooltip content={wrapper.unverifiedReason ?? 'This registry entry is flagged for user awareness. Proceed with caution.'} />
-                </div>
+                <Badge variant="warning" size="sm" style={{ fontSize: 9, gap: 2 }}>
+                  <AlertTriangle size={8} /> Unverified
+                </Badge>
               )}
             </div>
             <div
               className="text-muted text-xs"
               title={wrapper.name}
-              style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
             >
               {cleanName}
             </div>
           </div>
         </div>
-      </td>
-
-      {/* ── ERC-20 Address ────────────────────────────────────────────────── */}
-      <td className="registry-addr-col">
         <div className="table-address">
           <a
             href={`${explorerBase}/address/${wrapper.erc20Address}`}
@@ -233,93 +206,114 @@ function RegistryTokenRow({
           </a>
           <CopyButton text={wrapper.erc20Address} />
         </div>
-      </td>
-
-      {/* ── ERC-7984 Wrapper ──────────────────────────────────────────────── */}
-      <td className="registry-addr-col">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-            <Badge variant="default" size="sm" style={{ gap: 3, alignSelf: 'flex-start' }}>
-              <Lock size={9} /> Confidential
-            </Badge>
-            <Tooltip content={TIP.confidentialBadge} />
-          </div>
-          <div className="table-address">
-            <a
-              href={`${explorerBase}/address/${wrapper.erc7984Address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1"
-              aria-label={`View ${confidentialSymbol} on explorer`}
-              title={wrapper.erc7984Address}
-              style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            >
-              {formatAddress(wrapper.erc7984Address, 6)}
-              <ExternalLink size={11} />
-            </a>
-            <CopyButton text={wrapper.erc7984Address} />
-          </div>
-          <div className="text-xs text-muted">{confidentialSymbol}</div>
-        </div>
-      </td>
-
-      {/* ── Public Balance ────────────────────────────────────────────────── */}
-      <td>
-        {!isConnected ? (
-          <span className="text-xs text-muted">—</span>
-        ) : publicBalance !== undefined ? (
-          <span className="text-sm">
-            {formatAmount(publicBalance, wrapper.decimals)}{' '}
-            <span className="text-xs text-muted">{wrapper.symbol}</span>
-          </span>
-        ) : (
-          <Skeleton width={64} height={14} />
-        )}
-      </td>
-
-      {/* ── Confidential Balance ──────────────────────────────────────────── */}
-      <td>
-        {!isConnected ? (
-          <span className="text-xs text-muted">—</span>
-        ) : confidentialBalance !== undefined && confidentialBalance !== null ? (
-          confidentialBalance === 0n ? (
-            <span className="flex items-center gap-2">
-              <span className="text-xs text-muted" title="Confidential balance is empty — no ciphertext exists on-chain for this token, so no permit is needed.">
-                No confidential balance yet
-              </span>
-              <button
-                onClick={handleDecrypt}
-                className="flex items-center gap-1 btn-decrypt"
-                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                aria-label="Refresh confidential balance"
-                title="Re-check on-chain"
-              >
-                <RefreshCw size={9} />
-              </button>
+        <span className="text-sm">{wrapper.decimals}</span>
+        <div>
+          {!isConnected ? (
+            <span className="text-xs text-muted">—</span>
+          ) : publicBalance !== undefined ? (
+            <span className="text-sm">
+              {formatAmount(publicBalance, wrapper.decimals)}{' '}
+              <span className="text-xs text-muted">{wrapper.symbol}</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-sm">
-              {formatAmount(confidentialBalance, wrapper.wrapperDecimals)}{' '}
-              <span className="text-xs text-muted">{confidentialSymbol}</span>
-              <Lock size={10} style={{ color: 'var(--text-secondary)' }} />
+            <Skeleton width={64} height={14} />
+          )}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {isRevoked ? (
+            <span className="text-xs text-muted" title="This pair has been revoked from the registry">
+              Unavailable
             </span>
-          )
-        ) : isDecrypting ? (
-          <span className="text-xs text-muted">Awaiting signature…</span>
-        ) : decryptError ? (
-          <button
-            onClick={handleDecrypt}
+          ) : (
+            <div className="flex justify-end items-center gap-2">
+              <Link href={`/app/wrap?token=${wrapper.symbol}&action=wrap`}>
+                <Button variant="primary" size="sm" style={{ gap: 4 }} aria-label={`Shield ${wrapper.symbol}`}>
+                  <Shield size={12} /> Shield
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Confidential wrapper row ──────────────────────────────────────── */}
+      <div className="registry-pair-row registry-pair-columns">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <TokenIcon symbol={wrapper.symbol} size={28} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {confidentialSymbol}
+              {isMock && <Badge variant="default" size="sm" style={{ fontSize: 9 }}>Mock</Badge>}
+            </div>
+            <div
+              className="text-muted text-xs"
+              style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
+              Confidential {cleanName}
+            </div>
+          </div>
+        </div>
+        <div className="table-address">
+          <a
+            href={`${explorerBase}/address/${wrapper.erc7984Address}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1"
-            style={{ color: 'var(--color-danger, #ef4444)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: 0 }}
-            title={`Decryption failed: ${decryptError.message}`}
-            aria-label={`Retry decrypt ${confidentialSymbol}`}
+            aria-label={`View ${confidentialSymbol} on explorer`}
+            title={wrapper.erc7984Address}
+            style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
           >
-            <AlertCircle size={11} /> Retry
-          </button>
-        ) : (
-          <span className="flex items-center gap-1">
+            {formatAddress(wrapper.erc7984Address, 6)}
+            <ExternalLink size={11} />
+          </a>
+          <CopyButton text={wrapper.erc7984Address} />
+        </div>
+        <span className="flex items-center gap-1">
+          <span className="text-sm">{wrapper.wrapperDecimals}</span>
+          <span className="text-xs text-muted">FHE</span>
+          <Tooltip content="FHE ciphertexts use a fixed euint64 scale (6 decimals), independent of the underlying token's decimals." />
+        </span>
+        <div>
+          {!isConnected ? (
+            <span className="text-xs text-muted">—</span>
+          ) : confidentialBalance !== undefined && confidentialBalance !== null ? (
+            confidentialBalance === 0n ? (
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-muted" title="Confidential balance is empty — no ciphertext exists on-chain for this token, so no permit is needed.">
+                  No confidential balance yet
+                </span>
+                <button
+                  onClick={handleDecrypt}
+                  className="flex items-center gap-1 btn-decrypt"
+                  style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
+                  aria-label="Refresh confidential balance"
+                  title="Re-check on-chain"
+                >
+                  <RefreshCw size={9} />
+                </button>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-sm">
+                {formatAmount(confidentialBalance, wrapper.wrapperDecimals)}{' '}
+                <span className="text-xs text-muted">{confidentialSymbol}</span>
+                <Lock size={10} style={{ color: 'var(--text-secondary)' }} />
+              </span>
+            )
+          ) : isDecrypting ? (
+            <span className="text-xs text-muted">Awaiting signature…</span>
+          ) : decryptError ? (
+            <button
+              onClick={handleDecrypt}
+              className="flex items-center gap-1"
+              style={{ color: 'var(--color-danger, #ef4444)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: 0 }}
+              title={`Decryption failed: ${decryptError.message}`}
+              aria-label={`Retry decrypt ${confidentialSymbol}`}
+            >
+              <AlertCircle size={11} /> Retry
+            </button>
+          ) : (
             <button
               onClick={handleDecrypt}
               className="flex items-center gap-1 btn-decrypt"
@@ -346,40 +340,25 @@ function RegistryTokenRow({
             >
               <Unlock size={10} /> Decrypt
             </button>
-            <Tooltip content={TIP.permit} />
-          </span>
-        )}
-      </td>
-
-      {/* ── Actions ───────────────────────────────────────────────────────── */}
-      <td style={{ textAlign: 'right' }}>
-        {isRevoked ? (
-          <span className="text-xs text-muted" title="This pair has been revoked from the registry">
-            Unavailable
-          </span>
-        ) : (
-          <div className="flex justify-end items-center gap-2">
-            <Link href={`/app/wrap?token=${wrapper.symbol}&action=wrap`}>
-              <Button variant="primary" size="sm" style={{ gap: 4 }} aria-label={`Shield ${wrapper.symbol}`}>
-                <Shield size={12} /> Shield
-              </Button>
-            </Link>
-            <Tooltip content={TIP.shield(wrapper.symbol)} />
-            <Link href={`/app/wrap?token=${wrapper.symbol}&action=unwrap`}>
-              <Button variant="secondary" size="sm" aria-label={`Unshield ${confidentialSymbol}`}>
-                Unshield
-              </Button>
-            </Link>
-            <Tooltip content={TIP.unshield(wrapper.symbol)} />
-            <Link href={`/app/wrap?token=${wrapper.symbol}`}>
-              <Button variant="ghost" size="sm" style={{ gap: 4 }} aria-label={`Manage ${wrapper.symbol}`} title={`Manage ${wrapper.symbol}`}>
-                <Settings2 size={12} /> Manage
-              </Button>
-            </Link>
-          </div>
-        )}
-      </td>
-    </tr>
+          )}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {isRevoked ? (
+            <span className="text-xs text-muted" title="This pair has been revoked from the registry">
+              Unavailable
+            </span>
+          ) : (
+            <div className="flex justify-end items-center gap-2">
+              <Link href={`/app/wrap?token=${wrapper.symbol}&action=unwrap`}>
+                <Button variant="secondary" size="sm" aria-label={`Unshield ${confidentialSymbol}`}>
+                  Unshield
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -486,134 +465,162 @@ function DetectedTokenRow({
   };
 
   return (
-    <tr style={{ borderLeft: token.isAutoDetected ? '3px solid #6366f1' : '3px solid #8b5cf6' }}>
-      {/* ── Token ─────────────────────────────────────────────────────────── */}
-      <td>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <TokenIcon symbol={token.symbol} size={28} />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {cleanName}
-              <Badge variant={token.isAutoDetected ? 'warning' : 'accent'} size="sm" style={{ fontSize: 9 }}>
-                {token.isAutoDetected ? 'Detected' : 'Custom'}
-              </Badge>
+    <div className="registry-pair-card">
+      {/* ── Public token row ──────────────────────────────────────────────── */}
+      <div className="registry-pair-row registry-pair-columns">
+        {isWrapper ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <TokenIcon symbol={token.symbol} size={28} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {token.symbol}
+                <Badge variant={token.isAutoDetected ? 'warning' : 'accent'} size="sm" style={{ fontSize: 9 }}>
+                  {token.isAutoDetected ? 'Detected' : 'Custom'}
+                </Badge>
+              </div>
+              <div className="text-muted text-xs">{cleanName}</div>
             </div>
-            <div className="text-muted text-xs">{token.symbol}</div>
-          </div>
-        </div>
-      </td>
-
-      {/* ── ERC-20 Address ────────────────────────────────────────────────── */}
-      <td className="registry-addr-col">
-        {isWrapper && underlyingAddress ? (
-          <div className="table-address">
-            <a
-              href={`${explorerBase}/address/${underlyingAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1"
-              aria-label={`View underlying on explorer`}
-              title={underlyingAddress}
-              style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            >
-              {formatAddress(underlyingAddress, 6)}
-              <ExternalLink size={11} />
-            </a>
-            <CopyButton text={underlyingAddress} />
           </div>
         ) : (
-          <span className="text-xs text-muted" style={{ fontStyle: 'italic' }}>
-            Native FHE Asset
-          </span>
-        )}
-      </td>
-
-      {/* ── ERC-7984 Wrapper ──────────────────────────────────────────────── */}
-      <td className="registry-addr-col">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div className="table-address">
-            <a
-              href={`${explorerBase}/address/${token.address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1"
-              aria-label={`View confidential token on explorer`}
-              title={token.address}
-              style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            >
-              {formatAddress(token.address, 6)}
-              <ExternalLink size={11} />
-            </a>
-            <CopyButton text={token.address} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <TokenIcon symbol={token.symbol} size={28} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {token.symbol}
+                <Badge variant="default" size="sm" style={{ fontSize: 9, gap: 3 }}>
+                  <Unlock size={8} /> Decrypt-only
+                </Badge>
+              </div>
+              <span className="text-xs text-muted" style={{ fontStyle: 'italic' }}>Native FHE asset — no ERC-20</span>
+            </div>
           </div>
-          <div className="text-xs text-muted">{confidentialSymbol}</div>
-        </div>
-      </td>
-
-      {/* ── Public Balance ────────────────────────────────────────────────── */}
-      <td>
-        {!isConnected ? (
-          <span className="text-xs text-muted">—</span>
-        ) : !isWrapper ? (
-          <span className="text-xs text-muted">—</span>
-        ) : publicBalance !== undefined ? (
-          <span className="text-sm">
-            {formatAmount(publicBalance, token.decimals)}{' '}
-            <span className="text-xs text-muted">{token.symbol}</span>
-          </span>
-        ) : (
-          <Skeleton width={64} height={14} />
         )}
-      </td>
-
-      {/* ── Confidential Balance ──────────────────────────────────────────── */}
-      <td>
-        {!isConnected ? (
-          <span className="text-xs text-muted">—</span>
-        ) : confidentialBalance !== undefined && confidentialBalance !== null ? (
-          confidentialBalance === 0n ? (
-            <span className="flex items-center gap-2">
-              <span className="text-xs text-muted" title="Confidential balance is empty — no ciphertext exists on-chain, so no permit is needed.">
-                No confidential balance yet
-              </span>
-              <button
-                onClick={handleDecrypt}
-                className="flex items-center gap-1 btn-decrypt"
-                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
-                aria-label="Refresh confidential balance"
-                title="Re-check on-chain"
+        <div className="registry-addr-col">
+          {isWrapper && underlyingAddress ? (
+            <div className="table-address">
+              <a
+                href={`${explorerBase}/address/${underlyingAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1"
+                aria-label={`View underlying on explorer`}
+                title={underlyingAddress}
+                style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
               >
-                <RefreshCw size={9} />
-              </button>
+                {formatAddress(underlyingAddress, 6)}
+                <ExternalLink size={11} />
+              </a>
+              <CopyButton text={underlyingAddress} />
+            </div>
+          ) : (
+            <span className="text-xs text-muted">—</span>
+          )}
+        </div>
+        <span>{isWrapper ? <span className="text-sm">{token.decimals}</span> : <span className="text-xs text-muted">—</span>}</span>
+        <div>
+          {!isConnected ? (
+            <span className="text-xs text-muted">—</span>
+          ) : !isWrapper ? (
+            <span className="text-xs text-muted">—</span>
+          ) : publicBalance !== undefined ? (
+            <span className="text-sm">
+              {formatAmount(publicBalance, token.decimals)}{' '}
+              <span className="text-xs text-muted">{token.symbol}</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-sm">
-              {/* wrapperDecimals (euint64 = 6) not token.decimals — the encrypted
-                  balance is in wrapper units, and the underlying scale would
-                  show 0 for high-decimal underlyings. */}
-              {formatAmount(confidentialBalance, 6)}{' '}
-              <span className="text-xs text-muted">{confidentialSymbol}</span>
-              <Lock size={10} style={{ color: 'var(--text-secondary)' }} />
-            </span>
-          )
-        ) : isDecrypting ? (
-          <span className="text-xs text-muted">Awaiting signature…</span>
-        ) : decryptError ? (
-          <button
-            onClick={handleDecrypt}
+            <Skeleton width={64} height={14} />
+          )}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {isWrapper ? (
+            <div className="flex justify-end items-center gap-2">
+              <Link href={`/app/wrap?token=${token.address}&action=wrap`}>
+                <Button variant="primary" size="sm" style={{ gap: 4 }}>
+                  <Shield size={12} /> Shield
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <span className="text-xs text-muted" style={{ fontStyle: 'italic' }}>Direct Transfer Only</span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Confidential wrapper row ──────────────────────────────────────── */}
+      <div className="registry-pair-row registry-pair-columns">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <TokenIcon symbol={token.symbol} size={28} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{confidentialSymbol}</div>
+            <div className="text-muted text-xs">Confidential {cleanName}</div>
+          </div>
+        </div>
+        <div className="table-address">
+          <a
+            href={`${explorerBase}/address/${token.address}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1"
-            style={{ color: 'var(--color-danger, #ef4444)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: 0 }}
-            title={`Decryption failed: ${decryptError.message}`}
-            aria-label={`Retry decrypt`}
+            aria-label={`View confidential token on explorer`}
+            title={token.address}
+            style={{ color: 'var(--text-secondary)', transition: 'color 150ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
           >
-            <AlertCircle size={11} /> Retry
-          </button>
-        ) : (
-          <span className="flex items-center gap-1">
+            {formatAddress(token.address, 6)}
+            <ExternalLink size={11} />
+          </a>
+          <CopyButton text={token.address} />
+        </div>
+        <span className="flex items-center gap-1">
+          <span className="text-sm">6</span>
+          <span className="text-xs text-muted">FHE</span>
+          <Tooltip content="FHE ciphertexts use a fixed euint64 scale (6 decimals), independent of the underlying token's decimals." />
+        </span>
+        <div>
+          {!isConnected ? (
+            <span className="text-xs text-muted">—</span>
+          ) : confidentialBalance !== undefined && confidentialBalance !== null ? (
+            confidentialBalance === 0n ? (
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-muted" title="Confidential balance is empty — no ciphertext exists on-chain, so no permit is needed.">
+                  No confidential balance yet
+                </span>
+                <button
+                  onClick={handleDecrypt}
+                  className="flex items-center gap-1 btn-decrypt"
+                  style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', background: 'var(--bg-elevated)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
+                  aria-label="Refresh confidential balance"
+                  title="Re-check on-chain"
+                >
+                  <RefreshCw size={9} />
+                </button>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-sm">
+                {/* wrapperDecimals (euint64 = 6) not token.decimals — the encrypted
+                    balance is in wrapper units, and the underlying scale would
+                    show 0 for high-decimal underlyings. */}
+                {formatAmount(confidentialBalance, 6)}{' '}
+                <span className="text-xs text-muted">{confidentialSymbol}</span>
+                <Lock size={10} style={{ color: 'var(--text-secondary)' }} />
+              </span>
+            )
+          ) : isDecrypting ? (
+            <span className="text-xs text-muted">Awaiting signature…</span>
+          ) : decryptError ? (
+            <button
+              onClick={handleDecrypt}
+              className="flex items-center gap-1"
+              style={{ color: 'var(--color-danger, #ef4444)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: 0 }}
+              title={`Decryption failed: ${decryptError.message}`}
+              aria-label={`Retry decrypt`}
+            >
+              <AlertCircle size={11} /> Retry
+            </button>
+          ) : (
             <button
               onClick={handleDecrypt}
               className="flex items-center gap-1 btn-decrypt"
@@ -640,50 +647,32 @@ function DetectedTokenRow({
             >
               <Unlock size={10} /> Decrypt
             </button>
-          </span>
-        )}
-      </td>
-
-      {/* ── Actions ───────────────────────────────────────────────────────── */}
-      <td style={{ textAlign: 'right' }}>
-        <div className="flex justify-end items-center gap-2">
-          {isWrapper ? (
-            <>
-              <Link href={`/app/wrap?token=${token.address}&action=wrap`}>
-                <Button variant="primary" size="sm" style={{ gap: 4 }}>
-                  <Shield size={12} /> Shield
-                </Button>
-              </Link>
+          )}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="flex justify-end items-center gap-2">
+            {isWrapper && (
               <Link href={`/app/wrap?token=${token.address}&action=unwrap`}>
                 <Button variant="secondary" size="sm">
                   Unshield
                 </Button>
               </Link>
-              <Link href={`/app/wrap?token=${token.address}`}>
-                <Button variant="ghost" size="sm" style={{ gap: 4 }} title="Manage">
-                  <Settings2 size={12} /> Manage
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <span className="text-xs text-muted" style={{ fontStyle: 'italic', marginRight: '8px' }}>
-              Direct Transfer Only
-            </span>
-          )}
-          {onRemove && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              style={{ color: '#ef4444', padding: '6px 8px', minWidth: 'auto' }}
-              title="Remove manually added custom token"
-            >
-              <Trash2 size={13} />
-            </Button>
-          )}
+            )}
+            {onRemove && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                style={{ color: '#ef4444', padding: '6px 8px', minWidth: 'auto' }}
+                title="Remove manually added custom token"
+              >
+                <Trash2 size={13} />
+              </Button>
+            )}
+          </div>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -1304,68 +1293,48 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Table */}
-      <div className="table-wrap" style={{ position: 'relative', zIndex: 2 }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">Token</th>
-              <th scope="col" className="registry-addr-col">ERC-20 Address</th>
-              <th scope="col" className="registry-addr-col">
-                <span className="flex items-center gap-1">
-                  ERC-7984 Wrapper
-                  <Tooltip content={TIP.erc7984} />
-                </span>
-              </th>
-              <th scope="col">
-                <span className="flex items-center gap-1">
-                  Public Balance
-                  <Tooltip content={TIP.publicBalance} />
-                </span>
-              </th>
-              <th scope="col">
-                <span className="flex items-center gap-1">
-                  Confidential Balance
-                  <Tooltip content={TIP.confidentialBalance} />
-                </span>
-              </th>
-              <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && filteredWrappers.length === 0 ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td colSpan={6}><Skeleton height={44} /></td>
-                </tr>
-              ))
-            ) : filteredWrappers.length === 0 ? (
-              <tr>
-                <td colSpan={6}>
-                  <div className="empty-state" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
-                    <div className="empty-state-icon" style={{ display: 'inline-flex', color: 'var(--text-muted)' }}>
-                      <Search size={32} />
-                    </div>
-                    <div style={{ color: 'var(--text-secondary)', marginTop: 'var(--sp-4)' }}>
-                      {searchQuery ? 'No tokens match your search query' : 'No registered wrappers found on this network'}
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredWrappers.map(wrapper => (
-                <RegistryTokenRow
-                  key={wrapper.erc20Address}
-                  wrapper={wrapper}
-                  explorerBase={explorerBase}
-                  isTestnet={isTestnet}
-                  batchedValue={batchValueByAddress.get(wrapper.erc7984Address.toLowerCase())}
-                  batchedError={batchErrorByAddress.get(wrapper.erc7984Address.toLowerCase())}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Pair list */}
+      <div className="registry-grid-wrap" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="registry-grid-header registry-pair-columns">
+          <span>Token</span>
+          <span className="registry-addr-col">Address</span>
+          <span>Decimals</span>
+          <span className="flex items-center gap-1">
+            Balance
+            <Tooltip content={TIP.confidentialBalance} />
+          </span>
+          <span style={{ textAlign: 'right' }}>Actions</span>
+        </div>
+
+        {isLoading && filteredWrappers.length === 0 ? (
+          <div className="registry-pair-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={`skeleton-${i}`} height={92} />
+            ))}
+          </div>
+        ) : filteredWrappers.length === 0 ? (
+          <div className="empty-state" style={{ padding: 'var(--sp-12) var(--sp-8)' }}>
+            <div className="empty-state-icon" style={{ display: 'inline-flex', color: 'var(--text-muted)' }}>
+              <Search size={32} />
+            </div>
+            <div style={{ color: 'var(--text-secondary)', marginTop: 'var(--sp-4)' }}>
+              {searchQuery ? 'No tokens match your search query' : 'No registered wrappers found on this network'}
+            </div>
+          </div>
+        ) : (
+          <div className="registry-pair-list">
+            {filteredWrappers.map(wrapper => (
+              <RegistryTokenRow
+                key={wrapper.erc20Address}
+                wrapper={wrapper}
+                explorerBase={explorerBase}
+                isTestnet={isTestnet}
+                batchedValue={batchValueByAddress.get(wrapper.erc7984Address.toLowerCase())}
+                batchedError={batchErrorByAddress.get(wrapper.erc7984Address.toLowerCase())}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Auto-Detected & Custom Tokens Section */}
@@ -1529,31 +1498,26 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">Token</th>
-                    <th scope="col" className="registry-addr-col">ERC-20 Address</th>
-                    <th scope="col" className="registry-addr-col">ERC-7984 Address</th>
-                    <th scope="col">Public Balance</th>
-                    <th scope="col">Confidential Balance</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allCustomTokens.map((token) => (
-                    <DetectedTokenRow
-                      key={token.address}
-                      token={token}
-                      explorerBase={explorerBase}
-                      onRemove={token.isAutoDetected ? undefined : () => handleRemoveCustomToken(token.address)}
-                      batchedValue={batchValueByAddress.get(token.address.toLowerCase())}
-                      batchedError={batchErrorByAddress.get(token.address.toLowerCase())}
-                    />
-                  ))}
-                </tbody>
-              </table>
+            <div className="registry-grid-wrap">
+              <div className="registry-grid-header registry-pair-columns">
+                <span>Token</span>
+                <span className="registry-addr-col">Address</span>
+                <span>Decimals</span>
+                <span>Balance</span>
+                <span style={{ textAlign: 'right' }}>Actions</span>
+              </div>
+              <div className="registry-pair-list">
+                {allCustomTokens.map((token) => (
+                  <DetectedTokenRow
+                    key={token.address}
+                    token={token}
+                    explorerBase={explorerBase}
+                    onRemove={token.isAutoDetected ? undefined : () => handleRemoveCustomToken(token.address)}
+                    batchedValue={batchValueByAddress.get(token.address.toLowerCase())}
+                    batchedError={batchErrorByAddress.get(token.address.toLowerCase())}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>

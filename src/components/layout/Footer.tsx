@@ -42,7 +42,7 @@ export default function Footer() {
           </div>
         </div>
         <div style={{ marginTop: 'var(--sp-4)', opacity: 0.4, fontSize: 'var(--text-xs)' }}>
-          Built for Zama Developer Program Season 3 · Powered by FHE
+          Confidential token registry powered by Zama fhEVM · ERC-7984
         </div>
       </div>
     </footer>

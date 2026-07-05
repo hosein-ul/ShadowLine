@@ -297,7 +297,6 @@ const APP_PAGES = [
   { href: '/app/analytics',  icon: BarChart3,    label: 'Analytics',    desc: 'Total Value Shielded, 24h shield/unshield volume, and per-token activity across the registry.',                  color: '#8b5cf6', tag: 'Insights'   },
   { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC, WBTC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
   { href: '/app/learn',      icon: GraduationCap,label: 'Learn',        desc: 'Step-by-step tutorial: connect wallet → get tokens → shield → decrypt balance. Interactive with rewards.',       color: '#f59e0b', tag: 'Tutorial'   },
-  { href: '/app/developers', icon: Wrench,       label: 'Dev Tools',    desc: 'Raw contract ABI explorer, SDK hook reference, and integration helpers for building on ERC-7984.',              color: '#ef4444', tag: 'Builder'    },
   { href: '/app/docs',       icon: FileText,     label: 'Docs',         desc: 'ERC-7984 architecture, wrapper mechanics, permit model, and full SDK hook API reference.',                      color: '#64748b', tag: 'Reference'  },
 ];
 
@@ -676,7 +675,6 @@ export const CUSTOM_PAIRS: CustomPair[] = [
           {[
             { label: 'View on GitHub', href: 'https://github.com/hosein-ul/ShadowLine', icon: Globe },
             { label: 'Zama SDK Docs', href: 'https://docs.zama.org/protocol/sdk', icon: BookOpen },
-            { label: 'Developer Tools', href: '/app/developers', icon: Wrench },
           ].map(link => (
             <motion.a
               key={link.label}

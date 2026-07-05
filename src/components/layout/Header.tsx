@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/app/ClientLayout';
+import { useTheme, useActiveNetwork } from '@/app/ClientLayout';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
@@ -19,7 +19,6 @@ import {
   ChevronDown,
   Check,
   Copy,
-  Palette,
   Menu,
   X,
   RefreshCw,
@@ -32,9 +31,9 @@ interface NavItem {
 }
 
 /**
- * Core product flows — always visible in the desktop nav bar.
- * Kept short deliberately: the header must never overflow at common
- * desktop widths (1280px+). Everything else lives in the "More" dropdown.
+ * Product + informational routes — all shown directly in the desktop nav bar.
+ * Kept to short labels so the row stays on one line at common desktop widths;
+ * below the tablet breakpoint the whole nav collapses into the hamburger drawer.
  */
 const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app', label: 'Registry' },
@@ -42,30 +41,21 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app/transfer', label: 'Transfer' },
   { href: '/app/portfolio', label: 'Portfolio' },
   { href: '/app/faucet', label: 'Faucet', badge: 'TESTNET' },
-];
-
-/** Secondary / informational routes — grouped into the "More" dropdown. */
-const SECONDARY_NAV_ITEMS: NavItem[] = [
   { href: '/app/learn', label: 'Learn' },
-  { href: '/app/developers', label: 'Dev Tools' },
   { href: '/app/analytics', label: 'Analytics' },
   { href: '/app/docs', label: 'Docs' },
+];
+
+/** Only the external marketing site stays tucked into the compact "More" menu. */
+const SECONDARY_NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Marketing Site' },
 ];
 
 const ALL_NAV_ITEMS: NavItem[] = [...PRIMARY_NAV_ITEMS, ...SECONDARY_NAV_ITEMS];
 
-const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
-  { value: 'charcoal', label: 'Nordic Charcoal' },
-  { value: 'midnight', label: 'Nordic Midnight' },
-  { value: 'frost', label: 'Nordic Frost' },
-  { value: 'aurora', label: 'Nordic Aurora' },
-];
-
 export default function Header() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { designTheme, setDesignTheme } = useDesignTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
   // Wagmi Hooks
@@ -80,12 +70,8 @@ export default function Header() {
   // Local state for modals & dropdowns
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isDesignDropdownOpen, setIsDesignDropdownOpen] = useState(false);
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const isSecondaryActive = SECONDARY_NAV_ITEMS.some((item) => item.href === pathname);
 
   const handleCopy = async () => {
     if (!address) return;
@@ -107,13 +93,11 @@ export default function Header() {
     }
   };
 
-  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Charcoal';
-
   return (
     <header className="header">
       <div className="header-inner">
-        {/* Logo */}
-        <Link href="/app" className="header-logo">
+        {/* Logo — links to the marketing landing page, not the dApp */}
+        <Link href="/" className="header-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
             <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
@@ -140,40 +124,6 @@ export default function Header() {
             </Link>
           ))}
 
-          {/* "More" dropdown — secondary/informational routes */}
-          <div className="nav-more-wrapper">
-            <button
-              className={cn('header-link nav-more-trigger', isSecondaryActive && 'active')}
-              onClick={() => setIsMoreOpen((prev) => !prev)}
-              aria-haspopup="true"
-              aria-expanded={isMoreOpen}
-            >
-              More
-              <ChevronDown size={14} style={{ marginLeft: 4 }} />
-            </button>
-
-            {isMoreOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-                  onClick={() => setIsMoreOpen(false)}
-                />
-                <div className="nav-more-menu animate-slide-up">
-                  {SECONDARY_NAV_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn('nav-more-item', pathname === item.href && 'active')}
-                      onClick={() => setIsMoreOpen(false)}
-                    >
-                      {item.label}
-                      {pathname === item.href && <Check size={14} />}
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
         </nav>
 
         {/* Mobile hamburger — shown only below the tablet breakpoint */}
@@ -204,48 +154,6 @@ export default function Header() {
           >
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-
-          {/* Design Swapper Dropdown */}
-          {theme === 'dark' && (
-            <div className="theme-selector-dropdown">
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
-              >
-                <Palette size={14} />
-                <span>{activeThemeLabel}</span>
-                <ChevronDown size={14} />
-              </button>
-
-              {isDesignDropdownOpen && (
-                <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-                    onClick={() => setIsDesignDropdownOpen(false)}
-                  />
-                  <div className="theme-dropdown-menu animate-slide-up">
-                    {THEME_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        className={cn(
-                          'theme-dropdown-item',
-                          designTheme === opt.value && 'active'
-                        )}
-                        onClick={() => {
-                          setDesignTheme(opt.value);
-                          setIsDesignDropdownOpen(false);
-                        }}
-                      >
-                        <span>{opt.label}</span>
-                        {designTheme === opt.value && <Check size={14} />}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
 
           {/* Network Switcher */}
           <div className="network-switcher">
@@ -409,7 +317,7 @@ export default function Header() {
           <div className="mobile-nav-panel animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-nav-header">
               <Link
-                href="/app"
+                href="/"
                 className="header-logo"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

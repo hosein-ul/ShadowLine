@@ -7,7 +7,10 @@ interface TokenIconProps {
   style?: React.CSSProperties;
 }
 
-const STEAKHOUSE_LOGO = 'https://www.steakhouse.fi/apple-touch-icon.png';
+// Local copy — the old steakhouse.fi domain lapsed and now redirects to a
+// domain marketplace (verified 2026-07-05), so the external URL 404'd. Fetched
+// fresh from the current official site, www.steakhouse.financial.
+const STEAKHOUSE_LOGO = '/brands/steakhouse-logo.png';
 
 const LOGO_URLS: Record<string, string> = {
   USDC:       'https://assets.coingecko.com/coins/images/6319/small/usdc.png',

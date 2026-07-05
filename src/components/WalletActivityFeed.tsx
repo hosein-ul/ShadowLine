@@ -48,6 +48,8 @@ type WrapperLog = {
   transactionHash?: `0x${string}` | null;
   blockNumber?: bigint | null;
   logIndex?: number | null;
+  /** Block time in ms — populated only by the Blockscout path (authoritative). */
+  timestampMs?: number | null;
 };
 
 /** How far back the initial fetch reaches (~2 months on Sepolia at 12s/block). */
@@ -68,14 +70,28 @@ const BLOCKSCOUT_BASES: Record<number, string> = {
  */
 /** Cap Blockscout pagination so a very active contract can't hang the fetch. */
 const BLOCKSCOUT_MAX_PAGES = 30;
+/** Compact widget: fewer pages for a fast first paint (newest-first, so page 1
+ *  already holds the most recent activity — enough for a "recent" preview). */
+const BLOCKSCOUT_COMPACT_PAGES = 6;
+
+type BlockscoutLog = {
+  blockNumber: string;
+  transactionHash: string;
+  topics: string[];
+  data: string;
+  logIndex: string;
+  /** ISO block timestamp string from Blockscout (authoritative). */
+  blockTimestamp: string | null;
+};
 
 async function fetchBlockscoutLogs(
   chainId: number,
   contractAddress: string,
-): Promise<{ blockNumber: string; transactionHash: string; topics: string[]; data: string; logIndex: string }[]> {
+  maxPages: number = BLOCKSCOUT_MAX_PAGES,
+): Promise<BlockscoutLog[]> {
   const base = BLOCKSCOUT_BASES[chainId];
   if (!base) return [];
-  const all: { blockNumber: string; transactionHash: string; topics: string[]; data: string; logIndex: string }[] = [];
+  const all: BlockscoutLog[] = [];
   const build = (params: Record<string, string | number> = {}) => {
     const q = new URLSearchParams({ ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])) });
     return `${base}/api/v2/addresses/${contractAddress}/logs?${q.toString()}`;
@@ -83,13 +99,13 @@ async function fetchBlockscoutLogs(
   let url: string | null = build();
   let pages = 0;
 
-  while (url && pages < BLOCKSCOUT_MAX_PAGES) {
+  while (url && pages < maxPages) {
     pages += 1;
     try {
       const res = await fetch(url);
       if (!res.ok) break;
       const json = (await res.json()) as {
-        items?: { block_number: number; transaction_hash: string; topics: string[]; data: string; index: number }[];
+        items?: { block_number: number; transaction_hash: string; topics: string[]; data: string; index: number; block_timestamp?: string }[];
         next_page_params?: Record<string, string | number> | null;
       };
       for (const item of json.items ?? []) {
@@ -99,6 +115,7 @@ async function fetchBlockscoutLogs(
           topics: item.topics,
           data: item.data,
           logIndex: String(item.index),
+          blockTimestamp: item.block_timestamp ?? null,
         });
       }
       const next = json.next_page_params;
@@ -110,20 +127,25 @@ async function fetchBlockscoutLogs(
   return all;
 }
 
-/** Complete history for one wrapper via Blockscout, in WrapperLog shape. */
+/** History for one wrapper via Blockscout, in WrapperLog shape (with block times). */
 async function fetchWrapperLogsBlockscout(
   chainId: number,
   wrapperAddress: `0x${string}`,
+  maxPages?: number,
 ): Promise<WrapperLog[]> {
-  const bs = await fetchBlockscoutLogs(chainId, wrapperAddress);
-  return bs.map((l) => ({
-    address: wrapperAddress,
-    topics: l.topics as `0x${string}`[],
-    data: l.data as `0x${string}`,
-    transactionHash: (l.transactionHash || null) as `0x${string}` | null,
-    blockNumber: l.blockNumber ? BigInt(l.blockNumber) : null,
-    logIndex: l.logIndex ? Number(l.logIndex) : null,
-  }));
+  const bs = await fetchBlockscoutLogs(chainId, wrapperAddress, maxPages);
+  return bs.map((l) => {
+    const t = l.blockTimestamp ? Date.parse(l.blockTimestamp) : NaN;
+    return {
+      address: wrapperAddress,
+      topics: l.topics as `0x${string}`[],
+      data: l.data as `0x${string}`,
+      transactionHash: (l.transactionHash || null) as `0x${string}` | null,
+      blockNumber: l.blockNumber ? BigInt(l.blockNumber) : null,
+      logIndex: l.logIndex ? Number(l.logIndex) : null,
+      timestampMs: Number.isNaN(t) ? null : t,
+    };
+  });
 }
 
 /**
@@ -164,6 +186,7 @@ function useWrapperLogs(
   fullHistory: boolean,
 ): {
   logsByWrapper: Record<string, WrapperLog[]>;
+  blockTimesFromLogs: Record<string, number>;
   loading: boolean;
   loadingOlder: boolean;
   loadingAll: boolean;
@@ -191,11 +214,15 @@ function useWrapperLogs(
     if (!client || !address || validWrappers.length === 0) return;
     let cancelled = false;
 
-    // Full variant (Portfolio): pull COMPLETE history from Blockscout on mount
-    // so the entire shield/unshield history shows without any extra click. The
-    // RPC recent-window path is kept as a fallback (unknown chain, or Blockscout
-    // returned nothing) and for the compact dashboard preview (fast first paint).
-    const useBlockscout = fullHistory && !!BLOCKSCOUT_BASES[chainId];
+    // Blockscout is the primary source for BOTH variants: it returns logs
+    // newest-first with authoritative block timestamps, so it fixes both the
+    // "recent tx missing" and "wrong times" bugs that the RPC path suffered
+    // from. Full (Portfolio) pulls complete history; compact (Wrap dashboard)
+    // pulls a few newest-first pages — enough for a recent-activity preview and
+    // guaranteed to include a just-made wrap/unwrap. The RPC window path is kept
+    // only as a fallback (unknown chain, or Blockscout returned nothing).
+    const useBlockscout = !!BLOCKSCOUT_BASES[chainId];
+    const pageCap = fullHistory ? BLOCKSCOUT_MAX_PAGES : BLOCKSCOUT_COMPACT_PAGES;
 
     const run = async () => {
       setLoading(true);
@@ -204,7 +231,7 @@ function useWrapperLogs(
         if (useBlockscout) {
           const perWrapper = await Promise.all(
             validWrappers.map(async (p) => {
-              const logs = await fetchWrapperLogsBlockscout(chainId, p.erc7984Address);
+              const logs = await fetchWrapperLogsBlockscout(chainId, p.erc7984Address, pageCap);
               return [p.erc7984Address.toLowerCase(), logs] as const;
             }),
           );
@@ -298,8 +325,24 @@ function useWrapperLogs(
     void run();
   }, [validWrappers, chainId]);
 
+  // Authoritative block times harvested from the Blockscout logs themselves
+  // (blockNumber → ms). Lets the feed render correct timestamps immediately
+  // without a separate, flaky RPC block-time round-trip.
+  const blockTimesFromLogs = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const logs of Object.values(logsByWrapper)) {
+      for (const l of logs) {
+        if (l.blockNumber != null && l.timestampMs != null) {
+          map[String(l.blockNumber)] = l.timestampMs;
+        }
+      }
+    }
+    return map;
+  }, [logsByWrapper]);
+
   return {
     logsByWrapper,
+    blockTimesFromLogs,
     loading,
     loadingOlder,
     loadingAll,
@@ -350,6 +393,50 @@ function WrapperFeedRow({
 // Everything else (unshield_started/finalized, mint/burn transfers) is dropped.
 
 type FeedItem = ActivityItem & { wrapperAddr: string };
+
+/**
+ * Verified via Blockscout against a live deployed wrapper (topic0 of a real
+ * `wrap()` tx log): the on-chain event is
+ * `Wrap(address indexed to, uint256 roundedAmount, bytes32 encryptedWrappedAmount)`,
+ * i.e. `keccak256("Wrap(address,uint256,bytes32)")`.
+ *
+ * The Zama SDK's `parseActivityFeed` only recognizes a differently-named
+ * canonical event, `Wrapped(address,uint256)` — a different signature/topic —
+ * so it never emits a `type: 'shield'` ActivityItem for these contracts. Every
+ * shield mint decays to a plain `ConfidentialTransfer(from=0x0, to=user)`
+ * "transfer" item, which classifyFeed's mint/burn filter then drops entirely.
+ * Net effect: shield ("Wrap") actions were silently missing from the feed.
+ *
+ * Fix: decode the real `Wrap` log ourselves from the raw logs we already fetch
+ * and synthesize a proper "shield" FeedItem, instead of relying on the SDK's
+ * (non-matching) built-in recognizer.
+ */
+const WRAP_TOPIC = '0xcda691c81d2fd787d8c209adb4ae8b138f857d7575adf7669195ed05482e701b' as const;
+
+function decodeWrapLogs(logs: WrapperLog[], wrapperAddr: string, user: string): FeedItem[] {
+  const u = user.toLowerCase();
+  const out: FeedItem[] = [];
+  for (const log of logs) {
+    if (log.topics[0] !== WRAP_TOPIC || log.topics.length < 2) continue;
+    const to = `0x${log.topics[1].slice(-40)}` as `0x${string}`;
+    if (to.toLowerCase() !== u) continue;
+    const roundedAmount = BigInt(`0x${log.data.slice(2, 66)}`);
+    out.push({
+      type: 'shield',
+      direction: 'incoming',
+      amount: { type: 'clear', value: roundedAmount },
+      to,
+      metadata: {
+        transactionHash: log.transactionHash ?? undefined,
+        blockNumber: log.blockNumber ?? undefined,
+        logIndex: log.logIndex ?? undefined,
+      },
+      rawEvent: { eventName: 'Wrapped', to, amountIn: roundedAmount },
+      wrapperAddr,
+    } as FeedItem);
+  }
+  return out;
+}
 
 function involvesUser(item: ActivityItem, user: string): boolean {
   const u = user.toLowerCase();
@@ -444,9 +531,19 @@ interface WalletActivityFeedProps {
   chainId: number;
   variant?: 'full' | 'compact';
   maxRows?: number;
+  /**
+   * Bump this after a wrap/unshield completes to auto-refresh the feed so the
+   * new transaction appears without the user clicking Refresh. A short delay is
+   * applied to let Blockscout index the just-mined tx.
+   */
+  refreshKey?: number;
 }
 
 const PAGE_SIZE = 20;
+/** Default row cap for the compact widget (e.g. the Wrap page's "Recent Activity"). */
+const COMPACT_ROWS = 25;
+/** Give Blockscout a moment to index a just-mined tx before auto-refetching. */
+const AUTO_REFRESH_DELAY_MS = 4_000;
 
 export default function WalletActivityFeed({
   address,
@@ -454,12 +551,22 @@ export default function WalletActivityFeed({
   chainId,
   variant = 'full',
   maxRows,
+  refreshKey,
 }: WalletActivityFeedProps) {
   const explorerBase =
     CHAIN_CONFIG[chainId as keyof typeof CHAIN_CONFIG]?.explorerUrl ?? 'https://eth.blockscout.com';
   const client = usePublicClient({ chainId });
-  const { logsByWrapper, loading, loadingOlder, loadingAll, reachedStart, loadOlder, loadAll, refetch } =
+  const { logsByWrapper, blockTimesFromLogs, loading, loadingOlder, loadingAll, reachedStart, loadOlder, loadAll, refetch } =
     useWrapperLogs(address, wrappers, chainId, variant === 'full');
+
+  // Auto-refresh when the parent signals a completed tx (refreshKey change).
+  const firstRefreshRef = useRef(true);
+  useEffect(() => {
+    if (firstRefreshRef.current) { firstRefreshRef.current = false; return; }
+    const t = setTimeout(() => refetch(), AUTO_REFRESH_DELAY_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
   const [itemsByWrapper, setItemsByWrapper] = useState<Record<string, ActivityItem[]>>({});
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -484,6 +591,11 @@ export default function WalletActivityFeed({
     for (const [wrapperAddr, items] of Object.entries(itemsByWrapper)) {
       for (const it of items) all.push({ ...it, wrapperAddr });
     }
+    // The SDK doesn't recognize this app's actual on-chain Wrap event (see
+    // decodeWrapLogs above), so reconstruct "Shield" rows from the raw logs.
+    for (const [wrapperAddr, logs] of Object.entries(logsByWrapper)) {
+      all.push(...decodeWrapLogs(logs, wrapperAddr, address));
+    }
     const classified = classifyFeed(all, address);
     classified.sort((a, b) => {
       const ab = a.metadata?.blockNumber ? BigInt(a.metadata.blockNumber) : 0n;
@@ -491,7 +603,7 @@ export default function WalletActivityFeed({
       return bb > ab ? 1 : bb < ab ? -1 : 0;
     });
     return classified;
-  }, [itemsByWrapper, address]);
+  }, [itemsByWrapper, logsByWrapper, address]);
 
   // ── Amount decryption — explicit user gate ────────────────────────────────
   const { addToast } = useToast();
@@ -543,12 +655,19 @@ export default function WalletActivityFeed({
   );
 
   const isCompact = variant === 'compact';
-  const rowCap = maxRows ?? (isCompact ? PAGE_SIZE : visibleCount);
+  const rowCap = maxRows ?? (isCompact ? COMPACT_ROWS : visibleCount);
   const visibleItems = allItems.slice(0, rowCap);
   const hasMoreLoaded = allItems.length > rowCap;
 
   // ── Block timestamps ──────────────────────────────────────────────────────
+  // Blockscout already gives us authoritative block times (blockTimesFromLogs);
+  // the RPC fetch below only fills gaps for blocks Blockscout didn't cover
+  // (e.g. the RPC-window fallback path on an unknown chain).
   const [blockTimes, setBlockTimes] = useState<Record<string, number>>({});
+  const effectiveBlockTimes = useMemo(
+    () => ({ ...blockTimes, ...blockTimesFromLogs }),
+    [blockTimes, blockTimesFromLogs],
+  );
   useEffect(() => {
     if (!client) return;
     const missing = new Set<bigint>();
@@ -556,7 +675,7 @@ export default function WalletActivityFeed({
       const bn = it.metadata?.blockNumber;
       if (bn === undefined || bn === null) continue;
       const key = String(bn);
-      if (!(key in blockTimes)) missing.add(BigInt(bn));
+      if (!(key in effectiveBlockTimes)) missing.add(BigInt(bn));
       if (missing.size >= 40) break;
     }
     if (missing.size === 0) return;
@@ -707,7 +826,7 @@ export default function WalletActivityFeed({
               })();
 
               const bn = ev.metadata?.blockNumber;
-              const ts = bn !== undefined && bn !== null ? blockTimes[String(bn)] : undefined;
+              const ts = bn !== undefined && bn !== null ? effectiveBlockTimes[String(bn)] : undefined;
 
               return (
                 <div
