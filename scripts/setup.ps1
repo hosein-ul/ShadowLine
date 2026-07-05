@@ -1,7 +1,7 @@
 # ShadowLine 0-to-100 Quick Installer & Prerequisite Auto-Installer for Windows PowerShell
 #
 # Usage (PowerShell):
-#   irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex
+#   irm https://raw.githubusercontent.com/hosein-ul/shadowline/main/scripts/setup.ps1 | iex
 # Or locally:
 #   .\scripts\setup.ps1
 
@@ -11,15 +11,26 @@ Write-Host "====================================================================
 Write-Host "🚀 SHADOWLINE 0-TO-100 WINDOWS LAUNCHER & AUTO-INSTALLER" -ForegroundColor Cyan
 Write-Host "====================================================================" -ForegroundColor Cyan
 
+# Helper to refresh path
+function Refresh-Path {
+    if (Test-Path "C:\Program Files\Git\cmd") {
+        $env:Path = "C:\Program Files\Git\cmd;" + $env:Path
+    }
+    if (Test-Path "C:\Program Files\nodejs") {
+        $env:Path = "C:\Program Files\nodejs;" + $env:Path
+    }
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
 # 1. Check & Auto-Install Git
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "ℹ Git not found on your system. Attempting automatic installation via winget..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
-        # Refresh environment path
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        Refresh-Path
     } elseif (Get-Command choco -ErrorAction SilentlyContinue) {
         choco install git -y
+        Refresh-Path
     } else {
         Write-Host "[ERROR] Git is not installed and winget/choco was not found. Please install Git from https://git-scm.com/ and re-run." -ForegroundColor Red
         exit 1
@@ -33,10 +44,10 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "ℹ Node.js not found. Attempting automatic installation of Node.js LTS via winget..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         winget install --id OpenJS.NodeJS.LTS -e --source winget --accept-package-agreements --accept-source-agreements
-        # Refresh environment path
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        Refresh-Path
     } elseif (Get-Command choco -ErrorAction SilentlyContinue) {
         choco install nodejs-lts -y
+        Refresh-Path
     } else {
         Write-Host "[ERROR] Node.js is not installed and winget/choco was not found. Please install Node.js v18+ from https://nodejs.org/ and re-run." -ForegroundColor Red
         exit 1
@@ -54,13 +65,17 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 if (-not (Test-Path "package.json") -or -not (Get-Content "package.json" -Raw | Select-String '"name": "shadowline"')) {
     Write-Host "ℹ ShadowLine repository not detected in current directory." -ForegroundColor Yellow
     Write-Host "Cloning ShadowLine from GitHub..." -ForegroundColor Cyan
-    if (Test-Path "ShadowLine") {
+    if (Test-Path "shadowline") {
+        Write-Host "Directory shadowline already exists. Entering directory..." -ForegroundColor Yellow
+        Set-Location "shadowline"
+        git pull origin main
+    } elseif (Test-Path "ShadowLine") {
         Write-Host "Directory ShadowLine already exists. Entering directory..." -ForegroundColor Yellow
         Set-Location "ShadowLine"
         git pull origin main
     } else {
-        git clone https://github.com/hosein-ul/ShadowLine.git
-        Set-Location "ShadowLine"
+        git clone https://github.com/hosein-ul/shadowline.git shadowline
+        Set-Location "shadowline"
     }
 }
 

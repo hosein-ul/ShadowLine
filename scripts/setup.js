@@ -134,11 +134,11 @@ async function presentMenu() {
   switch (choice.trim()) {
     case '1':
       console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}`);
-      spawn('npm', ['run', 'dev'], { stdio: 'inherit', cwd: ROOT_DIR });
+      spawn('npm', ['run', 'dev'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
       break;
     case '2':
       console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}`);
-      spawn('npm', ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR });
+      spawn('npm', ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
       break;
     case '3':
       console.log(`\n${colors.cyan}☁️ Deploying to Netlify...${colors.reset}`);
