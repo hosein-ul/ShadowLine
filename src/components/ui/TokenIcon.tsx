@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { SiEthereum, SiTether } from 'react-icons/si';
-import { Coins, Cpu, PoundSterling, Landmark, CircleDollarSign } from 'lucide-react';
 
 interface TokenIconProps {
   symbol: string;
@@ -9,19 +7,42 @@ interface TokenIconProps {
   style?: React.CSSProperties;
 }
 
+// Local copy — the old steakhouse.fi domain lapsed and now redirects to a
+// domain marketplace (verified 2026-07-05), so the external URL 404'd. Fetched
+// fresh from the current official site, www.steakhouse.financial.
+const STEAKHOUSE_LOGO = '/brands/steakhouse-logo.png';
+
 const LOGO_URLS: Record<string, string> = {
-  ZAMA: '/tokens/zama.png',
-  XAUT: 'https://assets.coingecko.com/coins/images/10481/large/Tether_Gold.png',
-  WETH: '/tokens/weth.png',
-  ETH: '/tokens/eth.png',
-  BRON: '/tokens/bron.png',
-  USDT: '/tokens/usdt.png',
-  TGBP: 'https://assets.coingecko.com/coins/images/70647/standard/tgbp-square.png?1762953800',
-  USDC: '/tokens/usdc.png',
+  USDC:       'https://assets.coingecko.com/coins/images/6319/small/usdc.png',
+  USDT:       'https://assets.coingecko.com/coins/images/325/small/Tether.png',
+  WETH:       'https://assets.coingecko.com/coins/images/2518/small/weth.png',
+  ETH:        'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+  XAUT:       'https://assets.coingecko.com/coins/images/10481/large/Tether_Gold.png',
+  TGBP:       'https://assets.coingecko.com/coins/images/70647/standard/tgbp-square.png?1762953800',
+  ZAMA:       'https://assets.coingecko.com/coins/images/70921/standard/zama.png?1764591992',
+  BRON:       'https://assets.coingecko.com/coins/images/70826/standard/Bron_logo_sq.png?1764044817',
+  BBQTGBP:    STEAKHOUSE_LOGO,
+  STEAKCUSDC: STEAKHOUSE_LOGO,
+};
+
+// Optional per-symbol accent color for the initial-circle fallback.
+const FALLBACK_COLORS: Record<string, string> = {
+  USDC:       '#2775CA',
+  USDT:       '#50AF95',
+  WETH:       '#627EEA',
+  ETH:        '#627EEA',
+  XAUT:       '#f59e0b',
+  TGBP:       '#10b981',
+  ZAMA:       '#FFD208',
+  BRON:       '#a78bfa',
+  BBQTGBP:    '#1B5E3B',
+  STEAKCUSDC: '#1B5E3B',
 };
 
 const getBaseSymbol = (symbol: string): string => {
-  let sym = symbol.toUpperCase();
+  // Strip disambiguation suffixes added by the registry's dedupeSymbols pass,
+  // e.g. "tGBP (Restricted)" or "tGBP (ab12)" — logos key on the bare symbol.
+  let sym = symbol.toUpperCase().replace(/\s*\(.*$/, '').trim();
   if (sym.endsWith('MOCK')) {
     sym = sym.slice(0, -4);
   }
@@ -36,24 +57,20 @@ const getBaseSymbol = (symbol: string): string => {
 
 export default function TokenIcon({ symbol, size = 24, className, style }: TokenIconProps) {
   const [imageError, setImageError] = useState(false);
-  const sym = symbol.toUpperCase();
   const baseSym = getBaseSymbol(symbol);
   const logoUrl = LOGO_URLS[baseSym];
-
-  const getFallbackIcon = () => {
-    if (sym.includes('USDC')) return <CircleDollarSign size={size} style={{ color: '#2775CA', ...style }} className={className} />;
-    if (sym.includes('USDT')) return <SiTether size={size} style={{ color: '#50AF95', ...style }} className={className} />;
-    if (sym.includes('WETH') || sym === 'ETH') return <SiEthereum size={size} style={{ color: '#627EEA', ...style }} className={className} />;
-    if (sym.includes('ZAMA')) return <Cpu size={size} style={{ color: 'var(--accent)', ...style }} className={className} />;
-    if (sym.includes('BRON')) return <Coins size={size} style={{ color: '#a78bfa', ...style }} className={className} />;
-    if (sym.includes('GBP')) return <PoundSterling size={size} style={{ color: '#10b981', ...style }} className={className} />;
-    if (sym.includes('XAUT')) return <Landmark size={size} style={{ color: '#f59e0b', ...style }} className={className} />;
-    return <Coins size={size} style={{ color: 'var(--text-muted)', ...style }} className={className} />;
-  };
+  const color = FALLBACK_COLORS[baseSym] ?? 'var(--text-muted)';
 
   if (logoUrl && !imageError) {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
         <img
           src={logoUrl}
           alt={symbol}
@@ -74,9 +91,29 @@ export default function TokenIcon({ symbol, size = 24, className, style }: Token
     );
   }
 
+  // Neutral initial-in-circle fallback — no Lucide icons.
+  const initial = baseSym.slice(0, 1);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      {getFallbackIcon()}
+    <span
+      className={className}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        background: `color-mix(in srgb, ${color} 18%, var(--bg-input))`,
+        color,
+        fontWeight: 700,
+        fontSize: `${Math.max(9, Math.round(size * 0.42))}px`,
+        lineHeight: 1,
+        flexShrink: 0,
+        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+        ...style,
+      }}
+    >
+      {initial}
     </span>
   );
 }

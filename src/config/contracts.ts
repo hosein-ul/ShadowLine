@@ -55,6 +55,24 @@ export interface WrapperPair {
    * Only meaningful when source === 'custom'.
    */
   note?: string;
+  /**
+   * True when this pair is on-chain but our review flags it as suspected
+   * test/placeholder (e.g. Mainnet `cbbqTGBP` vanity address). The pair is
+   * kept in the list — bounty coverage requires wrap/unwrap for every
+   * registry pair — but the UI should surface an "Unverified" badge and
+   * `unverifiedReason` on hover so users can make an informed decision.
+   * See `UNVERIFIED_WRAPPERS` in `src/lib/registry.ts` for the canonical
+   * list and rationale.
+   */
+  unverified?: boolean;
+  /** Human-readable reason accompanying the `unverified` flag. */
+  unverifiedReason?: string;
+  /**
+   * Whether this pair is an ERC-20 wrapper (true) or a confidential-only
+   * token with no underlying ERC-20 (false / undefined). Only set for
+   * user-added custom pairs; registry pairs are always wrappers.
+   */
+  isWrapper?: boolean;
 }
 
 /**

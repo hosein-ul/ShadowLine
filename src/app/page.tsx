@@ -68,7 +68,7 @@ function Hero() {
           <motion.div whileHover={{ rotate: 12, scale: 1.1 }} style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 14px rgba(255,210,8,.5)' }}>
             <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
           </motion.div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(14px,2.5vw,32px)' }}>
           {[['How It Works', '#how'], ['App Pages', '#app'], ['Technology', '#tech']].map(([l, h]) => (
@@ -292,12 +292,11 @@ function PinnedStory() {
 // ─── HORIZONTAL SCROLL — App Pages ──────────────────────────────────────────
 const APP_PAGES = [
   { href: '/app',            icon: Database,     label: 'Registry',     desc: 'Browse ERC-7984 wrappers on Sepolia and Mainnet. View live encrypted balances for connected wallets.',           color: '#3b82f6', tag: 'Explorer'   },
-  { href: '/app/wrap',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
+  { href: '/app/wrapper',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
   { href: '/app/portfolio',  icon: Wallet,       label: 'Portfolio',    desc: 'Track all your shielded and unshielded balances. Decrypt FHE ciphertexts with EIP-712 permits.',                 color: '#10b981', tag: 'My Assets'  },
   { href: '/app/analytics',  icon: BarChart3,    label: 'Analytics',    desc: 'Total Value Shielded, 24h shield/unshield volume, and per-token activity across the registry.',                  color: '#8b5cf6', tag: 'Insights'   },
   { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC, WBTC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
   { href: '/app/learn',      icon: GraduationCap,label: 'Learn',        desc: 'Step-by-step tutorial: connect wallet → get tokens → shield → decrypt balance. Interactive with rewards.',       color: '#f59e0b', tag: 'Tutorial'   },
-  { href: '/app/developers', icon: Wrench,       label: 'Dev Tools',    desc: 'Raw contract ABI explorer, SDK hook reference, and integration helpers for building on ERC-7984.',              color: '#ef4444', tag: 'Builder'    },
   { href: '/app/docs',       icon: FileText,     label: 'Docs',         desc: 'ERC-7984 architecture, wrapper mechanics, permit model, and full SDK hook API reference.',                      color: '#64748b', tag: 'Reference'  },
 ];
 
@@ -348,7 +347,7 @@ function HorizontalScroll() {
 // ─── ANIMATED TIMELINE ───────────────────────────────────────────────────────
 const STEPS = [
   { n:'01', icon:Droplets, color:'#06b6d4', title:'Get Test Tokens',       body:'Visit the Faucet and mint free Sepolia testnet tokens (USDC, WBTC). No real funds required to test the complete FHE flow.', link:'/app/faucet' },
-  { n:'02', icon:Shield,   color:'#FFD208', title:'Shield Your ERC-20',    body:'The SDK auto-detects ERC-1363 (one transferAndCall tx) or standard (approve + wrap). Your balance is now a euint64 ciphertext on-chain.', link:'/app/wrap' },
+  { n:'02', icon:Shield,   color:'#FFD208', title:'Shield Your ERC-20',    body:'The SDK auto-detects ERC-1363 (one transferAndCall tx) or standard (approve + wrap). Your balance is now a euint64 ciphertext on-chain.', link:'/app/wrapper' },
   { n:'03', icon:EyeOff,   color:'#8b5cf6', title:'Transfer Confidentially',body:'Amounts are encrypted by WASM before the tx is broadcast. On-chain: sender and recipient are visible — only the amount is a ciphertext.', link:'/app' },
   { n:'04', icon:Key,      color:'#10b981', title:'Decrypt Your Balance',  body:'Sign an EIP-712 read-only permit. The Zama Gateway re-encrypts to your transport key. WASM decrypts locally — plaintext never leaves the browser.', link:'/app/portfolio' },
 ];
@@ -676,7 +675,6 @@ export const CUSTOM_PAIRS: CustomPair[] = [
           {[
             { label: 'View on GitHub', href: 'https://github.com/hosein-ul/ShadowLine', icon: Globe },
             { label: 'Zama SDK Docs', href: 'https://docs.zama.org/protocol/sdk', icon: BookOpen },
-            { label: 'Developer Tools', href: '/app/developers', icon: Wrench },
           ].map(link => (
             <motion.a
               key={link.label}
@@ -691,6 +689,74 @@ export const CUSTOM_PAIRS: CustomPair[] = [
             </motion.a>
           ))}
         </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+function PoweredBy() {
+  const partners = [
+    {
+      name: 'Zama',
+      logo: '/brands/zama-logo.svg',
+      desc: 'FHE confidential computing protocol',
+      cardBg: '#FFD208',
+      href: 'https://www.zama.org',
+    },
+    {
+      name: 'Blockscout',
+      logo: '/brands/blockscout-logo.svg',
+      desc: 'Open-source block explorer',
+      cardBg: '#fff',
+      href: 'https://www.blockscout.com',
+    },
+    {
+      name: 'OpenZeppelin',
+      logo: '/brands/openzeppelin-logo.svg',
+      desc: 'Audited smart contract standards',
+      cardBg: '#fff',
+      href: 'https://www.openzeppelin.com',
+    },
+  ];
+
+  return (
+    <section style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
+      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+        <BlurFade inView delay={0}>
+          <p style={{ textAlign: 'center', fontSize: '.78rem', fontWeight: 700, color: '#71717a', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '32px' }}>
+            Built on Trusted Infrastructure
+          </p>
+        </BlurFade>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+          {partners.map((p, i) => (
+            <BlurFade key={p.name} inView delay={i * 0.1}>
+              <a
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  padding: '36px 24px',
+                  borderRadius: '20px',
+                  border: '1px solid #e4e4e7',
+                  background: p.cardBg,
+                  textDecoration: 'none',
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,.02)',
+                }}
+              >
+                <img src={p.logo} alt={`${p.name} logo`} style={{ height: '32px', width: 'auto', maxWidth: '160px' }} />
+                <span style={{ fontSize: '.8rem', color: p.cardBg === '#FFD208' ? 'rgba(0,0,0,.7)' : '#71717a', textAlign: 'center' }}>
+                  {p.desc}
+                </span>
+              </a>
+            </BlurFade>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -976,8 +1042,10 @@ export default function LandingPage() {
       {/* 3. FAQs */}
       <FaqAccordions />
 
+      <PoweredBy />
+
       <CTA />
-      
+
       <footer style={{ background: '#000', color: '#fff', borderTop: '1px solid rgba(255,255,255,.06)', padding: '80px clamp(24px,6vw,80px) 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', marginBottom: '60px' }}>
           {/* Column 1: About ShadowLine */}
@@ -986,7 +1054,7 @@ export default function LandingPage() {
               <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="14" height="14" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
               </div>
-              <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Zama<span style={{ color: '#FFD208' }}>Vault</span></span>
+              <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
             </div>
             <p style={{ color: '#71717a', fontSize: '.84rem', lineHeight: 1.6, margin: 0 }}>
               ShadowLine is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
@@ -999,7 +1067,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
                 { l: 'Dashboard', h: '/app' },
-                { l: 'Shield & Unshield', h: '/app/wrap' },
+                { l: 'Shield & Unshield', h: '/app/wrapper' },
                 { l: 'Portfolio Manager', h: '/app/portfolio' },
                 { l: 'Token Faucet', h: '/app/faucet' }
               ].map(link => (

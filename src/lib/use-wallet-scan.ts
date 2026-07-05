@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { type PublicClient, parseAbiItem } from 'viem';
-import { ERC165_ABI, ERC20_ABI, ERC7984_INTERFACE_ID } from './wrapper-abi';
+import { ERC20_ABI, isErc7984Contract } from './wrapper-abi';
 import { CHAIN_CONFIG, type SupportedChainId } from '@/config/chains';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,7 +43,11 @@ const TRANSFER_EVENT = parseAbiItem(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Batch-check ERC-165 supportsInterface for many contract addresses */
+/**
+ * Filter a candidate address list down to genuine ERC-7984 confidential tokens.
+ * Uses the robust two-step detector (ERC-165 fast path + `confidentialBalanceOf`
+ * behavioral fallback) so tokens that don't implement ERC-165 are still caught.
+ */
 async function filterErc7984Contracts(
   client: PublicClient,
   addresses: `0x${string}`[],
@@ -52,14 +56,7 @@ async function filterErc7984Contracts(
 
   // Run checks in parallel — publicClients deduplicate identical RPC calls
   const results = await Promise.allSettled(
-    addresses.map((addr) =>
-      client.readContract({
-        address: addr,
-        abi: ERC165_ABI,
-        functionName: 'supportsInterface',
-        args: [ERC7984_INTERFACE_ID],
-      }),
-    ),
+    addresses.map((addr) => isErc7984Contract(client, addr)),
   );
 
   return addresses.filter((_, i) => {
@@ -101,14 +98,18 @@ async function fetchBlockscoutTokens(
   if (!response.ok) {
     throw new Error(`Blockscout API returned status ${response.status}`);
   }
-  const data = await response.json();
+  const data = (await response.json()) as {
+    status?: string;
+    message?: string;
+    result?: { contractAddress?: unknown }[];
+  };
   if (data.status !== '1' || !Array.isArray(data.result)) {
     throw new Error(data.message || 'Invalid Blockscout API response');
   }
   return data.result
-    .map((item: any) => item.contractAddress)
+    .map((item) => item.contractAddress)
     .filter(
-      (addr: any): addr is `0x${string}` =>
+      (addr): addr is `0x${string}` =>
         typeof addr === 'string' && addr.startsWith('0x') && addr.length === 42,
     );
 }
@@ -168,18 +169,23 @@ export function useWalletErc7984Scan(
       if (explorerUrl) {
         try {
           rawContracts = await fetchBlockscoutTokens(explorerUrl, walletAddress);
-          apiSucceeded = true;
+          // Only treat the API as authoritative when it returned at least one
+          // candidate contract. An empty list can mean either "no tokens" or
+          // "indexer out of sync" — the RPC fallback below is cheap enough
+          // that we run it in the empty case too, to avoid silently telling
+          // a user with a real balance that they have nothing.
+          apiSucceeded = rawContracts.length > 0;
           console.log(`[useWalletErc7984Scan] Blockscout API detected ${rawContracts.length} tokens`);
         } catch (apiErr) {
           console.warn('[useWalletErc7984Scan] Blockscout API failed, falling back to RPC logs:', apiErr);
         }
       }
 
-      // ── Step 2: L2 - RPC getLogs fallback (if API failed or returned empty) ──
+      // ── Step 2: L2 - RPC getLogs fallback (if API failed OR returned empty) ──
       if (!apiSucceeded && !cancelled) {
         try {
           const latestBlock = await client.getBlockNumber();
-          let logs: any[] = [];
+          let logs: { address: `0x${string}` }[] = [];
 
           // Try 500k, 100k, then 10k block ranges to handle RPC limit limits
           for (const lookback of [500_000n, 100_000n, 10_000n]) {
@@ -201,7 +207,7 @@ export function useWalletErc7984Scan(
               ]);
               logs = [...incoming, ...outgoing];
               break; // successfully queried
-            } catch (err) {
+            } catch {
               // Range too large for this RPC node, retry with smaller lookback
             }
           }
@@ -282,7 +288,10 @@ export function useWalletErc7984Scan(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletAddress, client, scanTick]);
 
-  const extra = detected.filter((t) => !t.isRegistryPair);
+  // Memoized — consumers put `extra` in effect dependency arrays, so a fresh
+  // array identity every render would re-trigger those effects on every state
+  // update (this previously kept cancelling the add-pair validation timer).
+  const extra = useMemo(() => detected.filter((t) => !t.isRegistryPair), [detected]);
 
   return { detected, extra, status, error, rescan };
 }

@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useTheme, useDesignTheme, useActiveNetwork, type DesignTheme } from '@/app/ClientLayout';
+import { useTheme, useActiveNetwork } from '@/app/ClientLayout';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { formatAddress } from '@/lib/utils';
+import { useSessionReset } from '@/lib/reset-session';
 import {
   Sun,
   Moon,
@@ -18,32 +19,43 @@ import {
   ChevronDown,
   Check,
   Copy,
-  Palette,
+  Menu,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Home' },
+interface NavItem {
+  href: string;
+  label: string;
+  badge?: string;
+}
+
+/**
+ * Product + informational routes — all shown directly in the desktop nav bar.
+ * Kept to short labels so the row stays on one line at common desktop widths;
+ * below the tablet breakpoint the whole nav collapses into the hamburger drawer.
+ */
+const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app', label: 'Registry' },
-  { href: '/app/wrap', label: 'Wrap' },
+  { href: '/app/wrapper', label: 'Wrapper' },
+  { href: '/app/transfer', label: 'Transfer' },
   { href: '/app/portfolio', label: 'Portfolio' },
-  { href: '/app/faucet', label: 'Faucet' },
+  { href: '/app/faucet', label: 'Faucet', badge: 'TESTNET' },
   { href: '/app/learn', label: 'Learn' },
-  { href: '/app/developers', label: 'Dev Tools' },
   { href: '/app/analytics', label: 'Analytics' },
   { href: '/app/docs', label: 'Docs' },
 ];
 
-const THEME_OPTIONS: { value: DesignTheme; label: string }[] = [
-  { value: 'charcoal', label: 'Nordic Charcoal' },
-  { value: 'midnight', label: 'Nordic Midnight' },
-  { value: 'frost', label: 'Nordic Frost' },
-  { value: 'aurora', label: 'Nordic Aurora' },
+/** Only the external marketing site stays tucked into the compact "More" menu. */
+const SECONDARY_NAV_ITEMS: NavItem[] = [
+  { href: '/', label: 'Marketing Site' },
 ];
+
+const ALL_NAV_ITEMS: NavItem[] = [...PRIMARY_NAV_ITEMS, ...SECONDARY_NAV_ITEMS];
 
 export default function Header() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { designTheme, setDesignTheme } = useDesignTheme();
   const { isTestnet, setIsTestnet, activeChainId } = useActiveNetwork();
 
   // Wagmi Hooks
@@ -52,10 +64,13 @@ export default function Header() {
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
 
+  // App-wide FHE credential reset (wired via SessionResetProvider in ClientLayout).
+  const { reset: resetSession, isResetting } = useSessionReset();
+
   // Local state for modals & dropdowns
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isDesignDropdownOpen, setIsDesignDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -78,24 +93,22 @@ export default function Header() {
     }
   };
 
-  const activeThemeLabel = THEME_OPTIONS.find(opt => opt.value === designTheme)?.label || 'Nordic Charcoal';
-
   return (
     <header className="header">
       <div className="header-inner">
-        {/* Logo */}
-        <Link href="/app" className="header-logo">
+        {/* Logo — links to the marketing landing page, not the dApp */}
+        <Link href="/" className="header-logo">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
             <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
           </svg>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Zama</span>
-          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Vault</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
+          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
         </Link>
 
-        {/* Navigation */}
+        {/* Navigation — desktop only; mobile uses the hamburger drawer below */}
         <nav className="header-nav">
-          {NAV_ITEMS.map((item) => (
+          {PRIMARY_NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -103,14 +116,24 @@ export default function Header() {
               style={{ display: 'inline-flex', alignItems: 'center' }}
             >
               {item.label}
-              {item.label === 'Faucet' && (
+              {item.badge && (
                 <Badge variant="default" size="sm" style={{ marginLeft: '6px', fontSize: '9px', color: 'var(--text-secondary)' }}>
-                  TESTNET
+                  {item.badge}
                 </Badge>
               )}
             </Link>
           ))}
+
         </nav>
+
+        {/* Mobile hamburger — shown only below the tablet breakpoint */}
+        <button
+          className="btn btn-secondary btn-icon nav-hamburger"
+          onClick={() => setIsMobileMenuOpen(true)}
+          aria-label="Open navigation menu"
+        >
+          <Menu size={18} />
+        </button>
 
         {/* Actions */}
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
@@ -131,48 +154,6 @@ export default function Header() {
           >
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-
-          {/* Design Swapper Dropdown */}
-          {theme === 'dark' && (
-            <div className="theme-selector-dropdown">
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setIsDesignDropdownOpen((prev) => !prev)}
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
-              >
-                <Palette size={14} />
-                <span>{activeThemeLabel}</span>
-                <ChevronDown size={14} />
-              </button>
-
-              {isDesignDropdownOpen && (
-                <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-                    onClick={() => setIsDesignDropdownOpen(false)}
-                  />
-                  <div className="theme-dropdown-menu animate-slide-up">
-                    {THEME_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        className={cn(
-                          'theme-dropdown-item',
-                          designTheme === opt.value && 'active'
-                        )}
-                        onClick={() => {
-                          setDesignTheme(opt.value);
-                          setIsDesignDropdownOpen(false);
-                        }}
-                      >
-                        <span>{opt.label}</span>
-                        {designTheme === opt.value && <Check size={14} />}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
 
           {/* Network Switcher */}
           <div className="network-switcher">
@@ -261,6 +242,18 @@ export default function Header() {
                           Disconnect
                         </Button>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        isLoading={isResetting}
+                        onClick={() => { void resetSession(); }}
+                        title="Wipes cached FHE decrypt permits — next decrypt prompts for a fresh wallet signature."
+                        style={{ gap: 6, justifyContent: 'center' }}
+                      >
+                        <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
+                        Reset Decryption Session
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -271,9 +264,10 @@ export default function Header() {
               className="btn btn-primary btn-sm"
               onClick={() => setIsConnectModalOpen(true)}
               style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}
+              title="Connect Wallet"
             >
               <Wallet size={16} />
-              Connect Wallet
+              <span className="btn-connect-label">Connect Wallet</span>
             </button>
           )}
         </div>
@@ -315,6 +309,52 @@ export default function Header() {
             )}
           </div>
         </Modal>
+      )}
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="mobile-nav-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="mobile-nav-panel animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-nav-header">
+              <Link
+                href="/"
+                className="header-logo"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
+                  <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
+                </svg>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
+              </Link>
+              <button
+                className="btn btn-secondary btn-icon"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close navigation menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <nav className="mobile-nav-list">
+              {ALL_NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn('mobile-nav-link', pathname === item.href && 'active')}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                  {item.badge && (
+                    <Badge variant="default" size="sm" style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
       )}
     </header>
   );

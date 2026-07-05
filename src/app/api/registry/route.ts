@@ -9,7 +9,7 @@ import { REGISTRY_ADDRESSES, KNOWN_WRAPPERS } from '@/config/contracts';
  * Public REST API for querying the Zama WrappersRegistry.
  *
  * Returns every registered ERC-20 ↔ ERC-7984 wrapper pair with metadata.
- * Falls back to the hardcoded snapshot when the on-chain read fails.
+ * Falls back to the hardcoded snapshot only when the on-chain read fails.
  *
  * Usage:
  *   fetch("https://YOUR_DEPLOYMENT_URL/api/registry?chain=sepolia")
@@ -17,8 +17,15 @@ import { REGISTRY_ADDRESSES, KNOWN_WRAPPERS } from '@/config/contracts';
  *     .then(data => console.log(data.pairs))
  */
 
-// Minimal ABI for the WrappersRegistry — only the methods we need.
-// The real contract exposes more, but these two give us the full pair list.
+/**
+ * Real WrappersRegistry ABI — the two view functions we need to paginate the
+ * pair list. Verified against the on-chain contract source at
+ * https://github.com/zama-ai/protocol-apps/tree/main/contracts/confidential-token-wrappers-registry
+ *
+ * Note: the previous version of this route called a non-existent `listPairs`
+ * function which always reverted, causing every request to fall through to
+ * the cached snapshot. That is now fixed.
+ */
 const REGISTRY_ABI = [
   {
     name: 'getTokenConfidentialTokenPairsLength',
@@ -28,17 +35,22 @@ const REGISTRY_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
   },
   {
-    // listPairs(uint256 start, uint256 count) → (address[] tokens, address[] confidentialTokens)
-    name: 'listPairs',
+    name: 'getTokenConfidentialTokenPairsSlice',
     type: 'function',
     stateMutability: 'view',
     inputs: [
-      { name: 'start', type: 'uint256' },
-      { name: 'count', type: 'uint256' },
+      { name: 'fromIndex', type: 'uint256' },
+      { name: 'toIndex', type: 'uint256' },
     ],
     outputs: [
-      { name: 'tokens', type: 'address[]' },
-      { name: 'confidentialTokens', type: 'address[]' },
+      {
+        type: 'tuple[]',
+        components: [
+          { name: 'tokenAddress', type: 'address' },
+          { name: 'confidentialTokenAddress', type: 'address' },
+          { name: 'isValid', type: 'bool' },
+        ],
+      },
     ],
   },
 ] as const;
@@ -60,10 +72,18 @@ const RPC_URLS: Record<number, string> = {
   [mainnet.id]: process.env.NEXT_PUBLIC_MAINNET_RPC || 'https://ethereum-rpc.publicnode.com',
 };
 
-// cbbqTGBP blocklist — same as client-side, see src/lib/registry.ts
-const BLOCKLISTED = new Set([
-  '0xba4cff6ed6f7cb2a58776deca4e984b498446762',
-]);
+/**
+ * Registry entries that are on-chain but that our review flags as unverified
+ * (suspected test/placeholder deployments). Instead of hiding them —
+ * which would silently drop official registry coverage — we surface them
+ * with an `unverified` flag + rationale so consumers can display a warning.
+ *
+ * Keep in sync with `BLOCKLISTED_WRAPPERS` in `src/lib/registry.ts`.
+ */
+const UNVERIFIED_WRAPPERS: Record<string, string> = {
+  '0xba4cff6ed6f7cb2a58776deca4e984b498446762':
+    'Suspected test/placeholder entry (cbbqTGBP). Underlying uses a vanity address (0xbeeff…) and the asset name has no known referent. See docs.zama.org mainnet addresses page.',
+};
 
 interface PairResult {
   tokenAddress: string;
@@ -73,6 +93,9 @@ interface PairResult {
   name: string;
   decimals: number;
   wrapperDecimals: number;
+  isValid: boolean;
+  unverified?: boolean;
+  unverifiedReason?: string;
 }
 
 async function readTokenMeta(
@@ -121,54 +144,56 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get pair count
-    const totalBig = await client.readContract({
+    const totalBig = (await client.readContract({
       address: registryAddress,
       abi: REGISTRY_ABI,
       functionName: 'getTokenConfidentialTokenPairsLength',
-    }) as bigint;
+    })) as bigint;
     const total = Number(totalBig);
 
     if (total === 0) {
       return NextResponse.json(
-        { pairs: [], total: 0, chain: chainParam, registryAddress, timestamp: Date.now() },
+        { pairs: [], total: 0, chain: chainParam, registryAddress, timestamp: Date.now(), source: 'on-chain' },
         { headers: cacheHeaders() },
       );
     }
 
-    // 2. Fetch all pairs in one call
-    const [tokens, confidentialTokens] = await client.readContract({
+    // 2. Fetch all pairs in one call (fromIndex inclusive, toIndex exclusive)
+    const slice = (await client.readContract({
       address: registryAddress,
       abi: REGISTRY_ABI,
-      functionName: 'listPairs',
-      args: [0n, BigInt(total)],
-    }) as [readonly `0x${string}`[], readonly `0x${string}`[]];
+      functionName: 'getTokenConfidentialTokenPairsSlice',
+      args: [0n, totalBig],
+    })) as readonly {
+      tokenAddress: `0x${string}`;
+      confidentialTokenAddress: `0x${string}`;
+      isValid: boolean;
+    }[];
 
     // 3. Enrich with ERC-20 metadata (parallel)
-    const pairs: PairResult[] = [];
-    const metaPromises = tokens.map(async (tokenAddr, i) => {
-      const wrapper = confidentialTokens[i];
-      if (BLOCKLISTED.has(wrapper.toLowerCase())) return null;
-
+    const metaPromises = slice.map(async (pair): Promise<PairResult> => {
       const [underlyingMeta, wrapperMeta] = await Promise.all([
-        readTokenMeta(client, tokenAddr),
-        readTokenMeta(client, wrapper),
+        readTokenMeta(client, pair.tokenAddress),
+        readTokenMeta(client, pair.confidentialTokenAddress),
       ]);
 
+      const wrapperKey = pair.confidentialTokenAddress.toLowerCase();
+      const unverifiedReason = UNVERIFIED_WRAPPERS[wrapperKey];
+
       return {
-        tokenAddress: tokenAddr,
-        confidentialTokenAddress: wrapper,
+        tokenAddress: pair.tokenAddress,
+        confidentialTokenAddress: pair.confidentialTokenAddress,
         symbol: underlyingMeta.symbol,
         confidentialSymbol: `c${underlyingMeta.symbol}`,
         name: underlyingMeta.name,
         decimals: underlyingMeta.decimals,
         wrapperDecimals: wrapperMeta.decimals,
-      } satisfies PairResult;
+        isValid: pair.isValid,
+        ...(unverifiedReason ? { unverified: true, unverifiedReason } : {}),
+      };
     });
 
-    const results = await Promise.all(metaPromises);
-    for (const r of results) {
-      if (r) pairs.push(r);
-    }
+    const pairs = await Promise.all(metaPromises);
 
     return NextResponse.json(
       {
@@ -182,11 +207,12 @@ export async function GET(request: NextRequest) {
       { headers: cacheHeaders() },
     );
   } catch (err) {
-    // Fallback to hardcoded snapshot
+    // Fallback to hardcoded snapshot only when the RPC read genuinely fails.
     console.error('Registry on-chain read failed, falling back to snapshot:', err);
-    const fallback = (KNOWN_WRAPPERS[chain.id as keyof typeof KNOWN_WRAPPERS] ?? [])
-      .filter((p) => !BLOCKLISTED.has(p.erc7984Address.toLowerCase()))
-      .map((p) => ({
+    const fallback = (KNOWN_WRAPPERS[chain.id as keyof typeof KNOWN_WRAPPERS] ?? []).map((p): PairResult => {
+      const wrapperKey = p.erc7984Address.toLowerCase();
+      const unverifiedReason = UNVERIFIED_WRAPPERS[wrapperKey];
+      return {
         tokenAddress: p.erc20Address,
         confidentialTokenAddress: p.erc7984Address,
         symbol: p.symbol,
@@ -194,7 +220,10 @@ export async function GET(request: NextRequest) {
         name: p.name,
         decimals: p.decimals,
         wrapperDecimals: p.wrapperDecimals,
-      }));
+        isValid: p.isValid ?? true,
+        ...(unverifiedReason ? { unverified: true, unverifiedReason } : {}),
+      };
+    });
 
     return NextResponse.json(
       {

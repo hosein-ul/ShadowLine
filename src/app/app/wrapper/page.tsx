@@ -1,40 +1,48 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
+import WalletActivityFeed from '@/components/WalletActivityFeed';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
 import { classifyError } from '@/lib/errors';
 import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useRegistryPairs, findPairBySymbol } from '@/lib/registry';
 import { useToast } from '@/components/ui/Toast';
+import { useSessionReset } from '@/lib/reset-session';
 import {
   useAccount,
   useReadContract,
   useConnect,
   useSwitchChain,
+  usePublicClient,
+  useWriteContract,
 } from 'wagmi';
-import { useConfidentialBalance, useShield, useUnshield } from '@zama-fhe/react-sdk';
+import {
+  useConfidentialBalance,
+  useShield,
+  useUnshield,
+  useZamaSDK,
+  savePendingUnshield,
+  clearPendingUnshield,
+} from '@zama-fhe/react-sdk';
 import { ERC20_ABI, WRAPPER_ABI } from '@/lib/wrapper-abi';
 import { isAddress } from 'viem';
 import BlurIn from '@/components/ui/BlurIn';
 import TypingAnimation from '@/components/ui/TypingAnimation';
-import confetti from 'canvas-confetti';
 import { CHAIN_CONFIG } from '@/config/chains';
 import TransactionSuccessModal from '@/components/ui/TransactionSuccessModal';
 import {
-  Shield,
   ArrowUpDown,
   Lock,
   Unlock,
   Check,
   Info,
-  Wallet,
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
@@ -100,19 +108,21 @@ function ConfidentialBalanceInline({
     );
   }
 
-  // Default: explicit decrypt button — never auto-fires
+  // Default: explicit decrypt button — never auto-fires. Neutral gray palette
+  // so it doesn't compete with the primary Shield/Unshield CTA (which owns the
+  // accent color).
   return (
     <button
       type="button"
       onClick={onDecrypt}
       className="flex items-center gap-1"
       style={{
-        color: 'var(--accent)',
+        color: 'var(--text-secondary)',
         cursor: 'pointer',
         fontWeight: 600,
         fontSize: '11px',
-        border: '1px solid var(--border-accent, var(--accent))',
-        background: 'var(--accent-subtle, rgba(255,210,8,0.08))',
+        border: '1px solid var(--border)',
+        background: 'var(--bg-elevated)',
         padding: '2px 8px',
         borderRadius: 'var(--radius-sm)',
       }}
@@ -135,6 +145,8 @@ function WrapPageContent() {
   const [activeTxHash, setActiveTxHash] = useState<`0x${string}` | undefined>(undefined);
   const [finalTxHash, setFinalTxHash] = useState<string | undefined>(undefined);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  // Bumped after each completed wrap/unshield so the activity feed auto-refreshes.
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
   const { activeChainId } = useActiveNetwork();
   const { addToast } = useToast();
@@ -143,12 +155,21 @@ function WrapPageContent() {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
   const { switchChain } = useSwitchChain();
+  const publicClient = usePublicClient({ chainId: activeChainId });
+  const { writeContractAsync } = useWriteContract();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   // Gate confidential-balance decryption behind an explicit user action.
   // The EIP-712 permit must NEVER fire automatically — it must only trigger
   // when the user clicks "Decrypt to view". This flag is reset when the
   // selected token changes so the user is always in control.
   const [decryptRequested, setDecryptRequested] = useState(false);
+
+  // App-wide session reset — re-arm the Decrypt button so the next click
+  // prompts for a fresh EIP-712 signature (IndexedDB is empty after reset).
+  const { resetToken } = useSessionReset();
+  useEffect(() => {
+    if (resetToken > 0) setDecryptRequested(false);
+  }, [resetToken]);
 
   // Dynamic registry: list of wrapper pairs for the active chain, including
   // any pair added on-chain after this client was built.
@@ -162,40 +183,69 @@ function WrapPageContent() {
   );
   const isTokenAddress = useMemo(() => isAddress(selectedToken), [selectedToken]);
 
+  // ── Address-first pair resolution ─────────────────────────────────────────
+  // Registry rows link with `?token=<symbol>`; custom rows link with
+  // `?token=<erc7984Address>`. Both live in `allPairs` (registry + user custom
+  // via mergeCustomPairs) so we look up by both — no on-chain refetch needed
+  // when the pair is already known to the app.
+  const addressMatchedPair = useMemo(() => {
+    if (!isTokenAddress) return undefined;
+    const key = (selectedToken as string).toLowerCase();
+    return allPairs.find(
+      (p) =>
+        p.erc7984Address.toLowerCase() === key ||
+        p.erc20Address.toLowerCase() === key,
+    );
+  }, [isTokenAddress, selectedToken, allPairs]);
+
+  // Only fall back to on-chain reads for a token address the app doesn't know
+  // about. This eliminates the "raw address shown as symbol" flash.
+  const needsOnChainLookup = isTokenAddress && !addressMatchedPair;
+
   const { data: customSymbol } = useReadContract({
     abi: ERC20_ABI,
-    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    address: needsOnChainLookup ? (selectedToken as `0x${string}`) : undefined,
     functionName: 'symbol',
-    query: { enabled: isTokenAddress },
+    query: { enabled: needsOnChainLookup },
   });
 
   const { data: customName } = useReadContract({
     abi: ERC20_ABI,
-    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    address: needsOnChainLookup ? (selectedToken as `0x${string}`) : undefined,
     functionName: 'name',
-    query: { enabled: isTokenAddress },
+    query: { enabled: needsOnChainLookup },
   });
 
   const { data: customDecimals } = useReadContract({
     abi: ERC20_ABI,
-    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
+    address: needsOnChainLookup ? (selectedToken as `0x${string}`) : undefined,
     functionName: 'decimals',
-    query: { enabled: isTokenAddress },
+    query: { enabled: needsOnChainLookup },
   });
 
+  // Canonical OpenZeppelin ERC7984ERC20Wrapper getter is `underlying()`.
+  // The legacy `underlyingToken()` alias reverts on real Sepolia wrappers
+  // (verified on-chain against the live registry pair).
   const { data: customUnderlying } = useReadContract({
     abi: WRAPPER_ABI,
-    address: isTokenAddress ? (selectedToken as `0x${string}`) : undefined,
-    functionName: 'underlyingToken',
-    query: { enabled: isTokenAddress },
+    address: needsOnChainLookup ? (selectedToken as `0x${string}`) : undefined,
+    functionName: 'underlying',
+    query: { enabled: needsOnChainLookup },
   });
 
   const selectedWrapper = useMemo(() => {
-    const found = findPairBySymbol(wrappers, selectedToken);
-    if (found) return found;
+    // 1) Symbol match (registry pairs deep-linked by symbol from the registry table).
+    const bySymbol = findPairBySymbol(wrappers, selectedToken);
+    if (bySymbol) return bySymbol;
 
-    // If selectedToken is an address, resolve dynamically
-    if (isTokenAddress && customSymbol && customName) {
+    // 2) Address match against merged registry + custom (also filters revoked
+    //    isValid === false; the wrap selector never surfaces those).
+    if (addressMatchedPair && addressMatchedPair.isValid !== false) return addressMatchedPair;
+
+    // 3) Unknown address — synthesize a pair from on-chain reads. Only build the
+    //    wrapper object once symbol AND name have resolved; before that, return
+    //    undefined so the UI shows a skeleton instead of raw text.
+    if (needsOnChainLookup && customSymbol && customName) {
       return {
         erc20Address: (customUnderlying as `0x${string}`) || ('0x0000000000000000000000000000000000000000' as `0x${string}`),
         erc7984Address: selectedToken as `0x${string}`,
@@ -208,7 +258,7 @@ function WrapPageContent() {
       };
     }
     return undefined;
-  }, [wrappers, selectedToken, isTokenAddress, customSymbol, customName, customDecimals, customUnderlying]);
+  }, [wrappers, selectedToken, addressMatchedPair, needsOnChainLookup, customSymbol, customName, customDecimals, customUnderlying]);
 
   // Real contract balance reads (Public underlying)
   const { data: rawPublicBalance, refetch: refetchPublicBalance, error: publicBalanceError } = useReadContract({
@@ -239,8 +289,27 @@ function WrapPageContent() {
     error: decryptWrapperError,
   } = useConfidentialBalance(
     { tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000' },
-    { enabled: decryptRequested && !!address && !!selectedWrapper?.erc7984Address }
+    {
+      // retry: false — a rejected permit signature must NOT re-prompt the wallet.
+      enabled: decryptRequested && !!address && !!selectedWrapper?.erc7984Address,
+      retry: false,
+      refetchOnWindowFocus: false,
+    }
   );
+
+  // Fire-once: on decrypt error (incl. signature rejection), disable the query
+  // so it can't re-fire on remount/focus. The Decrypt button re-arms itself.
+  const decryptErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!decryptWrapperError) {
+      decryptErrorRef.current = null;
+      return;
+    }
+    const msg = decryptWrapperError.message ?? '';
+    if (decryptErrorRef.current === msg) return;
+    decryptErrorRef.current = msg;
+    setDecryptRequested(false);
+  }, [decryptWrapperError]);
 
   // Read allowance
   const { data: rawAllowance, refetch: refetchAllowance } = useReadContract({
@@ -266,6 +335,8 @@ function WrapPageContent() {
 
 
   // Zama official Shield/Unshield hooks
+  const sdk = useZamaSDK();
+
   const { mutateAsync: shield } = useShield({
     tokenAddress: selectedWrapper?.erc7984Address ?? '0x0000000000000000000000000000000000000000',
   });
@@ -297,21 +368,67 @@ function WrapPageContent() {
     if (!selectedWrapper || !address) return;
     try {
       if (action === 'wrap') {
-        // If allowance is already sufficient, SDK skips approval —
-        // jump straight to step 3 (Shield pending) for consistent UI.
-        setTxStep(needsApproval ? 1 : 3);
-        const res = await shield({
-          amount: parsedInputAmount,
-          approvalStrategy: needsApproval ? 'exact' : 'skip',
-          onApprovalSubmitted: (txHash) => {
-            setTxStep(2); // Approve mining
-            setActiveTxHash(txHash);
+        // ── Approve first, and WAIT for it to be mined, before the wrap ──────
+        // The installed SDK 3.0.1 `shield()` broadcasts the ERC-20 approval and
+        // immediately submits the wrap in the same call WITHOUT awaiting the
+        // approval receipt (verified in node_modules/@zama-fhe/sdk — the private
+        // approval helper calls signer.writeContract but never
+        // waitForTransactionReceipt). The wallet then simulates the wrap against
+        // an allowance that isn't mined yet and rejects it ("Third-party
+        // contract execution error"). So we run the approval ourselves, await
+        // the receipt, then call shield with approvalStrategy:'skip'.
+        if (needsApproval) {
+          if (!publicClient) throw new Error('No RPC client available for the active network.');
+          setTxStep(1); // Approve pending (awaiting signature)
+
+          // Some ERC-20s (notably real USDT, and this app's USDTMock which
+          // deliberately replicates it — verified on-chain: USDTMock.approve
+          // has `require(!(value != 0 && allowance(...) != 0))`) revert an
+          // approve() call that changes a non-zero allowance directly to a
+          // different non-zero value. The wallet's pre-flight simulation
+          // catches this and blocks confirmation ("Third-party contract
+          // execution error") before the user can even sign. Zero the
+          // allowance first when one is already outstanding, then approve
+          // the real amount — this is required by USDT-style tokens and a
+          // harmless no-op extra tx for standard ERC-20s.
+          if (hasAllowance > 0n) {
+            const zeroHash = await writeContractAsync({
+              abi: ERC20_ABI,
+              address: selectedWrapper.erc20Address,
+              functionName: 'approve',
+              args: [selectedWrapper.erc7984Address, 0n],
+            });
             addToast({
               variant: 'info',
-              title: 'Approval Submitted',
-              message: 'Approve transaction sent. Waiting for confirmation...',
+              title: 'Resetting Allowance',
+              message: 'This token requires clearing the existing approval before setting a new one.',
             });
-          },
+            await publicClient.waitForTransactionReceipt({ hash: zeroHash });
+            await refetchAllowance();
+          }
+
+          const approveHash = await writeContractAsync({
+            abi: ERC20_ABI,
+            address: selectedWrapper.erc20Address,
+            functionName: 'approve',
+            args: [selectedWrapper.erc7984Address, parsedInputAmount],
+          });
+          setTxStep(2); // Approve mining
+          setActiveTxHash(approveHash);
+          addToast({
+            variant: 'info',
+            title: 'Approval Submitted',
+            message: 'Approve transaction sent. Waiting for on-chain confirmation before shielding…',
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          await refetchAllowance();
+        }
+
+        // Allowance is now confirmed on-chain — the wrap simulation will pass.
+        setTxStep(3); // Shield pending (awaiting signature)
+        const res = await shield({
+          amount: parsedInputAmount,
+          approvalStrategy: 'skip',
           onShieldSubmitted: (txHash) => {
             setTxStep(4); // Shield mining
             setActiveTxHash(txHash);
@@ -328,7 +445,7 @@ function WrapPageContent() {
         addToast({
           variant: 'success',
           title: 'Shielding Confirmed',
-          message: `Successfully wrapped ${amount} ${selectedToken} into confidential c${selectedToken}.`,
+          message: `Successfully wrapped ${amount} ${selectedWrapper?.symbol ?? ''} into confidential c${selectedWrapper?.symbol ?? ''}.`,
         });
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
@@ -339,13 +456,25 @@ function WrapPageContent() {
         setDecryptRequested(false);
         refetchPublicBalance();
         refetchAllowance();
+        setFeedRefreshKey((k) => k + 1); // auto-refresh the activity feed
       } else {
         setTxStep(3); // Unshield pending
+        const wrapperAddress = selectedWrapper.erc7984Address;
         const res = await unshield({
           amount: parsedInputAmount,
           onUnwrapSubmitted: (txHash) => {
             setTxStep(4); // Unwrap on-chain, waiting for proof
             setActiveTxHash(txHash);
+            // Persist the unwrap tx hash immediately. Per the official Zama
+            // unshield guide (docs.zama.org/protocol/sdk/guides/unshield-tokens),
+            // the SDK does NOT auto-persist this. If the user closes the tab
+            // between here and finalize, `loadPendingUnshield` on next mount
+            // will pick it up and `PendingUnshieldBanner` can offer Resume.
+            if (sdk?.storage) {
+              void savePendingUnshield(sdk.storage, wrapperAddress, txHash).catch((err) => {
+                console.error('savePendingUnshield failed:', err);
+              });
+            }
             addToast({
               variant: 'info',
               title: 'Unwrap Submitted',
@@ -369,19 +498,29 @@ function WrapPageContent() {
             });
           },
         });
-        
+
         setFinalTxHash(res.txHash);
+
+        // Finalization confirmed on-chain — the pending record is no longer
+        // needed. Best-effort clear; failure here is non-fatal because the
+        // banner also self-clears on successful Resume.
+        if (sdk?.storage) {
+          void clearPendingUnshield(sdk.storage, wrapperAddress).catch(() => {
+            /* non-fatal */
+          });
+        }
 
         addToast({
           variant: 'success',
           title: 'Unshielding Confirmed',
-          message: `Successfully unshielded ${amount} c${selectedToken} into public ${selectedToken}.`,
+          message: `Successfully unshielded ${amount} c${selectedWrapper?.symbol ?? ''} into public ${selectedWrapper?.symbol ?? ''}.`,
         });
         setTxStep(5); // Completed
         setIsSuccessModalOpen(true);
         // Reset decrypt gate — same reason as wrap path above.
         setDecryptRequested(false);
         refetchPublicBalance();
+        setFeedRefreshKey((k) => k + 1); // auto-refresh the activity feed
       }
     } catch (err: unknown) {
       console.error(err);
@@ -478,37 +617,63 @@ function WrapPageContent() {
               
               {/* Token Display / Selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                {selectedToken && <TokenIcon symbol={selectedToken} size={20} />}
-                <select
-                  className="btn btn-secondary"
-                  disabled={txStep > 0}
-                  style={{
-                    appearance: 'none',
-                    padding: 'var(--sp-2) var(--sp-4)',
-                    background: 'var(--bg-elevated)',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    color: 'var(--text-primary)',
-                    minWidth: '110px',
-                  }}
-                  value={selectedToken}
-                  onChange={e => {
-                    setSelectedToken(e.target.value);
-                    setTxStep(0);
-                    setAmount('');
-                    // Reset synchronously here — NOT in a useEffect — to
-                    // prevent a one-frame window where the old
-                    // decryptRequested=true fires a permit for the new token.
-                    setDecryptRequested(false);
-                  }}
-                >
-                  <option value="">Select Token</option>
-                  {wrappers.map(w => (
-                    <option key={w.symbol} value={w.symbol}>
-                      {action === 'wrap' ? w.symbol : `c${w.symbol}`}
-                    </option>
-                  ))}
-                </select>
+                {selectedWrapper && <TokenIcon symbol={selectedWrapper.symbol} size={20} />}
+                {(() => {
+                  // Two groups so users never confuse locally-added pairs with
+                  // Zama-endorsed ones. Official first, then Custom / Dev-only.
+                  const official = wrappers.filter((w) => w.source !== 'custom');
+                  const custom = wrappers.filter((w) => w.source === 'custom');
+                  // Value key: the pair's erc7984Address (lowercased) — the same
+                  // key the registry table's Shield/Unshield links pass in
+                  // `?token=`. Using symbol here would break for pairs deep-linked
+                  // by address, which is exactly the custom-row path.
+                  const selectedKey = selectedWrapper?.erc7984Address.toLowerCase() ?? '';
+                  return (
+                    <select
+                      className="btn btn-secondary"
+                      disabled={txStep > 0}
+                      style={{
+                        appearance: 'none',
+                        padding: 'var(--sp-2) var(--sp-4)',
+                        background: 'var(--bg-elevated)',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        color: 'var(--text-primary)',
+                        minWidth: '110px',
+                      }}
+                      value={selectedKey}
+                      onChange={e => {
+                        setSelectedToken(e.target.value);
+                        setTxStep(0);
+                        setAmount('');
+                        // Reset synchronously here — NOT in a useEffect — to
+                        // prevent a one-frame window where the old
+                        // decryptRequested=true fires a permit for the new token.
+                        setDecryptRequested(false);
+                      }}
+                    >
+                      <option value="">Select Token</option>
+                      {official.length > 0 && (
+                        <optgroup label="Official Registry">
+                          {official.map((w) => (
+                            <option key={w.erc7984Address} value={w.erc7984Address.toLowerCase()}>
+                              {action === 'wrap' ? w.symbol : `c${w.symbol}`}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {custom.length > 0 && (
+                        <optgroup label="Custom / Dev-only">
+                          {custom.map((w) => (
+                            <option key={w.erc7984Address} value={w.erc7984Address.toLowerCase()}>
+                              {action === 'wrap' ? w.symbol : `c${w.symbol}`}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  );
+                })()}
               </div>
             </div>
 
@@ -609,14 +774,19 @@ function WrapPageContent() {
               </div>
               {selectedToken && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                  <TokenIcon symbol={selectedToken} size={20} />
+                  {/* Display the resolved symbol from selectedWrapper — never
+                      the raw ?token= address (that's how "c0xfF89…" leaked into
+                      the UI when navigated from a custom row). */}
+                  <TokenIcon symbol={selectedWrapper?.symbol ?? selectedToken} size={20} />
                   <Badge variant="accent" size="md" style={{ gap: '4px' }}>
                     {action === 'wrap' && (
                       <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                         <Lock size={12} />
                       </span>
                     )}
-                    {action === 'wrap' ? `c${selectedToken}` : selectedToken}
+                    {selectedWrapper
+                      ? (action === 'wrap' ? `c${selectedWrapper.symbol}` : selectedWrapper.symbol)
+                      : 'Loading…'}
                   </Badge>
                 </div>
               )}
@@ -708,7 +878,7 @@ function WrapPageContent() {
                 onClick={handleAction}
                 className="btn-primary-black"
               >
-                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedToken}`}
+                {parsedInputAmount > hasPublicBalance ? 'Insufficient Balance' : `Approve & Shield ${selectedWrapper?.symbol ?? ''}`}
               </Button>
             ) : (
               <Button
@@ -733,10 +903,10 @@ function WrapPageContent() {
                   : action === 'wrap'
                   ? parsedInputAmount > hasPublicBalance
                     ? 'Insufficient Balance'
-                    : `Shield ${amount} ${selectedToken}`
+                    : `Shield ${amount} ${selectedWrapper?.symbol ?? ''}`
                   : parsedInputAmount > hasWrapperBalance
                   ? 'Insufficient Shielded Balance'
-                  : `Unshield ${amount} c${selectedToken}`}
+                  : `Unshield ${amount} c${selectedWrapper?.symbol ?? ''}`}
               </Button>
             )}
           </div>
@@ -824,6 +994,18 @@ function WrapPageContent() {
             </span>
           </div>
         </Card>
+
+        {/* Compact wallet activity feed */}
+        {isConnected && address && wrappers.length > 0 && (
+          <WalletActivityFeed
+            address={address}
+            wrappers={wrappers}
+            chainId={activeChainId}
+            variant="compact"
+            maxRows={25}
+            refreshKey={feedRefreshKey}
+          />
+        )}
       </div>
 
       {/* Connect Wallet Modal */}
@@ -863,7 +1045,7 @@ function WrapPageContent() {
           }}
           action={action}
           amount={amount}
-          tokenSymbol={selectedToken}
+          tokenSymbol={selectedWrapper?.symbol ?? selectedToken}
           txHash={finalTxHash}
         />
       )}
