@@ -1,0 +1,31 @@
+# ShadowLine
+
+> Privacy-first asset shielding protocol built on Zama FHEVM. Confidentially shield, transfer, and unshield ERC-20 tokens using the ERC-7984 standard.
+
+ShadowLine enables users, DAOs, and autonomous AI agents to wrap standard public ERC-20 tokens into confidential ERC-7984 tokens (`cTokens`). On-chain balances and transfer amounts are encrypted using Fully Homomorphic Encryption (FHE) via Zama's fhEVM, preventing front-running, strategy copy-trading, and wallet tracking.
+
+## Core Capabilities for AI Agents
+- **Shield (Wrap):** Lock public ERC-20 tokens in a wrapper contract to mint an encrypted balance (`euint64`) on-chain.
+- **Confidential Transfer:** Send confidential tokens to any address. The transfer amount is encrypted client-side; on-chain observers see sender and receiver addresses but never the token amount.
+- **Unshield (Unwrap):** Request withdrawal of confidential tokens back to public ERC-20 tokens via Zama Gateway threshold decryption.
+- **REST API:** Query verified wrapper pairs without a wallet or web3 provider via `GET /api/registry`.
+
+## Key Resources
+- [Live Web App & Registry](https://shadow-line.netlify.app/app)
+- [Developer Documentation](https://shadow-line.netlify.app/app/docs)
+- [REST API Reference](https://shadow-line.netlify.app/app/docs/rest-api)
+- [GitHub Repository](https://github.com/hosein-ul/ShadowLine)
+- [Zama FHEVM Documentation](https://docs.zama.org/protocol)
+
+## Network & Contract Architecture
+- **Supported Networks:** Ethereum Sepolia Testnet (Chain ID: 11155111), Ethereum Mainnet (Chain ID: 1)
+- **Encryption Scale:** All ERC-7984 confidential ciphertexts use a fixed 6-decimal scale (`euint64`), regardless of the underlying ERC-20 decimals.
+- **Decryption Security:** Balance decryption requires an EIP-712 read-only permit signature (`FHE.allowThis`/`allow`). Private keys and plaintext balances never leave the client/agent memory.
+
+## AI Agent Integration (Drop-in Hook & API)
+AI agents can fetch live verified token pairs via HTTP:
+```http
+GET https://shadow-line.netlify.app/api/registry?chain=sepolia
+```
+
+For direct smart contract interaction, agents should reference `src/lib/use-shadowline.ts` or view the full documentation in `/llms-full.txt`.

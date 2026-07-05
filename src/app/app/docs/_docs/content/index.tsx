@@ -12,6 +12,7 @@ import Transfer from './transfer';
 import Registry from './registry';
 import Portfolio from './portfolio';
 import RestApi from './rest-api';
+import AiAgents from './ai-agents';
 import UseCases from './use-cases';
 import Addresses from './addresses';
 import Errors from './errors';
@@ -31,6 +32,7 @@ export const DOC_CONTENT: Record<string, React.ComponentType> = {
   registry: Registry,
   portfolio: Portfolio,
   'rest-api': RestApi,
+  'ai-agents': AiAgents,
   'use-cases': UseCases,
   addresses: Addresses,
   errors: Errors,

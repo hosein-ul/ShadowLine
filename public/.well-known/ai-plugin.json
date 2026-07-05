@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "ShadowLine FHE Confidential Token Registry",
+  "name_for_model": "shadowline_fhe_registry",
+  "description_for_human": "Discover and query ERC-7984 confidential token wrapper pairs on Zama FHEVM.",
+  "description_for_model": "Plugin for querying verified ERC-20 to ERC-7984 confidential wrapper token pairs on Zama FHEVM (Ethereum Sepolia Testnet and Ethereum Mainnet). Use this to find confidential token addresses, underlying token symbols, decimals, and scaling rules for shielding and unshielding assets.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://shadow-line.netlify.app/openapi.json"
+  },
+  "logo_url": "https://shadow-line.netlify.app/file.svg",
+  "contact_email": "dev@shadowline.protocol",
+  "legal_info_url": "https://shadow-line.netlify.app/app/docs"
+}

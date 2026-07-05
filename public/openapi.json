@@ -1,0 +1,112 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ShadowLine FHE Confidential Token Registry API",
+    "description": "Public REST API for querying on-chain ERC-20 to ERC-7984 confidential wrapper pairs on Zama FHEVM.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://shadow-line.netlify.app"
+    }
+  ],
+  "paths": {
+    "/api/registry": {
+      "get": {
+        "operationId": "getConfidentialTokenPairs",
+        "summary": "Get all verified confidential token wrapper pairs",
+        "description": "Returns a list of all registered ERC-20 to ERC-7984 confidential token wrapper pairs from the on-chain WrappersRegistry contract.",
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "query",
+            "description": "Blockchain network to query ('sepolia' or 'mainnet'). Defaults to 'sepolia'.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["sepolia", "mainnet"],
+              "default": "sepolia"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response containing wrapper pairs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RegistryResponse": {
+        "type": "object",
+        "properties": {
+          "pairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PairResult"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "registryAddress": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "PairResult": {
+        "type": "object",
+        "properties": {
+          "tokenAddress": {
+            "type": "string",
+            "description": "Underlying public ERC-20 contract address"
+          },
+          "confidentialTokenAddress": {
+            "type": "string",
+            "description": "Confidential ERC-7984 wrapper contract address"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Normalized underlying token symbol (e.g. USDC)"
+          },
+          "confidentialSymbol": {
+            "type": "string",
+            "description": "Confidential token symbol (e.g. cUSDC)"
+          },
+          "name": {
+            "type": "string"
+          },
+          "decimals": {
+            "type": "integer",
+            "description": "Underlying ERC-20 decimals"
+          },
+          "wrapperDecimals": {
+            "type": "integer",
+            "description": "Fixed 6 decimals for FHE euint64 ciphertexts"
+          },
+          "isValid": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

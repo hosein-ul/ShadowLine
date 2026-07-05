@@ -85,11 +85,11 @@ export default function Header() {
   };
 
   const handleNetworkToggle = (targetIsTestnet: boolean) => {
+    if (!targetIsTestnet) return; // Mainnet is temporarily disabled while relayer API key is pending
     if (isConnected) {
-      const targetChainId = targetIsTestnet ? sepolia.id : mainnet.id;
-      switchChain({ chainId: targetChainId });
+      switchChain({ chainId: sepolia.id });
     } else {
-      setIsTestnet(targetIsTestnet);
+      setIsTestnet(true);
     }
   };
 
@@ -164,10 +164,13 @@ export default function Header() {
               Sepolia
             </button>
             <button
-              className={cn('network-option', !isTestnet && 'active')}
-              onClick={() => handleNetworkToggle(false)}
+              className="network-option"
+              disabled
+              style={{ cursor: 'not-allowed', opacity: 0.55, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              title="Ethereum Mainnet support requires a Zama production relayer API key. Coming Soon!"
             >
-              Mainnet
+              <span>Mainnet</span>
+              <span style={{ fontSize: '9px', background: 'rgba(120, 120, 128, 0.15)', color: 'var(--text-secondary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, lineHeight: 1.2 }}>Soon</span>
             </button>
           </div>
 

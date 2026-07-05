@@ -122,6 +122,14 @@ export const DOC_ENTRIES: DocEntry[] = [
 
   // ── Developers ──────────────────────────────────────────────────
   {
+    slug: 'ai-agents',
+    label: 'AI Agents & LLMs',
+    group: 'Developers',
+    eyebrow: 'Developers',
+    description:
+      'Discover verified asset pairs via llms.txt and OpenAI manifests, and execute MEV-resistant confidential DeFi operations.',
+  },
+  {
     slug: 'rest-api',
     label: 'REST API',
     group: 'Developers',
