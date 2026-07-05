@@ -1,11 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lead, P, H2, H4, CodeBlock, EndpointBadge, PropTable, PropRow } from '../components';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://YOUR_DEPLOYMENT_URL';
+function useAppUrl() {
+  const [url, setUrl] = useState(process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '');
+  useEffect(() => { setUrl(window.location.origin); }, []);
+  return url;
+}
 
 export default function RestApi() {
+  const APP_URL = useAppUrl();
   return (
     <>
       <Lead>

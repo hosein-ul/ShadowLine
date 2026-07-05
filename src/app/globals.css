@@ -1183,6 +1183,7 @@ html[data-theme='light'] .header { background: rgba(255, 255, 255, 0.85); }
   gap: var(--sp-1);
   min-width: 0;
   flex-shrink: 1;
+  overflow: hidden;
 }
 .header-link {
   padding: var(--sp-2) var(--sp-2);
