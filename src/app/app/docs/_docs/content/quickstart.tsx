@@ -99,7 +99,7 @@ export default function QuickStart() {
         Simply copy <code>src/lib/use-shadowline.ts</code> into your React, Next.js, or Wagmi project to get instant access to verified contract pairs, automatic ERC-20 allowances, and one-click shielding/unshielding:
       </P>
       <CodeBlock
-        language="tsx"
+        lang="tsx"
         code={`import { useShadowline } from '@/lib/use-shadowline';
 
 export default function MyConfidentialApp() {
@@ -119,6 +119,33 @@ export default function MyConfidentialApp() {
     </div>
   );
 }`}
+      />
+      <H2>0-to-100 Automated Setup & Deployment</H2>
+      <P>
+        Want to run ShadowLine locally or deploy to a cloud node / VPS in under 1 minute? We built an automated cross-platform wizard that handles dependency checking, environment configuration (<code>.env.local</code>), production build verification, and server launching.
+      </P>
+      <P>
+        <strong>Universal Cross-Platform Command (Ubuntu Linux / Windows / macOS):</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`git clone https://github.com/hosein-ul/ShadowLine.git
+cd ShadowLine
+npm run setup`}
+      />
+      <P>
+        <strong>Ubuntu Linux & macOS 1-Line Quick Installer:</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`curl -sSL https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.sh | bash`}
+      />
+      <P>
+        <strong>Docker & VPS Self-Hosting:</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`docker compose up -d --build`}
       />
     </>
   );

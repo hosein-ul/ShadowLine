@@ -66,7 +66,7 @@ export default function AiAgents() {
         <code>src/lib/agent-tools.ts</code>. These tools can be plugged directly into LangChain or Vercel AI SDK:
       </P>
       <CodeBlock
-        language="typescript"
+        lang="typescript"
         code={`import { shadowlineTools } from '@/lib/agent-tools';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';

@@ -26,13 +26,14 @@
 import { useCallback, useMemo } from 'react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { parseUnits, formatUnits, type Address } from 'viem';
-import { useRegistryPairs, type WrapperPairRecord } from '@/lib/registry';
+import { useRegistryPairs } from '@/lib/registry';
+import { type WrapperPair } from '@/config/contracts';
 import { useActiveNetwork } from '@/app/ClientLayout';
 import { useToast } from '@/components/ui/Toast';
 
 export interface ShadowlineHookReturn {
   /** List of verified confidential token pairs available on the active chain */
-  pairs: WrapperPairRecord[];
+  pairs: WrapperPair[];
   /** Whether the user's wallet is connected */
   isConnected: boolean;
   /** Active network chain ID */
@@ -73,13 +74,13 @@ export function useShadowline(): ShadowlineHookReturn {
   const shield = useCallback(
     async (wrapperAddress: Address, amountStr: string): Promise<`0x${string}` | undefined> => {
       if (!isConnected || !address || !walletClient || !publicClient) {
-        addToast({ title: 'Wallet Not Connected', description: 'Please connect your wallet first.', variant: 'error' });
+        addToast({ title: 'Wallet Not Connected', message: 'Please connect your wallet first.', variant: 'error' });
         return;
       }
 
       const pair = rawPairs.find((p) => p.erc7984Address.toLowerCase() === wrapperAddress.toLowerCase());
       if (!pair) {
-        addToast({ title: 'Token Not Found', description: 'Invalid wrapper address.', variant: 'error' });
+        addToast({ title: 'Token Not Found', message: 'Invalid wrapper address.', variant: 'error' });
         return;
       }
 
@@ -103,7 +104,7 @@ export function useShadowline(): ShadowlineHookReturn {
         });
 
         if (allowance < rawAmount) {
-          addToast({ title: 'Approving Token...', description: `Please approve ${pair.symbol} spend in your wallet.`, variant: 'info' });
+          addToast({ title: 'Approving Token...', message: `Please approve ${pair.symbol} spend in your wallet.`, variant: 'info' });
           const approveHash = await walletClient.writeContract({
             address: pair.erc20Address as Address,
             abi: [
@@ -121,7 +122,7 @@ export function useShadowline(): ShadowlineHookReturn {
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
         }
 
-        addToast({ title: 'Shielding Assets...', description: 'Confirm shielding transaction in your wallet.', variant: 'info' });
+        addToast({ title: 'Shielding Assets...', message: 'Confirm shielding transaction in your wallet.', variant: 'info' });
         const shieldHash = await walletClient.writeContract({
           address: wrapperAddress,
           abi: [
@@ -137,11 +138,11 @@ export function useShadowline(): ShadowlineHookReturn {
           args: [address, rawAmount],
         });
 
-        addToast({ title: 'Shield Submitted', description: 'Transaction broadcasted to network.', variant: 'success' });
+        addToast({ title: 'Shield Submitted', message: 'Transaction broadcasted to network.', variant: 'success' });
         return shieldHash;
       } catch (err: any) {
         console.error('Shield error:', err);
-        addToast({ title: 'Shield Failed', description: err?.shortMessage || err?.message || 'Transaction rejected.', variant: 'error' });
+        addToast({ title: 'Shield Failed', message: err?.shortMessage || err?.message || 'Transaction rejected.', variant: 'error' });
         return undefined;
       }
     },
@@ -151,13 +152,13 @@ export function useShadowline(): ShadowlineHookReturn {
   const unshield = useCallback(
     async (wrapperAddress: Address, amountStr: string): Promise<`0x${string}` | undefined> => {
       if (!isConnected || !address || !walletClient) {
-        addToast({ title: 'Wallet Not Connected', description: 'Please connect your wallet first.', variant: 'error' });
+        addToast({ title: 'Wallet Not Connected', message: 'Please connect your wallet first.', variant: 'error' });
         return;
       }
 
       const pair = rawPairs.find((p) => p.erc7984Address.toLowerCase() === wrapperAddress.toLowerCase());
       if (!pair) {
-        addToast({ title: 'Token Not Found', description: 'Invalid wrapper address.', variant: 'error' });
+        addToast({ title: 'Token Not Found', message: 'Invalid wrapper address.', variant: 'error' });
         return;
       }
 
@@ -165,7 +166,7 @@ export function useShadowline(): ShadowlineHookReturn {
         // FHE confidential wrappers use fixed 6 decimals scale for ciphertexts
         const scaledAmount = parseUnits(amountStr, 6);
 
-        addToast({ title: 'Requesting Unshield...', description: 'Confirm unshield request in your wallet.', variant: 'info' });
+        addToast({ title: 'Requesting Unshield...', message: 'Confirm unshield request in your wallet.', variant: 'info' });
         const unshieldHash = await walletClient.writeContract({
           address: wrapperAddress,
           abi: [
@@ -181,11 +182,11 @@ export function useShadowline(): ShadowlineHookReturn {
           args: [scaledAmount as unknown as bigint],
         });
 
-        addToast({ title: 'Unshield Requested', description: 'Relayer will decrypt and finalize transfer shortly.', variant: 'success' });
+        addToast({ title: 'Unshield Requested', message: 'Relayer will decrypt and finalize transfer shortly.', variant: 'success' });
         return unshieldHash;
       } catch (err: any) {
         console.error('Unshield error:', err);
-        addToast({ title: 'Unshield Failed', description: err?.shortMessage || err?.message || 'Transaction rejected.', variant: 'error' });
+        addToast({ title: 'Unshield Failed', message: err?.shortMessage || err?.message || 'Transaction rejected.', variant: 'error' });
         return undefined;
       }
     },
