@@ -125,20 +125,29 @@ export default function MyConfidentialApp() {
         Want to run ShadowLine locally or deploy to a cloud node / VPS in under 1 minute? We built an automated cross-platform wizard that handles dependency checking, environment configuration (<code>.env.local</code>), production build verification, and server launching.
       </P>
       <P>
-        <strong>Universal Cross-Platform Command (Ubuntu Linux / Windows / macOS):</strong>
+        <strong>Linux Ubuntu & macOS (Bash / Zsh):</strong>
       </P>
       <CodeBlock
         lang="bash"
-        code={`git clone https://github.com/hosein-ul/ShadowLine.git
-cd ShadowLine
-npm run setup`}
+        code={`git clone https://github.com/hosein-ul/ShadowLine.git && cd ShadowLine && npm run setup`}
       />
       <P>
-        <strong>Ubuntu Linux & macOS 1-Line Quick Installer:</strong>
+        <strong>Windows (PowerShell & CMD):</strong>
       </P>
       <CodeBlock
         lang="bash"
-        code={`curl -sSL https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.sh | bash`}
+        code={`git clone https://github.com/hosein-ul/ShadowLine.git; cd ShadowLine; npm run setup`}
+      />
+      <P>
+        <strong>1-Line Auto-Installers (with Automatic Prerequisite Installation):</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`# Linux Ubuntu & macOS
+curl -sSL https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.sh | bash
+
+# Windows PowerShell (Auto-installs Git & Node via winget if missing)
+irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex`}
       />
       <P>
         <strong>Docker & VPS Self-Hosting:</strong>
