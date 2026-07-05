@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync, spawn } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const readline = require('readline');
 
 // Bug fix: on Windows npm is npm.cmd — using shell:true triggers DEP0190 security warning
@@ -51,6 +51,34 @@ function checkNodeVersion() {
     process.exit(1);
   }
   console.log(`${colors.green}✔ Node.js version check passed (${process.version})${colors.reset}`);
+}
+
+/**
+ * Checks if Turbopack native (.node) bindings are present in node_modules.
+ * This is a reliable, zero-execution file-system check — no EINVAL risk.
+ * Turbopack ships per-platform native modules like:
+ *   @next/swc-win32-x64-msvc / @next/swc-linux-x64-gnu / @next/swc-darwin-arm64
+ */
+function hasTurbopackNativeBindings() {
+  const platform = process.platform;   // 'win32' | 'linux' | 'darwin'
+  const arch     = process.arch;       // 'x64' | 'arm64'
+
+  // Map platform+arch to the native package name Next.js ships
+  const platformMap = {
+    'win32-x64':    '@next/swc-win32-x64-msvc',
+    'win32-arm64':  '@next/swc-win32-arm64-msvc',
+    'linux-x64':    '@next/swc-linux-x64-gnu',
+    'linux-arm64':  '@next/swc-linux-arm64-gnu',
+    'darwin-x64':   '@next/swc-darwin-x64',
+    'darwin-arm64': '@next/swc-darwin-arm64',
+  };
+
+  const pkg = platformMap[`${platform}-${arch}`];
+  if (!pkg) return false; // Unknown platform → assume no native support
+
+  // Check if the package directory exists in node_modules
+  const pkgDir = path.join(ROOT_DIR, 'node_modules', pkg);
+  return fs.existsSync(pkgDir);
 }
 
 // Bug fix: open stdin stream once and reuse — avoids multiple /dev/tty handles and leaks
@@ -166,15 +194,13 @@ async function presentMenu() {
 
   switch (choice.trim()) {
     case '1': {
-      // Detect Turbopack native bindings availability; fall back to Webpack if not supported
-      let devArgs = ['run', 'dev'];
-      const turboCheck = spawnSync(NPM, ['run', 'dev', '--', '--version'], {
-        cwd: ROOT_DIR, encoding: 'utf8', timeout: 5000,
-      });
-      const turboOutput = (turboCheck.stderr || '') + (turboCheck.stdout || '');
-      if (turboOutput.includes('native bindings are not available') || turboOutput.includes('not supported on this platform')) {
-        console.log(`${colors.yellow}⚠  Turbopack native bindings unavailable on this platform. Falling back to Webpack...${colors.reset}`);
-        devArgs = ['run', 'dev', '--', '--webpack'];
+      // Reliably detect Turbopack support by checking if native .node binding file exists on disk.
+      // This avoids the EINVAL bug from trying to run `next dev --version` which doesn't exist.
+      const devArgs = hasTurbopackNativeBindings()
+        ? ['run', 'dev']
+        : ['run', 'dev', '--', '--webpack'];
+      if (devArgs.includes('--webpack')) {
+        console.log(`${colors.yellow}⚠  Turbopack native bindings not found. Using Webpack bundler instead.${colors.reset}`);
       }
       console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}\n`);
       spawn(NPM, devArgs, { stdio: 'inherit', cwd: ROOT_DIR });
