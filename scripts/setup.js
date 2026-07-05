@@ -193,22 +193,13 @@ async function presentMenu() {
   closeRl();
 
   switch (choice.trim()) {
-    case '1': {
-      // Reliably detect Turbopack support by checking if native .node binding file exists on disk.
-      // This avoids the EINVAL bug from trying to run `next dev --version` which doesn't exist.
-      const devArgs = hasTurbopackNativeBindings()
-        ? ['run', 'dev']
-        : ['run', 'dev', '--', '--webpack'];
-      if (devArgs.includes('--webpack')) {
-        console.log(`${colors.yellow}⚠  Turbopack native bindings not found. Using Webpack bundler instead.${colors.reset}`);
-      }
+    case '1':
       console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}\n`);
-      spawn(NPM, devArgs, { stdio: 'inherit', cwd: ROOT_DIR });
+      execSync('npm run dev', { stdio: 'inherit', cwd: ROOT_DIR });
       break;
-    }
     case '2':
       console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}\n`);
-      spawn(NPM, ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR });
+      execSync('npm run start', { stdio: 'inherit', cwd: ROOT_DIR });
       break;
     case '3':
       console.log(`\n${colors.cyan}☁️  Deploying to Netlify...${colors.reset}`);
