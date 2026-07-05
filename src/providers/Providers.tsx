@@ -5,8 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider as WagmiProviderBase, createConfig, http, fallback } from 'wagmi';
 import { sepolia, mainnet } from 'wagmi/chains';
 import { injected, walletConnect } from 'wagmi/connectors';
-import { ZamaProvider, RelayerWeb, indexedDBStorage, SepoliaConfig, MainnetConfig } from '@zama-fhe/react-sdk';
+import { ZamaProvider, RelayerWeb, SepoliaConfig, MainnetConfig } from '@zama-fhe/react-sdk';
 import { WagmiSigner } from '@zama-fhe/react-sdk/wagmi';
+import { indexedDBStorage, IndexedDBStorage } from '@zama-fhe/sdk';
 
 // WalletConnect project ID — register at https://cloud.walletconnect.com
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo';
@@ -54,6 +55,11 @@ export const relayer = new RelayerWeb({
   },
 });
 
+// storage (FHE keypair) and sessionStorage (wallet permit) MUST be separate stores
+// to prevent credential cache corruption in IndexedDB.
+// In @zama-fhe/react-sdk v3.0.1, the prop for wallet permit storage is named `sessionStorage`.
+const permitDBStorage = new IndexedDBStorage('PermitStore');
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -67,7 +73,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProviderBase config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ZamaProvider relayer={relayer} signer={signer} storage={indexedDBStorage}>
+        <ZamaProvider
+          relayer={relayer}
+          signer={signer}
+          storage={indexedDBStorage}
+          sessionStorage={permitDBStorage}
+        >
           {children}
         </ZamaProvider>
       </QueryClientProvider>

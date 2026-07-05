@@ -95,6 +95,14 @@ export const REGISTRY_ADDRESSES: Record<SupportedChainId, `0x${string}`> = {
 export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
   [sepolia.id]: [
     {
+      erc20Address: '0x75355a85c6FB9df5f0C80FF54e8747EEe9a0BF57',
+      erc7984Address: '0xf2D628d2598aF4eAF94CB76a437Ff86CA78FfbFB',
+      symbol: 'ZAMA',
+      name: 'Zama Token',
+      decimals: 18,
+      wrapperDecimals: 6,
+    },
+    {
       erc20Address: '0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF',
       erc7984Address: '0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639',
       symbol: 'USDC',
@@ -115,14 +123,6 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       erc7984Address: '0x46208622DA27d91db4f0393733C8BA082ed83158',
       symbol: 'WETH',
       name: 'Wrapped Ether',
-      decimals: 18,
-      wrapperDecimals: 6,
-    },
-    {
-      erc20Address: '0x75355a85c6FB9df5f0C80FF54e8747EEe9a0BF57',
-      erc7984Address: '0xf2D628d2598aF4eAF94CB76a437Ff86CA78FfbFB',
-      symbol: 'ZAMA',
-      name: 'Zama Token',
       decimals: 18,
       wrapperDecimals: 6,
     },
@@ -153,6 +153,14 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
   ],
   [mainnet.id]: [
     {
+      erc20Address: '0xA12CC123ba206d4031D1c7f6223D1C2Ec249f4f3',
+      erc7984Address: '0x80CB147Fd86dC6dEe3Eee7e4Cee33d1397d98071',
+      symbol: 'ZAMA',
+      name: 'Zama Token',
+      decimals: 18,
+      wrapperDecimals: 6,
+    },
+    {
       erc20Address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
       erc7984Address: '0xe978F22157048E5DB8E5d07971376e86671672B2',
       symbol: 'USDC',
@@ -173,14 +181,6 @@ export const KNOWN_WRAPPERS: Record<SupportedChainId, WrapperPair[]> = {
       erc7984Address: '0xda9396b82634Ea99243cE51258B6A5Ae512D4893',
       symbol: 'WETH',
       name: 'Wrapped Ether',
-      decimals: 18,
-      wrapperDecimals: 6,
-    },
-    {
-      erc20Address: '0xA12CC123ba206d4031D1c7f6223D1C2Ec249f4f3',
-      erc7984Address: '0x80CB147Fd86dC6dEe3Eee7e4Cee33d1397d98071',
-      symbol: 'ZAMA',
-      name: 'Zama Token',
       decimals: 18,
       wrapperDecimals: 6,
     },
