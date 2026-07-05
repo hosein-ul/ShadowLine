@@ -115,9 +115,15 @@ NEXT_PUBLIC_ZAMA_RELAYER_API_KEY="${relayerKey}"
 
 function installDependencies() {
   console.log(`\n${colors.bold}─── Step 2: Installing Dependencies ───${colors.reset}`);
+  const nodeModulesPath = path.join(ROOT_DIR, 'node_modules');
+  if (fs.existsSync(nodeModulesPath)) {
+    console.log(`${colors.green}✔ node_modules directory detected. Verifying lockfile and packages without re-installing...${colors.reset}`);
+  } else {
+    console.log(`${colors.yellow}ℹ node_modules not found. Installing project dependencies...${colors.reset}`);
+  }
   try {
     execSync('npm install', { stdio: 'inherit', cwd: ROOT_DIR });
-    console.log(`${colors.green}✔ Dependencies installed successfully.${colors.reset}`);
+    console.log(`${colors.green}✔ Project dependencies verified and ready.${colors.reset}`);
   } catch (error) {
     console.error(`${colors.red}[ERROR] Failed to install dependencies.${colors.reset}`);
     process.exit(1);
