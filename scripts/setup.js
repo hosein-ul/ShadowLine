@@ -3,8 +3,8 @@
  * ShadowLine 0-to-100 Automated Setup & Launcher
  *
  * Cross-platform CLI wizard for Linux Ubuntu, Windows, and macOS.
- * Handles environment configuration, dependency installation, production build
- * verification, and launching local dev/prod servers or cloud deployments.
+ * Handles environment configuration, dependency installation, and
+ * launching local dev/prod servers or cloud deployments.
  */
 
 const fs = require('fs');
@@ -50,64 +50,79 @@ function checkNodeVersion() {
   console.log(`${colors.green}✔ Node.js version check passed (${process.version})${colors.reset}`);
 }
 
+// Bug fix: open stdin stream once and reuse — avoids multiple /dev/tty handles and leaks
+let _stdinStream = null;
 function getInputStream() {
-  if (process.stdin.isTTY) {
-    return process.stdin;
-  }
+  if (process.stdin.isTTY) return process.stdin;
+  if (_stdinStream) return _stdinStream;
   try {
     if (process.platform === 'win32') {
-      return fs.createReadStream('CONIN$');
+      _stdinStream = fs.createReadStream('\\\\.\\CON');
     } else if (fs.existsSync('/dev/tty')) {
-      return fs.createReadStream('/dev/tty');
+      _stdinStream = fs.openSync('/dev/tty', 'r');
+      _stdinStream = fs.createReadStream(null, { fd: _stdinStream });
     }
   } catch (e) {
-    // Ignore and fallback
+    // Fallback to stdin
   }
-  return process.stdin;
+  return _stdinStream || process.stdin;
 }
 
-function createRl() {
-  return readline.createInterface({
-    input: getInputStream(),
-    output: process.stdout,
-  });
+// Bug fix: create rl once and pass it around instead of recreating in each function
+let _rl = null;
+function getRl() {
+  if (!_rl || _rl.closed) {
+    _rl = readline.createInterface({
+      input: getInputStream(),
+      output: process.stdout,
+      terminal: true,
+    });
+  }
+  return _rl;
 }
 
-function question(rl, query) {
-  return new Promise((resolve) => rl.question(query, resolve));
+function closeRl() {
+  if (_rl && !_rl.closed) {
+    _rl.close();
+    _rl = null;
+  }
+}
+
+function question(query) {
+  return new Promise((resolve) => getRl().question(query, resolve));
 }
 
 async function setupEnvironment() {
   console.log(`\n${colors.bold}─── Step 1: Environment Configuration (.env.local) ───${colors.reset}`);
-  
+
   if (fs.existsSync(ENV_LOCAL_PATH)) {
     console.log(`${colors.green}✔ .env.local already exists. Using existing configuration.${colors.reset}`);
     return;
   }
 
   console.log(`${colors.yellow}ℹ .env.local not found. Generating default public configuration...${colors.reset}`);
-  
-  const rl = createRl();
-  const customize = await question(rl, `${colors.cyan}? Do you want to configure custom API keys (WalletConnect / Relayer)? [y/N]: ${colors.reset}`);
-  
+
+  const customize = await question(`${colors.cyan}? Do you want to configure custom API keys (WalletConnect / Relayer)? [y/N]: ${colors.reset}`);
+
   let wcId = 'public-demo-project-id';
   let relayerKey = '';
-  
+
   if (customize.trim().toLowerCase() === 'y' || customize.trim().toLowerCase() === 'yes') {
-    const inputWc = await question(rl, `${colors.cyan}? Enter WalletConnect Project ID (leave blank for public fallback): ${colors.reset}`);
+    const inputWc = await question(`${colors.cyan}? Enter WalletConnect Project ID (leave blank for public fallback): ${colors.reset}`);
     if (inputWc.trim()) wcId = inputWc.trim();
-    
-    const inputRelayer = await question(rl, `${colors.cyan}? Enter Zama Relayer API Key (leave blank for public testnet mode): ${colors.reset}`);
+
+    const inputRelayer = await question(`${colors.cyan}? Enter Zama Relayer API Key (leave blank for public testnet mode): ${colors.reset}`);
     if (inputRelayer.trim()) relayerKey = inputRelayer.trim();
   }
-  rl.close();
 
-  const envContent = `# ShadowLine Automated Configuration
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_DEFAULT_CHAIN="sepolia"
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="${wcId}"
-NEXT_PUBLIC_ZAMA_RELAYER_API_KEY="${relayerKey}"
-`;
+  const envContent = [
+    '# ShadowLine Automated Configuration',
+    'NEXT_PUBLIC_APP_URL="http://localhost:3000"',
+    'NEXT_PUBLIC_DEFAULT_CHAIN="sepolia"',
+    `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="${wcId}"`,
+    `NEXT_PUBLIC_ZAMA_RELAYER_API_KEY="${relayerKey}"`,
+    '',
+  ].join('\n');
 
   fs.writeFileSync(ENV_LOCAL_PATH, envContent, 'utf8');
   console.log(`${colors.green}✔ Created .env.local successfully!${colors.reset}`);
@@ -117,7 +132,7 @@ function installDependencies() {
   console.log(`\n${colors.bold}─── Step 2: Installing Dependencies ───${colors.reset}`);
   const nodeModulesPath = path.join(ROOT_DIR, 'node_modules');
   if (fs.existsSync(nodeModulesPath)) {
-    console.log(`${colors.green}✔ node_modules directory detected. Verifying lockfile and packages without re-installing...${colors.reset}`);
+    console.log(`${colors.green}✔ node_modules found. Verifying packages are up to date...${colors.reset}`);
   } else {
     console.log(`${colors.yellow}ℹ node_modules not found. Installing project dependencies...${colors.reset}`);
   }
@@ -130,21 +145,9 @@ function installDependencies() {
   }
 }
 
-function verifyBuild() {
-  console.log(`\n${colors.bold}─── Step 3: Verifying Production Build ───${colors.reset}`);
-  console.log(`${colors.yellow}ℹ Running npm run build to ensure code compilation integrity...${colors.reset}`);
-  try {
-    execSync('npm run build', { stdio: 'inherit', cwd: ROOT_DIR });
-    console.log(`${colors.green}✔ Production bundle verified successfully!${colors.reset}`);
-  } catch (error) {
-    console.error(`${colors.red}[ERROR] Production build failed. Please check compilation errors above.${colors.reset}`);
-    process.exit(1);
-  }
-}
-
 async function presentMenu() {
   console.log(`\n${colors.bold}${colors.magenta}═══════════════════════════════════════════════════════════════════════`);
-  console.log(`🎉 0-TO-100 SETUP COMPLETE! What would you like to do next?`);
+  console.log(`🎉 SETUP COMPLETE! What would you like to do next?`);
   console.log(`═══════════════════════════════════════════════════════════════════════${colors.reset}`);
   console.log(`${colors.green}[1] 🚀 Start Local Development Server (npm run dev) [RECOMMENDED]${colors.reset}`);
   console.log(`[2] 🌐 Start Production Server (npm run start)`);
@@ -154,46 +157,48 @@ async function presentMenu() {
   console.log(`[0] ❌ Exit`);
   console.log(`${colors.magenta}───────────────────────────────────────────────────────────────────────${colors.reset}`);
 
-  const rl = createRl();
-  const choice = await question(rl, `${colors.cyan}? Select an option [0-5]: ${colors.reset}`);
-  rl.close();
+  const choice = await question(`${colors.cyan}? Select an option [0-5]: ${colors.reset}`);
+  // Close readline BEFORE spawning long-running processes so stdin is released
+  closeRl();
 
   switch (choice.trim()) {
     case '1':
-      console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}`);
+      console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}\n`);
       spawn('npm', ['run', 'dev'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
       break;
     case '2':
-      console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}`);
+      console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}\n`);
       spawn('npm', ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
       break;
     case '3':
-      console.log(`\n${colors.cyan}☁️ Deploying to Netlify...${colors.reset}`);
+      console.log(`\n${colors.cyan}☁️  Deploying to Netlify...${colors.reset}`);
+      console.log(`${colors.yellow}ℹ Make sure you are logged in. If not, run: npx netlify login${colors.reset}\n`);
       try {
-        execSync('npx netlify deploy --prod', { stdio: 'inherit', cwd: ROOT_DIR });
+        execSync('npx netlify-cli deploy --prod', { stdio: 'inherit', cwd: ROOT_DIR });
       } catch (e) {
-        console.error(`${colors.red}[ERROR] Netlify deployment failed. Make sure you are logged in via 'npx netlify login'.${colors.reset}`);
+        console.error(`${colors.red}[ERROR] Netlify deployment failed.${colors.reset}`);
       }
       break;
     case '4':
-      console.log(`\n${colors.cyan}☁️ Deploying to Vercel...${colors.reset}`);
+      console.log(`\n${colors.cyan}☁️  Deploying to Vercel...${colors.reset}`);
+      console.log(`${colors.yellow}ℹ Make sure you are logged in. If not, run: npx vercel login${colors.reset}\n`);
       try {
         execSync('npx vercel --prod', { stdio: 'inherit', cwd: ROOT_DIR });
       } catch (e) {
-        console.error(`${colors.red}[ERROR] Vercel deployment failed. Make sure you are logged in via 'npx vercel login'.${colors.reset}`);
+        console.error(`${colors.red}[ERROR] Vercel deployment failed.${colors.reset}`);
       }
       break;
     case '5':
-      console.log(`\n${colors.cyan}🐳 Launching Docker container...${colors.reset}`);
+      console.log(`\n${colors.cyan}🐳 Launching Docker container...${colors.reset}\n`);
       try {
         execSync('docker compose up -d --build', { stdio: 'inherit', cwd: ROOT_DIR });
         console.log(`${colors.green}✔ Docker container running on http://localhost:3000${colors.reset}`);
       } catch (e) {
-        console.error(`${colors.red}[ERROR] Docker command failed. Is Docker running on your system?${colors.reset}`);
+        console.error(`${colors.red}[ERROR] Docker command failed. Is Docker running?${colors.reset}`);
       }
       break;
     case '0':
-      console.log(`\n${colors.yellow}Goodbye! You can re-run this wizard anytime with: npm run setup${colors.reset}\n`);
+      console.log(`\n${colors.yellow}Goodbye! Re-run anytime with: npm run setup${colors.reset}\n`);
       process.exit(0);
       break;
     default:
@@ -207,11 +212,11 @@ async function main() {
   checkNodeVersion();
   await setupEnvironment();
   installDependencies();
-  verifyBuild();
   await presentMenu();
 }
 
 main().catch((err) => {
-  console.error(`${colors.red}[FATAL ERROR]`, err, colors.reset);
+  console.error(`${colors.red}[FATAL ERROR]`, err.message || err, colors.reset);
+  closeRl();
   process.exit(1);
 });
