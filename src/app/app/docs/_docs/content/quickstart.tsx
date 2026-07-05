@@ -2,90 +2,93 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Lead, P, H2, CodeBlock, Callout } from '../components';
+import { Lead, H2, P, UL, Callout, StepList } from '../components';
 
 export default function QuickStart() {
   return (
     <>
-      <Lead>Integrate Zama confidential tokens into your app in three steps.</Lead>
+      <Lead>
+        ShadowLine is ready to use — no installation required. Connect a wallet, pick a token pair,
+        and your first confidential balance is on-chain in under a minute.
+      </Lead>
 
-      <H2>1. Install dependencies</H2>
-      <CodeBlock
-        lang="bash"
-        filename="terminal"
-        code={`npm install @zama-fhe/react-sdk wagmi viem @tanstack/react-query`}
-      />
-
-      <H2>2. Wrap your app with providers</H2>
+      <H2>1. Connect your wallet</H2>
       <P>
-        ShadowLine uses Wagmi for wallet connections and the Zama React SDK for FHE operations. Both
-        must be initialized at the root of your app.
+        Open the <Link href="/app">Registry</Link> and click <strong>Connect</strong> in the top
+        right. ShadowLine works with any EIP-1193 wallet (MetaMask, Rabby, WalletConnect). Switch
+        the network toggle to <strong>Sepolia</strong> to use free test tokens, or{' '}
+        <strong>Mainnet</strong> for real assets.
       </P>
-      <CodeBlock
-        lang="tsx"
-        filename="providers.tsx"
-        code={`import { WagmiProvider, http, createConfig, fallback } from 'wagmi';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import { ZamaProvider } from '@zama-fhe/react-sdk';
-import { sepolia, mainnet } from 'wagmi/chains';
+      <Callout>
+        First time on Sepolia? Head to the <Link href="/app/faucet">Faucet</Link> page and mint free
+        mock tokens — no ETH required, one click per token.
+      </Callout>
 
-const config = createConfig({
-  chains: [sepolia, mainnet],
-  transports: {
-    [sepolia.id]: fallback([http(process.env.NEXT_PUBLIC_SEPOLIA_RPC), http()]),
-    [mainnet.id]: fallback([http(process.env.NEXT_PUBLIC_MAINNET_RPC), http()]),
-  },
-});
-
-const queryClient = new QueryClient();
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <ZamaProvider>{children}</ZamaProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-}`}
-      />
-
-      <H2>3. Fetch pairs and shield tokens</H2>
+      <H2>2. Browse the Registry and pick a pair</H2>
       <P>
-        Use the live registry to get all wrapper pairs, then call <code>useShield</code> to wrap
-        your first token.
+        The <Link href="/app">Registry</Link> lists every verified ERC-20 ↔ ERC-7984 wrapper pair
+        registered on-chain. Each card shows the public token on top and its confidential wrapper
+        below. Use the search bar to find a token by symbol or address.
       </P>
-      <CodeBlock
-        lang="tsx"
-        filename="app.tsx"
-        code={`import { useListPairs, useShield } from '@zama-fhe/react-sdk';
-import { parseUnits } from 'viem';
+      <P>
+        Click <strong>Shield</strong> on any public-token row to go directly to that pair on the{' '}
+        <Link href="/app/wrapper">Wrapper</Link> page.
+      </P>
 
-function ShieldButton() {
-  const { data } = useListPairs({ page: 1, pageSize: 50, metadata: true });
-  const firstPair = data?.pairs[0];
-
-  const { mutateAsync: shield, isPending } = useShield({
-    tokenAddress: firstPair?.confidentialToken,
-  });
-
-  const handleShield = async () => {
-    // amount uses the UNDERLYING token's decimals (e.g. 6 for USDC)
-    await shield({ amount: parseUnits('100', 6) });
-  };
-
-  return (
-    <button onClick={handleShield} disabled={isPending}>
-      {isPending ? 'Shielding…' : 'Shield 100 USDC'}
-    </button>
-  );
-}`}
+      <H2>3. Shield — wrap ERC-20 into a confidential token</H2>
+      <P>
+        On the <Link href="/app/wrapper">Wrapper</Link> page, enter an amount and click{' '}
+        <strong>Shield</strong>. Two wallet prompts follow:
+      </P>
+      <StepList
+        steps={[
+          {
+            t: 'Approve',
+            d: 'Allow the wrapper contract to spend your ERC-20. USDT requires zeroing any existing allowance first.',
+          },
+          {
+            t: 'Wrap',
+            d: 'Lock the ERC-20 inside the wrapper. Your encrypted balance (euint64) is minted on-chain.',
+          },
+        ]}
       />
+      <P>
+        The Zama Gateway finalizes the ciphertext in a few seconds. Your confidential balance appears
+        in the <Link href="/app">Registry</Link> after you click <strong>Decrypt</strong> and sign a
+        read-only EIP-712 permit.
+      </P>
+
+      <H2>4. Transfer or decrypt</H2>
+      <P>
+        Once shielded, you have two options:
+      </P>
+      <UL>
+        <li>
+          <strong>Confidential Transfer</strong> — go to <Link href="/app/transfer">Transfer</Link>,
+          pick the confidential token, enter a recipient and amount. The amount is encrypted
+          client-side before submission. On-chain observers see the addresses but never the value.
+        </li>
+        <li>
+          <strong>Decrypt balance</strong> — on the Registry or Portfolio page, click{' '}
+          <strong>Decrypt</strong> next to any confidential row. Sign the EIP-712 permit in your
+          wallet. No tokens move; the balance is decrypted only inside your browser session.
+        </li>
+      </UL>
+
+      <H2>5. Unshield when you are done</H2>
+      <P>
+        To recover your original ERC-20, go to the <Link href="/app/wrapper">Wrapper</Link> page,
+        switch to <strong>Unshield</strong>, and enter the amount. The Zama Gateway decrypts
+        on-chain and releases the underlying ERC-20 back to your wallet (typically 30–60 seconds).
+        If the page closes mid-flow, the <strong>Resume</strong> banner re-appears automatically on
+        your next visit.
+      </P>
 
       <Callout variant="warning">
-        <strong>Before you go further:</strong> the single most common integration bug is decimal
-        mismatch. Read <Link href="/app/docs/decimal-scaling">Decimal Scaling</Link> before wiring up real
-        amounts — shield uses the underlying decimals, unshield always uses 6.
+        <strong>Decimal note:</strong> shield amounts use the <em>underlying</em> token&apos;s
+        decimals (e.g. 6 for USDC, 18 for WETH). Unshield always uses the wrapper&apos;s fixed{' '}
+        6-decimal scale. See <Link href="/app/docs/decimal-scaling">Decimal Scaling</Link> for the
+        full rule.
       </Callout>
     </>
   );

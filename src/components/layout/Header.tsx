@@ -37,7 +37,7 @@ interface NavItem {
  */
 const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app', label: 'Registry' },
-  { href: '/app/wrap', label: 'Wrap' },
+  { href: '/app/wrapper', label: 'Wrapper' },
   { href: '/app/transfer', label: 'Transfer' },
   { href: '/app/portfolio', label: 'Portfolio' },
   { href: '/app/faucet', label: 'Faucet', badge: 'TESTNET' },

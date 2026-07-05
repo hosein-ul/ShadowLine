@@ -544,7 +544,7 @@ export default function TransferPage() {
               </div>
             </div>
             <div className="flex gap-2" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-              <a href="/app/wrap"><Button variant="primary" size="sm"><Shield size={13} /> Wrap Tokens</Button></a>
+              <a href="/app/wrapper"><Button variant="primary" size="sm"><Shield size={13} /> Wrap Tokens</Button></a>
               <a href="/app/faucet"><Button variant="secondary" size="sm">Get Test Tokens</Button></a>
             </div>
           </div>

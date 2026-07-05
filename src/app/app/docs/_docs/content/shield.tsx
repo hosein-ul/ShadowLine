@@ -9,7 +9,7 @@ export default function Shield() {
     <>
       <Lead>
         Shielding wraps a public ERC-20 into its confidential ERC-7984 form; unshielding does the
-        reverse. In the app both live on the <Link href="/app/wrap">Wrap</Link> page.
+        reverse. In the app both live on the <Link href="/app/wrapper">Wrap</Link> page.
       </Lead>
 
       <Reveal>

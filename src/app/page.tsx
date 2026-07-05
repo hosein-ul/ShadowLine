@@ -292,7 +292,7 @@ function PinnedStory() {
 // ─── HORIZONTAL SCROLL — App Pages ──────────────────────────────────────────
 const APP_PAGES = [
   { href: '/app',            icon: Database,     label: 'Registry',     desc: 'Browse ERC-7984 wrappers on Sepolia and Mainnet. View live encrypted balances for connected wallets.',           color: '#3b82f6', tag: 'Explorer'   },
-  { href: '/app/wrap',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
+  { href: '/app/wrapper',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
   { href: '/app/portfolio',  icon: Wallet,       label: 'Portfolio',    desc: 'Track all your shielded and unshielded balances. Decrypt FHE ciphertexts with EIP-712 permits.',                 color: '#10b981', tag: 'My Assets'  },
   { href: '/app/analytics',  icon: BarChart3,    label: 'Analytics',    desc: 'Total Value Shielded, 24h shield/unshield volume, and per-token activity across the registry.',                  color: '#8b5cf6', tag: 'Insights'   },
   { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC, WBTC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
@@ -347,7 +347,7 @@ function HorizontalScroll() {
 // ─── ANIMATED TIMELINE ───────────────────────────────────────────────────────
 const STEPS = [
   { n:'01', icon:Droplets, color:'#06b6d4', title:'Get Test Tokens',       body:'Visit the Faucet and mint free Sepolia testnet tokens (USDC, WBTC). No real funds required to test the complete FHE flow.', link:'/app/faucet' },
-  { n:'02', icon:Shield,   color:'#FFD208', title:'Shield Your ERC-20',    body:'The SDK auto-detects ERC-1363 (one transferAndCall tx) or standard (approve + wrap). Your balance is now a euint64 ciphertext on-chain.', link:'/app/wrap' },
+  { n:'02', icon:Shield,   color:'#FFD208', title:'Shield Your ERC-20',    body:'The SDK auto-detects ERC-1363 (one transferAndCall tx) or standard (approve + wrap). Your balance is now a euint64 ciphertext on-chain.', link:'/app/wrapper' },
   { n:'03', icon:EyeOff,   color:'#8b5cf6', title:'Transfer Confidentially',body:'Amounts are encrypted by WASM before the tx is broadcast. On-chain: sender and recipient are visible — only the amount is a ciphertext.', link:'/app' },
   { n:'04', icon:Key,      color:'#10b981', title:'Decrypt Your Balance',  body:'Sign an EIP-712 read-only permit. The Zama Gateway re-encrypts to your transport key. WASM decrypts locally — plaintext never leaves the browser.', link:'/app/portfolio' },
 ];
@@ -1067,7 +1067,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
                 { l: 'Dashboard', h: '/app' },
-                { l: 'Shield & Unshield', h: '/app/wrap' },
+                { l: 'Shield & Unshield', h: '/app/wrapper' },
                 { l: 'Portfolio Manager', h: '/app/portfolio' },
                 { l: 'Token Faucet', h: '/app/faucet' }
               ].map(link => (

@@ -139,7 +139,7 @@ function TokenPositionCard({
                 variant="secondary"
                 fullWidth
                 size="sm"
-                onClick={() => (window.location.href = `/app/wrap?token=${wrapper.symbol}&action=unwrap`)}
+                onClick={() => (window.location.href = `/app/wrapper?token=${wrapper.symbol}&action=unwrap`)}
               >
                 Unshield
               </Button>

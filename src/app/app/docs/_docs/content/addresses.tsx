@@ -48,8 +48,10 @@ export default function Addresses() {
         ]}
       />
       <P>
-        Always prefer the <Link href="/app/docs/rest-api">REST API</Link> or <code>useListPairs</code> for
-        the most current on-chain data — the tables here are a point-in-time snapshot.
+        These are the pairs included in the local fallback snapshot. The live on-chain registry
+        may contain additional pairs registered after this snapshot was taken — use the{' '}
+        <Link href="/app/docs/rest-api">REST API</Link> or the{' '}
+        <Link href="/app">Registry page</Link> for the authoritative, always-current list.
       </P>
     </>
   );

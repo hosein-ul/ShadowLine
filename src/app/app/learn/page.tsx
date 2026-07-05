@@ -285,7 +285,7 @@ function StepShield() {
       </div>
 
       <div style={{ marginTop: 'var(--sp-6)' }}>
-        <Link href="/app/wrap">
+        <Link href="/app/wrapper">
           <Button variant="secondary" size="sm" style={{ gap: 'var(--sp-2)' }}>
             <Shield size={14} /> Go to Wrap / Unwrap
             <ExternalLink size={12} style={{ opacity: 0.6 }} />
@@ -421,7 +421,7 @@ function StepUnshield() {
       </div>
 
       <div style={{ marginTop: 'var(--sp-6)', display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
-        <Link href="/app/wrap">
+        <Link href="/app/wrapper">
           <Button variant="secondary" size="sm" style={{ gap: 'var(--sp-2)' }}>
             <Unlock size={14} /> Go to Wrap / Unwrap
             <ExternalLink size={12} style={{ opacity: 0.6 }} />
@@ -649,7 +649,7 @@ export default function LearnPage() {
                   <Droplets size={16} /> Get Test Tokens
                 </Button>
               </Link>
-              <Link href="/app/wrap">
+              <Link href="/app/wrapper">
                 <Button variant="secondary" style={{ gap: 'var(--sp-2)' }}>
                   <Shield size={16} /> Start Shielding
                 </Button>

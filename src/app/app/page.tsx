@@ -226,7 +226,7 @@ function RegistryTokenRow({
             </span>
           ) : (
             <div className="flex justify-end items-center gap-2">
-              <Link href={`/app/wrap?token=${wrapper.symbol}&action=wrap`}>
+              <Link href={`/app/wrapper?token=${wrapper.symbol}&action=wrap`}>
                 <Button variant="primary" size="sm" style={{ gap: 4 }} aria-label={`Shield ${wrapper.symbol}`}>
                   <Shield size={12} /> Shield
                 </Button>
@@ -349,7 +349,7 @@ function RegistryTokenRow({
             </span>
           ) : (
             <div className="flex justify-end items-center gap-2">
-              <Link href={`/app/wrap?token=${wrapper.symbol}&action=unwrap`}>
+              <Link href={`/app/wrapper?token=${wrapper.symbol}&action=unwrap`}>
                 <Button variant="secondary" size="sm" aria-label={`Unshield ${confidentialSymbol}`}>
                   Unshield
                 </Button>
@@ -536,7 +536,7 @@ function DetectedTokenRow({
         <div style={{ textAlign: 'right' }}>
           {isWrapper ? (
             <div className="flex justify-end items-center gap-2">
-              <Link href={`/app/wrap?token=${token.address}&action=wrap`}>
+              <Link href={`/app/wrapper?token=${token.address}&action=wrap`}>
                 <Button variant="primary" size="sm" style={{ gap: 4 }}>
                   <Shield size={12} /> Shield
                 </Button>
@@ -652,7 +652,7 @@ function DetectedTokenRow({
         <div style={{ textAlign: 'right' }}>
           <div className="flex justify-end items-center gap-2">
             {isWrapper && (
-              <Link href={`/app/wrap?token=${token.address}&action=unwrap`}>
+              <Link href={`/app/wrapper?token=${token.address}&action=unwrap`}>
                 <Button variant="secondary" size="sm">
                   Unshield
                 </Button>

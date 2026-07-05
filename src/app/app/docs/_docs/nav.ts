@@ -49,7 +49,7 @@ export const DOC_ENTRIES: DocEntry[] = [
     group: 'Getting Started',
     eyebrow: 'Getting Started',
     description:
-      'Install the SDK, wire up the providers, and shield your first token in three steps.',
+      'Connect a wallet, browse the Registry, shield your first token, and transfer confidentially.',
   },
   {
     slug: 'architecture',
