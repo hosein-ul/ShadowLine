@@ -9,8 +9,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawn } = require('child_process');
+const { execSync, spawnSync, spawn } = require('child_process');
 const readline = require('readline');
+
+// Bug fix: on Windows npm is npm.cmd — using shell:true triggers DEP0190 security warning
+const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const ENV_LOCAL_PATH = path.join(ROOT_DIR, '.env.local');
@@ -162,13 +165,24 @@ async function presentMenu() {
   closeRl();
 
   switch (choice.trim()) {
-    case '1':
+    case '1': {
+      // Detect Turbopack native bindings availability; fall back to Webpack if not supported
+      let devArgs = ['run', 'dev'];
+      const turboCheck = spawnSync(NPM, ['run', 'dev', '--', '--version'], {
+        cwd: ROOT_DIR, encoding: 'utf8', timeout: 5000,
+      });
+      const turboOutput = (turboCheck.stderr || '') + (turboCheck.stdout || '');
+      if (turboOutput.includes('native bindings are not available') || turboOutput.includes('not supported on this platform')) {
+        console.log(`${colors.yellow}⚠  Turbopack native bindings unavailable on this platform. Falling back to Webpack...${colors.reset}`);
+        devArgs = ['run', 'dev', '--', '--webpack'];
+      }
       console.log(`\n${colors.green}🚀 Launching local development server on http://localhost:3000 ...${colors.reset}\n`);
-      spawn('npm', ['run', 'dev'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
+      spawn(NPM, devArgs, { stdio: 'inherit', cwd: ROOT_DIR });
       break;
+    }
     case '2':
       console.log(`\n${colors.green}🌐 Launching production server on http://localhost:3000 ...${colors.reset}\n`);
-      spawn('npm', ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR, shell: true });
+      spawn(NPM, ['run', 'start'], { stdio: 'inherit', cwd: ROOT_DIR });
       break;
     case '3':
       console.log(`\n${colors.cyan}☁️  Deploying to Netlify...${colors.reset}`);
