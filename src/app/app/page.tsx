@@ -1203,35 +1203,70 @@ export default function HomePage() {
         </Card>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-3 gap-4" style={{ marginBottom: 'var(--sp-8)', position: 'relative', zIndex: 2 }}>
-        <Card variant="glass" padding="md" hover>
-          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Registered Pairs</div>
-          <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }} className="text-gradient">
-            {isLoading ? <Skeleton width={48} height={36} /> : officialTotal}
+      {/* Stats Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          marginBottom: 'var(--sp-8)',
+          position: 'relative',
+          zIndex: 2,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-xl)',
+          overflow: 'hidden',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Pairs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'var(--sp-3) var(--sp-5)', borderRight: '1px solid var(--border)', flex: '1 1 160px' }}>
+          <Database size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800, lineHeight: 1.1 }}>
+              {isLoading ? <Skeleton width={28} height={20} /> : officialTotal}
+            </div>
+            <div className="text-xs text-muted" style={{ marginTop: 3 }}>
+              Wrapper Pairs
+              {revokedCount > 0 && <span style={{ marginLeft: 5, opacity: 0.6 }}>· {revokedCount} revoked</span>}
+            </div>
           </div>
-          <div className="text-xs text-muted" style={{ marginTop: 'var(--sp-1)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {revokedCount > 0 && <span>{revokedCount} revoked</span>}
-            {customTotal > 0 && (
-              <span>
-                · {customTotal} custom (local)
-              </span>
-            )}
+        </div>
+
+        {/* Network */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'var(--sp-3) var(--sp-5)', borderRight: '1px solid var(--border)', flex: '1 1 180px' }}>
+          <div style={{
+            width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+            background: isTestnet ? '#f59e0b' : 'var(--success)',
+            boxShadow: isTestnet ? '0 0 7px #f59e0b' : '0 0 7px var(--success)',
+          }} />
+          <div>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, lineHeight: 1.1 }}>
+              {isTestnet ? 'Sepolia Testnet' : 'Ethereum Mainnet'}
+            </div>
+            <div className="text-xs text-muted" style={{ marginTop: 3 }}>Active Network</div>
           </div>
-        </Card>
-        <Card variant="glass" padding="md" hover>
-          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>Active Network</div>
-          <Badge variant={isTestnet ? 'warning' : 'success'} dot>
-            {isTestnet ? 'Sepolia Testnet' : 'Ethereum Mainnet'}
-          </Badge>
-        </Card>
-        <Card variant="glass" padding="md" hover>
-          <div className="text-muted text-sm" style={{ marginBottom: 'var(--sp-2)' }}>FHE Security</div>
-          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }} className="flex items-center gap-2">
-            <span>ERC-7984 Standard</span>
-            <Tooltip content={TIP.erc7984} />
+        </div>
+
+        {/* Standard */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'var(--sp-3) var(--sp-5)', borderRight: '1px solid var(--border)', flex: '1 1 170px' }}>
+          <Lock size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.1 }}>
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>ERC-7984</span>
+              <Tooltip content={TIP.erc7984} />
+            </div>
+            <div className="text-xs text-muted" style={{ marginTop: 3 }}>Confidential Standard</div>
           </div>
-        </Card>
+        </div>
+
+        {/* Encryption layer */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'var(--sp-3) var(--sp-5)', flex: '1 1 160px' }}>
+          <Shield size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, lineHeight: 1.1 }}>fhEVM · Zama</div>
+            <div className="text-xs text-muted" style={{ marginTop: 3 }}>Encryption Layer</div>
+          </div>
+        </div>
       </div>
 
       {/* Search + Actions */}
