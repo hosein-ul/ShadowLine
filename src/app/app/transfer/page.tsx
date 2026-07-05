@@ -374,8 +374,8 @@ export default function TransferPage() {
         title: 'Confidential Transfer Confirmed',
         message: `Sent ${amount} ${symbolDisplay} to ${formatAddress(recipientTrimmed)}.`,
       });
-      setAmount('');
-      setRecipient('');
+      // Note: amount/recipient are cleared in modal onClose so the modal
+      // can display the correct sent amount (React batches these state updates).
     } catch (err: unknown) {
       console.error('Confidential transfer failed:', err);
       const classified = classifyError(err);
@@ -408,8 +408,7 @@ export default function TransferPage() {
         title: 'ERC-20 Transfer Confirmed',
         message: `Sent ${amount} ${selectedPair.symbol} to ${formatAddress(recipientTrimmed)}.`,
       });
-      setAmount('');
-      setRecipient('');
+      // Note: amount/recipient are cleared in modal onClose (see above).
     } catch (err: unknown) {
       console.error('ERC-20 transfer failed:', err);
       const classified = classifyError(err);
@@ -551,7 +550,20 @@ export default function TransferPage() {
           </div>
         </Card>
       ) : (
-        <Card variant="glass" padding="lg">
+        <Card
+          variant="glass"
+          padding="lg"
+          style={{
+            borderColor: isConfMode
+              ? 'rgba(56, 189, 248, 0.28)'
+              : 'rgba(245, 158, 11, 0.28)',
+            borderLeftWidth: 3,
+            borderLeftColor: isConfMode
+              ? 'rgba(56, 189, 248, 0.7)'
+              : 'rgba(245, 158, 11, 0.7)',
+            transition: 'border-color 250ms',
+          }}
+        >
           {/* Step indicator (confidential only) */}
           {isConfMode && <StepIndicator step={step} />}
 
@@ -858,6 +870,8 @@ export default function TransferPage() {
             setFinalTxHash(undefined);
             setPendingTxHash(undefined);
             setStep('idle');
+            setAmount('');
+            setRecipient('');
           }}
           action="transfer"
           amount={amount || '0'}
