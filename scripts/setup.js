@@ -50,34 +50,6 @@ function checkNodeVersion() {
   console.log(`${colors.green}✔ Node.js version check passed (${process.version})${colors.reset}`);
 }
 
-/**
- * Checks if Turbopack native (.node) bindings are present in node_modules.
- * This is a reliable, zero-execution file-system check — no EINVAL risk.
- * Turbopack ships per-platform native modules like:
- *   @next/swc-win32-x64-msvc / @next/swc-linux-x64-gnu / @next/swc-darwin-arm64
- */
-function hasTurbopackNativeBindings() {
-  const platform = process.platform;   // 'win32' | 'linux' | 'darwin'
-  const arch     = process.arch;       // 'x64' | 'arm64'
-
-  // Map platform+arch to the native package name Next.js ships
-  const platformMap = {
-    'win32-x64':    '@next/swc-win32-x64-msvc',
-    'win32-arm64':  '@next/swc-win32-arm64-msvc',
-    'linux-x64':    '@next/swc-linux-x64-gnu',
-    'linux-arm64':  '@next/swc-linux-arm64-gnu',
-    'darwin-x64':   '@next/swc-darwin-x64',
-    'darwin-arm64': '@next/swc-darwin-arm64',
-  };
-
-  const pkg = platformMap[`${platform}-${arch}`];
-  if (!pkg) return false; // Unknown platform → assume no native support
-
-  // Check if the package directory exists in node_modules
-  const pkgDir = path.join(ROOT_DIR, 'node_modules', pkg);
-  return fs.existsSync(pkgDir);
-}
-
 // Single shared readline interface — created once, reused across all questions
 let _rl = null;
 function getRl() {
@@ -167,8 +139,9 @@ async function presentMenu() {
   console.log(`${colors.magenta}───────────────────────────────────────────────────────────────────────${colors.reset}`);
 
   const choice = await question(`${colors.cyan}? Select an option [0-5]: ${colors.reset}`);
-  // Close readline BEFORE spawning long-running processes so stdin is released
-  closeRl();
+  // Pause readline (do NOT close/destroy it) — closing destroys stdin fd which causes EINVAL
+  // when execSync tries to inherit stdio from this process.
+  getRl().pause();
 
   switch (choice.trim()) {
     case '1':
