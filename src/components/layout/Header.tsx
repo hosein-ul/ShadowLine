@@ -42,12 +42,12 @@ const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: '/app/portfolio', label: 'Portfolio' },
   { href: '/app/faucet', label: 'Faucet', badge: 'TESTNET' },
   { href: '/app/learn', label: 'Learn' },
-  { href: '/app/analytics', label: 'Analytics' },
   { href: '/app/docs', label: 'Docs' },
 ];
 
-/** Only the external marketing site stays tucked into the compact "More" menu. */
+/** Analytics + marketing site are in the hamburger drawer only. */
 const SECONDARY_NAV_ITEMS: NavItem[] = [
+  { href: '/app/analytics', label: 'Analytics' },
   { href: '/', label: 'Marketing Site' },
 ];
 
