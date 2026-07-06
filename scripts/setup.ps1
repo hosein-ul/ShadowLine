@@ -1,4 +1,4 @@
-﻿# ShadowLine 0-to-100 Quick Installer & Prerequisite Auto-Installer for Windows PowerShell
+# ShadowLine 0-to-100 Quick Installer and Prerequisite Auto-Installer for Windows PowerShell
 #
 # Usage (one-liner in PowerShell):
 #   irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex
@@ -26,7 +26,7 @@ function Refresh-Path {
     $env:Path    = "$machinePath;$userPath"
 }
 
-# 1. Check & Auto-Install Git
+# 1. Check and Auto-Install Git
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "ℹ Git not found. Attempting automatic installation..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
@@ -44,7 +44,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "✔ Git is already installed ($(git --version))." -ForegroundColor Green
 }
 
-# 2. Check & Auto-Install Node.js (v18+)
+# 2. Check and Auto-Install Node.js (v18+)
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "ℹ Node.js not found. Attempting automatic installation of Node.js LTS..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
