@@ -6,7 +6,14 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-ShadowLine is an enterprise-grade, non-custodial decentralized application (dApp) that acts as the primary gateway for Zama's FHEVM Wrappers Registry. Built entirely on Fully Homomorphic Encryption (FHE), ShadowLine enables users and institutions to seamlessly shield standard ERC-20 tokens into ERC-7984 confidential tokens (cTokens) and perform private on-chain asset transfers.
+ShadowLine is a non-custodial dApp built on top of Zama's Confidential
+Token Wrappers Registry, powered by Zama's FHEVM. It lets you shield
+ERC-20 tokens into ERC-7984 confidential tokens (cTokens), unshield them
+back, and send confidential transfers with encrypted amounts.
+
+Beyond wrapping, ShadowLine includes user decryption of your own balances,
+a browsable token registry with custom-token support, a portfolio view,
+and a testnet faucet — across Sepolia and coming soon on Ethereum mainnet.
 
 With ShadowLine, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
 
