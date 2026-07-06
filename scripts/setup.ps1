@@ -88,20 +88,25 @@ if (Test-Path "package.json") {
 if ($InRepo) {
     $RepoDir = (Get-Location).Path
     Write-Host "✔ ShadowLine repository detected in current directory." -ForegroundColor Green
-} elseif (Test-Path "shadowline") {
+} elseif ((Test-Path "shadowline\package.json") -and (Test-Path "shadowline\.git")) {
     Write-Host "ℹ Directory 'shadowline' found. Updating..." -ForegroundColor Yellow
     Set-Location "shadowline"
     git pull origin main
     $RepoDir = (Get-Location).Path
-} elseif (Test-Path "ShadowLine") {
+} elseif ((Test-Path "ShadowLine\package.json") -and (Test-Path "ShadowLine\.git")) {
     Write-Host "ℹ Directory 'ShadowLine' found. Updating..." -ForegroundColor Yellow
     Set-Location "ShadowLine"
     git pull origin main
     $RepoDir = (Get-Location).Path
 } else {
     Write-Host "Cloning ShadowLine from GitHub..." -ForegroundColor Cyan
-    git clone https://github.com/hosein-ul/ShadowLine.git shadowline
-    Set-Location "shadowline"
+    $currName = Split-Path -Leaf (Get-Location).Path
+    if (($currName -ieq "shadowline") -and -not (Get-ChildItem -Force | Where-Object { $_.Name -ne "." -and $_.Name -ne ".." })) {
+        git clone https://github.com/hosein-ul/ShadowLine.git .
+    } else {
+        git clone https://github.com/hosein-ul/ShadowLine.git shadowline
+        Set-Location "shadowline"
+    }
     $RepoDir = (Get-Location).Path
 }
 

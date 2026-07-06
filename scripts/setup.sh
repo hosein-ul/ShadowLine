@@ -112,21 +112,26 @@ if [ -f "package.json" ] && grep -q '"name": "shadowline"' package.json 2>/dev/n
     # Already inside the repo
     REPO_DIR="$(pwd)"
     echo -e "${GREEN}✔ ShadowLine repository detected in current directory.${NC}"
-elif [ -d "shadowline" ]; then
+elif [ -f "shadowline/package.json" ] && [ -d "shadowline/.git" ]; then
     echo -e "${YELLOW}ℹ Directory 'shadowline' found. Updating...${NC}"
     cd shadowline
     # Bug fix: don't fail on git pull errors (e.g. already up to date, detached HEAD)
     git pull origin main || echo -e "${YELLOW}Warning: git pull had an issue; continuing with existing code.${NC}"
     REPO_DIR="$(pwd)"
-elif [ -d "ShadowLine" ]; then
+elif [ -f "ShadowLine/package.json" ] && [ -d "ShadowLine/.git" ]; then
     echo -e "${YELLOW}ℹ Directory 'ShadowLine' found. Updating...${NC}"
     cd ShadowLine
     git pull origin main || echo -e "${YELLOW}Warning: git pull had an issue; continuing with existing code.${NC}"
     REPO_DIR="$(pwd)"
 else
     echo -e "${CYAN}Cloning ShadowLine from GitHub...${NC}"
-    git clone https://github.com/hosein-ul/ShadowLine.git shadowline
-    cd shadowline
+    CURR_DIR_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')
+    if [ "$CURR_DIR_NAME" = "shadowline" ] && [ -z "$(ls -A 2>/dev/null)" ]; then
+        git clone https://github.com/hosein-ul/ShadowLine.git .
+    else
+        git clone https://github.com/hosein-ul/ShadowLine.git shadowline
+        cd shadowline
+    fi
     REPO_DIR="$(pwd)"
 fi
 
