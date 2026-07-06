@@ -1,4 +1,4 @@
-# ShadowLine 0-to-100 Quick Installer & Prerequisite Auto-Installer for Windows PowerShell
+﻿# ShadowLine 0-to-100 Quick Installer & Prerequisite Auto-Installer for Windows PowerShell
 #
 # Usage (one-liner in PowerShell):
 #   irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex
