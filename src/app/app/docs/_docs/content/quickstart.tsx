@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Lead, H2, P, UL, Callout, StepList } from '../components';
+import { Lead, H2, P, UL, Callout, StepList, CodeBlock } from '../components';
 
 export default function QuickStart() {
   return (
@@ -90,6 +90,72 @@ export default function QuickStart() {
         6-decimal scale. See <Link href="/app/docs/decimal-scaling">Decimal Scaling</Link> for the
         full rule.
       </Callout>
+
+      <H2>For Developers: Drop-in SDK Hook</H2>
+      <P>
+        Want to integrate confidential asset shielding into your own dApp without writing boilerplate contract or relayer code? We created a zero-boilerplate drop-in React hook: <code>useShadowline()</code>.
+      </P>
+      <P>
+        Simply copy <code>src/lib/use-shadowline.ts</code> into your React, Next.js, or Wagmi project to get instant access to verified contract pairs, automatic ERC-20 allowances, and one-click shielding/unshielding:
+      </P>
+      <CodeBlock
+        lang="tsx"
+        code={`import { useShadowline } from '@/lib/use-shadowline';
+
+export default function MyConfidentialApp() {
+  const { pairs, shield, unshield, isConnected } = useShadowline();
+
+  return (
+    <div>
+      <h3>Available Confidential Assets ({pairs.length})</h3>
+      {pairs.map((pair) => (
+        <div key={pair.symbol} className="flex gap-4">
+          <span>{pair.symbol} ↔ c{pair.symbol}</span>
+          <button onClick={() => shield(pair.erc7984Address, '10')}>
+            Shield 10 {pair.symbol}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}`}
+      />
+      <H2>0-to-100 Automated Setup & Deployment</H2>
+      <P>
+        Want to run ShadowLine locally or deploy to a cloud node / VPS in under 1 minute? We built an automated cross-platform wizard that handles dependency checking, environment configuration (<code>.env.local</code>), production build verification, and server launching.
+      </P>
+      <P>
+        <strong>Linux Ubuntu & macOS (Bash / Zsh):</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`git clone https://github.com/hosein-ul/ShadowLine.git && cd ShadowLine && npm run setup`}
+      />
+      <P>
+        <strong>Windows (PowerShell & CMD):</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`git clone https://github.com/hosein-ul/ShadowLine.git; cd ShadowLine; npm run setup`}
+      />
+      <P>
+        <strong>1-Line Auto-Installers (with Automatic Prerequisite Installation):</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`# Linux Ubuntu & macOS
+curl -sSL https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.sh | bash
+
+# Windows PowerShell (Auto-installs Git & Node via winget if missing)
+irm https://raw.githubusercontent.com/hosein-ul/ShadowLine/main/scripts/setup.ps1 | iex`}
+      />
+      <P>
+        <strong>Docker & VPS Self-Hosting:</strong>
+      </P>
+      <CodeBlock
+        lang="bash"
+        code={`docker compose up -d --build`}
+      />
     </>
   );
 }

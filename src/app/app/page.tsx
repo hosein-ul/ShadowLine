@@ -126,7 +126,7 @@ function RegistryTokenRow({
   // assets don't exist on Sepolia. (isMintablePair's on-chain symbol() check is
   // kept for the Faucet's actual mint-button gating, a separate concern; it's
   // unreliable as a *label* since some mocks' symbol() doesn't end in "Mock".)
-  const isMock = isTestnet && !wrapper.symbol.toLowerCase().includes('restricted');
+  const isMock = isTestnet && !wrapper.name.toLowerCase().includes('restricted') && !wrapper.symbol.toLowerCase().includes('restricted');
   const confidentialSymbol = `c${wrapper.symbol}`;
 
   // App-wide session reset — re-arm the button so the next click prompts for

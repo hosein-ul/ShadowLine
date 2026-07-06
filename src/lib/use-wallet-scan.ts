@@ -264,8 +264,12 @@ export function useWalletErc7984Scan(
         );
 
         if (!cancelled) {
-          // Sort: registry pairs first, then detected pairs
+          // Sort: ZAMA first, then registry pairs, then detected pairs
           tokenData.sort((a, b) => {
+            const aIsZama = a.symbol.toUpperCase() === 'ZAMA' || a.symbol.toUpperCase().startsWith('ZAMA ') || a.symbol.toUpperCase() === 'CZAMA';
+            const bIsZama = b.symbol.toUpperCase() === 'ZAMA' || b.symbol.toUpperCase().startsWith('ZAMA ') || b.symbol.toUpperCase() === 'CZAMA';
+            if (aIsZama && !bIsZama) return -1;
+            if (!aIsZama && bIsZama) return 1;
             if (a.isRegistryPair !== b.isRegistryPair)
               return a.isRegistryPair ? -1 : 1;
             return a.symbol.localeCompare(b.symbol);

@@ -1110,10 +1110,10 @@ export default function LandingPage() {
             <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Technology</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { l: 'Zama FHEVM', h: 'https://docs.zama.org/fhevm' },
-                { l: 'ERC-7984 Standard', h: '/app/docs#decimal-scaling' },
-                { l: 'FHE Coprocessors', h: '/app/docs#concepts' },
-                { l: 'EIP-712 Permits', h: '/app/docs#permit-flow' }
+                { l: 'Zama FHEVM', h: 'https://docs.zama.org/protocol' },
+                { l: 'ERC-7984 Standard', h: '/app/docs/fhe' },
+                { l: 'FHE Coprocessors', h: '/app/docs/architecture' },
+                { l: 'EIP-712 Permits', h: '/app/docs/permits' }
               ].map(link => {
                 if (link.h.startsWith('http')) {
                   return (

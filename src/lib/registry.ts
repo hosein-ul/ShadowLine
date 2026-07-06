@@ -353,6 +353,16 @@ export function isMintablePair(pair: WrapperPair): boolean {
   return true;
 }
 
+function sortZamaFirst(pairs: WrapperPair[]): WrapperPair[] {
+  return [...pairs].sort((a, b) => {
+    const aIsZama = a.symbol.toUpperCase() === 'ZAMA' || a.symbol.toUpperCase().startsWith('ZAMA ') || a.symbol.toUpperCase() === 'CZAMA';
+    const bIsZama = b.symbol.toUpperCase() === 'ZAMA' || b.symbol.toUpperCase().startsWith('ZAMA ') || b.symbol.toUpperCase() === 'CZAMA';
+    if (aIsZama && !bIsZama) return -1;
+    if (!aIsZama && bIsZama) return 1;
+    return 0;
+  });
+}
+
 /**
  * Merge custom pairs from the local config into a live pair list.
  * De-duplication rule: if the same erc20Address already exists in `base`
@@ -377,7 +387,7 @@ function mergeCustomPairs(base: WrapperPair[], userPairs: WrapperPair[] = []): W
       !afterConfigErc20.has(cp.erc20Address.toLowerCase()) &&
       !afterConfigErc7984.has(cp.erc7984Address.toLowerCase()),
   );
-  return [...afterConfig, ...userAdded];
+  return sortZamaFirst([...afterConfig, ...userAdded]);
 }
 
 /**

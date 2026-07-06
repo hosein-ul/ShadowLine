@@ -54,31 +54,23 @@ export function useActiveNetwork() {
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isTestnet, setIsTestnet] = useState(true);
 
-  // Load network preference on mount
+  // Load network preference on mount — force Sepolia while Mainnet relayer API key is pending
   useEffect(() => {
-    const savedNetwork = localStorage.getItem('network-preference');
-    if (savedNetwork) {
-      setIsTestnet(savedNetwork === 'testnet');
-    }
+    setIsTestnet(true);
+    localStorage.setItem('network-preference', 'testnet');
   }, []);
 
   const handleSetIsTestnet = (val: boolean) => {
+    if (!val) return; // Mainnet is temporarily disabled
     setIsTestnet(val);
-    localStorage.setItem('network-preference', val ? 'testnet' : 'mainnet');
+    localStorage.setItem('network-preference', 'testnet');
   };
 
   // Determine active chain ID dynamically (safe now that we are within Providers)
-  const { chain, isConnected } = useAccount();
-  const activeChainId = (isConnected && chain && (chain.id === sepolia.id || chain.id === mainnet.id)
-    ? chain.id 
-    : (isTestnet ? sepolia.id : mainnet.id)) as SupportedChainId;
-
-  // Keep isTestnet in sync with connected wallet chain
-  useEffect(() => {
-    if (isConnected && chain) {
-      setIsTestnet(chain.id === sepolia.id);
-    }
-  }, [chain, isConnected]);
+  // While Mainnet relayer API key is pending, force activeChainId to Sepolia (11155111).
+  // If the user connects a wallet on Mainnet (chain 1), activeChainId stays Sepolia,
+  // prompting all UI actions (like Wrap/Transfer/Portfolio) to show "Switch to Sepolia".
+  const activeChainId = sepolia.id as SupportedChainId;
 
   return (
     <NetworkContext.Provider value={{ isTestnet, setIsTestnet: handleSetIsTestnet, activeChainId }}>
