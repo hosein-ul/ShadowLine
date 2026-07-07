@@ -387,7 +387,6 @@ src/
 │       ├── faucet/            # Claim cTokenMocks
 │       ├── analytics/         # Protocol Analytics & Global Stream
 │       ├── learn/             # Interactive User Onboarding Guide
-│       ├── developers/        # ABI Explorer & SDK Code Generator
 │       └── docs/              # In-App Architecture Docs
 ├── config/
 │   ├── contracts.ts           # Registry ABIs and known snapshots
