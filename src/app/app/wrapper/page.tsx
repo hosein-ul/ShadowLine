@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
+import TokenSelect, { type TokenSelectGroup } from '@/components/ui/TokenSelect';
 import WalletActivityFeed from '@/components/WalletActivityFeed';
 import { formatAddress, formatAmount, parseAmount } from '@/lib/utils';
 import { classifyError } from '@/lib/errors';
@@ -178,9 +179,40 @@ function WrapPageContent() {
   // valid; revoked pairs are kept in `allPairs` so the registry table can
   // surface them, but they have no business in the swap selector.
   const wrappers = useMemo(
-    () => allPairs.filter((p) => p.isValid !== false),
+    () => allPairs.filter((p) => p.isValid !== false && p.isWrapper !== false),
     [allPairs],
   );
+
+  const wrapperGroups = useMemo(() => {
+    const official = wrappers.filter((w) => w.source !== 'custom');
+    const custom = wrappers.filter((w) => w.source === 'custom');
+    const groups: TokenSelectGroup[] = [];
+    if (official.length > 0) {
+      groups.push({
+        label: 'Official Registry',
+        options: official.map((w) => ({
+          value: w.erc7984Address.toLowerCase(),
+          symbol: action === 'wrap' ? w.symbol : `c${w.symbol}`,
+          name: w.name,
+          iconSymbol: w.symbol,
+        })),
+      });
+    }
+    if (custom.length > 0) {
+      groups.push({
+        label: 'Custom / Dev-only',
+        options: custom.map((w) => ({
+          value: w.erc7984Address.toLowerCase(),
+          symbol: action === 'wrap' ? w.symbol : `c${w.symbol}`,
+          name: w.name,
+          iconSymbol: w.symbol,
+          badge: { text: 'Custom', variant: 'accent' },
+        })),
+      });
+    }
+    return groups;
+  }, [wrappers, action]);
+
   const isTokenAddress = useMemo(() => isAddress(selectedToken), [selectedToken]);
 
   // ── Address-first pair resolution ─────────────────────────────────────────
@@ -309,7 +341,13 @@ function WrapPageContent() {
     if (decryptErrorRef.current === msg) return;
     decryptErrorRef.current = msg;
     setDecryptRequested(false);
-  }, [decryptWrapperError]);
+    const classified = classifyError(decryptWrapperError);
+    addToast({
+      variant: 'warning',
+      title: classified.title,
+      message: classified.message,
+    });
+  }, [decryptWrapperError, addToast]);
 
   // Read allowance
   const { data: rawAllowance, refetch: refetchAllowance } = useReadContract({
@@ -596,7 +634,7 @@ function WrapPageContent() {
                     isDecrypting={isDecryptingWrapper}
                     error={decryptWrapperError}
                     wrapperDecimals={wrapperDecimals}
-                    onDecrypt={() => { setDecryptRequested(true); refetchWrapperBalance(); }}
+                    onDecrypt={() => setDecryptRequested(true)}
                   />
                 )}
               </span>
@@ -617,63 +655,20 @@ function WrapPageContent() {
               
               {/* Token Display / Selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                {selectedWrapper && <TokenIcon symbol={selectedWrapper.symbol} size={20} />}
-                {(() => {
-                  // Two groups so users never confuse locally-added pairs with
-                  // Zama-endorsed ones. Official first, then Custom / Dev-only.
-                  const official = wrappers.filter((w) => w.source !== 'custom');
-                  const custom = wrappers.filter((w) => w.source === 'custom');
-                  // Value key: the pair's erc7984Address (lowercased) — the same
-                  // key the registry table's Shield/Unshield links pass in
-                  // `?token=`. Using symbol here would break for pairs deep-linked
-                  // by address, which is exactly the custom-row path.
-                  const selectedKey = selectedWrapper?.erc7984Address.toLowerCase() ?? '';
-                  return (
-                    <select
-                      className="btn btn-secondary"
-                      disabled={txStep > 0}
-                      style={{
-                        appearance: 'none',
-                        padding: 'var(--sp-2) var(--sp-4)',
-                        background: 'var(--bg-elevated)',
-                        borderRadius: 'var(--radius-md)',
-                        cursor: 'pointer',
-                        color: 'var(--text-primary)',
-                        minWidth: '110px',
-                      }}
-                      value={selectedKey}
-                      onChange={e => {
-                        setSelectedToken(e.target.value);
-                        setTxStep(0);
-                        setAmount('');
-                        // Reset synchronously here — NOT in a useEffect — to
-                        // prevent a one-frame window where the old
-                        // decryptRequested=true fires a permit for the new token.
-                        setDecryptRequested(false);
-                      }}
-                    >
-                      <option value="">Select Token</option>
-                      {official.length > 0 && (
-                        <optgroup label="Official Registry">
-                          {official.map((w) => (
-                            <option key={w.erc7984Address} value={w.erc7984Address.toLowerCase()}>
-                              {action === 'wrap' ? w.symbol : `c${w.symbol}`}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {custom.length > 0 && (
-                        <optgroup label="Custom / Dev-only">
-                          {custom.map((w) => (
-                            <option key={w.erc7984Address} value={w.erc7984Address.toLowerCase()}>
-                              {action === 'wrap' ? w.symbol : `c${w.symbol}`}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                  );
-                })()}
+                <TokenSelect
+                  value={selectedWrapper?.erc7984Address.toLowerCase() ?? ''}
+                  onChange={(val) => {
+                    setSelectedToken(val);
+                    setTxStep(0);
+                    setAmount('');
+                    setDecryptRequested(false);
+                  }}
+                  groups={wrapperGroups}
+                  placeholder="Select Token"
+                  disabled={txStep > 0}
+                  size="sm"
+                  style={{ minWidth: '160px' }}
+                />
               </div>
             </div>
 
@@ -755,7 +750,7 @@ function WrapPageContent() {
                     isDecrypting={isDecryptingWrapper}
                     error={decryptWrapperError}
                     wrapperDecimals={wrapperDecimals}
-                    onDecrypt={() => { setDecryptRequested(true); refetchWrapperBalance(); }}
+                    onDecrypt={() => setDecryptRequested(true)}
                   />
                 )}
               </span>

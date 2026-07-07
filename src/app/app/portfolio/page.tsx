@@ -8,7 +8,6 @@ import Modal from '@/components/ui/Modal';
 import TokenIcon from '@/components/ui/TokenIcon';
 import WalletActivityFeed from '@/components/WalletActivityFeed';
 import { type WrapperPair } from '@/config/contracts';
-import { type CustomPairRecord } from '@/lib/registry';
 import { formatAmount, formatAddress } from '@/lib/utils';
 import { classifyError } from '@/lib/errors';
 import PendingUnshieldBanner from '@/components/PendingUnshieldBanner';
@@ -95,7 +94,7 @@ function TokenPositionCard({
           </div>
         ) : decryptError ? (
           <div className="text-xs" style={{ color: 'var(--color-danger, #ef4444)', wordBreak: 'break-word' }}>
-            {decryptError.message || 'Decryption failed.'}
+            {classifyError(decryptError).message}
           </div>
         ) : isDecrypted ? (
           <div className="flex items-end gap-2">
@@ -157,11 +156,11 @@ function TokenPositionCard({
 // ── Confidential-only per-row decrypt (singular hook, one per card) ──────────
 
 function ConfidentialOnlyCard({
-  record,
+  wrapper,
   isConnected,
   resetToken,
 }: {
-  record: CustomPairRecord;
+  wrapper: WrapperPair;
   isConnected: boolean;
   resetToken: number;
 }) {
@@ -172,7 +171,7 @@ function ConfidentialOnlyCard({
     isLoading,
     error,
   } = useConfidentialBalance(
-    { tokenAddress: record.erc7984Address as `0x${string}` },
+    { tokenAddress: wrapper.erc7984Address as `0x${string}` },
     {
       enabled: decryptRequested && isConnected,
       retry: false,
@@ -185,16 +184,20 @@ function ConfidentialOnlyCard({
     if (resetToken > 0) setDecryptRequested(false);
   }, [resetToken]);
 
-  const wrapper: WrapperPair = {
-    erc20Address: record.erc20Address as `0x${string}`,
-    erc7984Address: record.erc7984Address as `0x${string}`,
-    symbol: record.symbol,
-    name: record.name,
-    decimals: record.decimals,
-    wrapperDecimals: record.wrapperDecimals,
-    source: 'custom',
-    isWrapper: false,
-  };
+  const { addToast } = useToast();
+  const lastErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!error) {
+      lastErrorRef.current = null;
+      return;
+    }
+    const msg = error.message ?? '';
+    if (lastErrorRef.current === msg) return;
+    lastErrorRef.current = msg;
+    setDecryptRequested(false);
+    const classified = classifyError(error);
+    addToast({ variant: 'warning', title: classified.title, message: classified.message });
+  }, [error, addToast]);
 
   return (
     <TokenPositionCard
@@ -225,9 +228,9 @@ export default function PortfolioPage() {
   // Official pairs = registry + config-file (never localStorage custom)
   const officialWrappers = useMemo(() => pairs.filter((p) => p.source !== 'custom'), [pairs]);
   // Custom wrapper pairs (isWrapper:true — has ERC-20 underlying, can unshield)
-  const customWrapperPairs = useMemo(() => pairs.filter((p) => p.source === 'custom'), [pairs]);
+  const customWrapperPairs = useMemo(() => pairs.filter((p) => p.source === 'custom' && p.isWrapper !== false), [pairs]);
   // Confidential-only custom pairs (isWrapper:false — no underlying, decrypt only)
-  const customConfOnly = useMemo(() => localRecords.filter((r) => r.isWrapper === false), [localRecords]);
+  const customConfOnly = useMemo(() => pairs.filter((p) => p.source === 'custom' && p.isWrapper === false), [pairs]);
 
   // All pairs passed to the activity feed (official + custom wrappers)
   const allWrappers = useMemo(() => pairs, [pairs]);
@@ -519,10 +522,10 @@ export default function PortfolioPage() {
                 </div>
               </div>
               <div className="grid grid-2 gap-4">
-                {customConfOnly.map((record) => (
+                {customConfOnly.map((wrapper) => (
                   <ConfidentialOnlyCard
-                    key={record.erc7984Address}
-                    record={record}
+                    key={wrapper.erc7984Address}
+                    wrapper={wrapper}
                     isConnected={isConnected}
                     resetToken={resetToken}
                   />

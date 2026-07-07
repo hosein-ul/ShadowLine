@@ -141,7 +141,7 @@ export default function FaucetPage() {
       setIsRequestPending(false);
       const classified = classifyError(err);
       addToast({
-        variant: 'error',
+        variant: classified.retryable ? 'warning' : 'error',
         title: classified.title,
         message: classified.message,
       });

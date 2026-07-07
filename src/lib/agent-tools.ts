@@ -63,7 +63,7 @@ export const shadowlineTools: Record<string, AgentToolDefinition> = {
   getContractAbis: {
     name: 'getContractAbis',
     description:
-      'Get the essential smart contract ABIs required for an AI agent to approve ERC-20 spend, shield tokens (depositFor), and unshield tokens (requestWithdraw).',
+      'Get the essential smart contract ABIs required for an AI agent to approve ERC-20 spend, shield tokens (wrap), and unshield tokens (unwrap).',
     parameters: {
       type: 'object',
       properties: {},
@@ -71,9 +71,9 @@ export const shadowlineTools: Record<string, AgentToolDefinition> = {
     },
     execute: async () => ({
       erc20_approve: 'function approve(address spender, uint256 amount) external returns (bool)',
-      erc7984_shield: 'function depositFor(address to, uint256 amount) external returns (bool)',
-      erc7984_unshield: 'function requestWithdraw(uint64 amount) external returns (uint256)',
-      erc7984_transfer: 'function confidentialTransfer(address to, bytes calldata encryptedAmount) external returns (bool)',
+      erc7984_shield: 'function wrap(address to, uint256 amount) external returns (bytes32)',
+      erc7984_unshield: 'function unwrap(address from, address to, bytes32 amount) external returns (bytes32)',
+      erc7984_transfer: 'function transfer(address to, uint256 amount) external returns (bool)',
     }),
   },
 };

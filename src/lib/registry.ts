@@ -346,6 +346,15 @@ function dedupeSymbols(pairs: WrapperPair[]): WrapperPair[] {
  *     because the hardcoded list was curated to include mocks only.
  */
 export function isMintablePair(pair: WrapperPair): boolean {
+  if (pair.isWrapper === false || pair.erc20Address === '0x0000000000000000000000000000000000000000') {
+    return false;
+  }
+  if (pair.source === 'custom') {
+    return pair.isMintable === true;
+  }
+  if (typeof pair.isMintable === 'boolean') {
+    return pair.isMintable;
+  }
   const raw = pair.underlyingRawSymbol;
   if (typeof raw === 'string' && raw.length > 0) {
     return /mock$/i.test(raw);
@@ -453,11 +462,9 @@ export function useRegistryPairs(chainId: SupportedChainId): RegistryPairsResult
   // On-chain wins on any address conflict.
   const localRecords = useLocalCustomPairs(chainId);
   const userPairs = useMemo(
-    // Confidential-only custom tokens (isWrapper === false) have no ERC-20 side
-    // and can't be shielded/unshielded, so they never enter the wrapper-pair
-    // list that drives the Wrap/Transfer selectors. The registry page still
-    // renders them in the Custom / Dev-only section as decrypt-only rows.
-    () => localRecords.filter((r) => r.isWrapper !== false).map(customRecordToWrapperPair),
+    // All custom tokens (including standalone ERC-7984 confidential tokens where isWrapper === false)
+    // flow into userPairs so they can be transferred in Confidential Transfer mode and managed in Portfolio.
+    () => localRecords.map(customRecordToWrapperPair),
     [localRecords],
   );
 

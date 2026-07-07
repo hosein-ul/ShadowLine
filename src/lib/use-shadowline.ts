@@ -25,7 +25,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { parseUnits, formatUnits, type Address } from 'viem';
+import { parseUnits, formatUnits, pad, toHex, type Address } from 'viem';
 import { useRegistryPairs } from '@/lib/registry';
 import { type WrapperPair } from '@/config/contracts';
 import { useActiveNetwork } from '@/app/ClientLayout';
@@ -127,14 +127,14 @@ export function useShadowline(): ShadowlineHookReturn {
           address: wrapperAddress,
           abi: [
             {
-              name: 'depositFor',
+              name: 'wrap',
               type: 'function',
               stateMutability: 'nonpayable',
               inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
-              outputs: [{ name: '', type: 'bool' }],
+              outputs: [{ name: '', type: 'bytes32' }],
             },
           ] as const,
-          functionName: 'depositFor',
+          functionName: 'wrap',
           args: [address, rawAmount],
         });
 
@@ -165,21 +165,26 @@ export function useShadowline(): ShadowlineHookReturn {
       try {
         // FHE confidential wrappers use fixed 6 decimals scale for ciphertexts
         const scaledAmount = parseUnits(amountStr, 6);
+        const amountBytes32 = pad(toHex(scaledAmount), { size: 32 });
 
         addToast({ title: 'Requesting Unshield...', message: 'Confirm unshield request in your wallet.', variant: 'info' });
         const unshieldHash = await walletClient.writeContract({
           address: wrapperAddress,
           abi: [
             {
-              name: 'requestWithdraw',
+              name: 'unwrap',
               type: 'function',
               stateMutability: 'nonpayable',
-              inputs: [{ name: 'amount', type: 'uint64' }],
-              outputs: [{ name: '', type: 'uint256' }],
+              inputs: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'bytes32' },
+              ],
+              outputs: [{ name: 'unwrapRequestId', type: 'bytes32' }],
             },
           ] as const,
-          functionName: 'requestWithdraw',
-          args: [scaledAmount as unknown as bigint],
+          functionName: 'unwrap',
+          args: [address, address, amountBytes32],
         });
 
         addToast({ title: 'Unshield Requested', message: 'Relayer will decrypt and finalize transfer shortly.', variant: 'success' });

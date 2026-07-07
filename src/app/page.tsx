@@ -153,6 +153,35 @@ function Hero() {
             ))}
           </div>
         </BlurFade>
+
+        {/* Visual Decor Centerpiece */}
+        <BlurFade delay={0.68} inView>
+          <motion.div
+            initial={{ opacity: 0, y: 35, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            whileHover={{ scale: 1.015, y: -4 }}
+            style={{
+              position: 'relative',
+              margin: '36px auto 0',
+              maxWidth: '860px',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              border: '1px solid #e4e4e7',
+              boxShadow: '0 24px 80px rgba(0,0,0,0.08), 0 0 60px rgba(255,210,8,0.18)',
+              background: '#fff',
+              aspectRatio: '16/9',
+            }}
+          >
+            <img
+              src="/images/crystal-shield-decor.jpg"
+              alt="ShadowLine Crystal Shield"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 70%, rgba(250,250,250,0.95) 100%)', pointerEvents: 'none' }} />
+            <BorderBeam size={300} duration={14} delay={5} colorFrom="#FFD208" colorTo="#f59e0b" />
+          </motion.div>
+        </BlurFade>
       </motion.div>
 
       {/* Scroll indicator */}
@@ -1011,6 +1040,81 @@ function FaqAccordions() {
   );
 }
 
+// ─── VISUAL DECOR BANNER 1 ──────────────────────────────────────────────────
+function VisualAuroraBanner() {
+  return (
+    <section style={{ padding: '40px clamp(24px,6vw,80px)', background: '#fff', overflow: 'hidden' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView>
+          <motion.div whileHover={{ scale: 1.005 }} transition={{ duration: 0.4 }} style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 20px 60px rgba(0,0,0,.06)', minHeight: '320px', display: 'flex', alignItems: 'center' }}>
+            <img src="/images/encrypted-lock-prism.jpg" alt="ShadowLine Interlocking Rings" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 55%, transparent 100%)' }} />
+            <div style={{ position: 'relative', zIndex: 1, padding: '48px clamp(28px,6vw,64px)', maxWidth: '580px' }}>
+              <span style={{ display: 'inline-block', padding: '5px 16px', borderRadius: '100px', background: 'rgba(255,210,8,.18)', border: '1px solid rgba(255,210,8,.4)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>On-Chain Privacy</span>
+              <h3 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.035em', lineHeight: 1.12, margin: '0 0 14px' }}>
+                Encrypted in motion.<br />Protected at rest.
+              </h3>
+              <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: 1.65, margin: 0 }}>
+                ShadowLine transforms public ERC-20 tokens into confidential on-chain ciphertexts, giving you institutional-grade privacy without compromising self-custody.
+              </p>
+            </div>
+          </motion.div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+// ─── VISUAL DECOR BANNER 2 ──────────────────────────────────────────────────
+function VisualSculptureBanner() {
+  return (
+    <section style={{ padding: '40px clamp(24px,6vw,80px)', background: '#fff', overflow: 'hidden' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView>
+          <motion.div whileHover={{ scale: 1.005 }} transition={{ duration: 0.4 }} style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 20px 60px rgba(0,0,0,.06)', minHeight: '320px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <img src="/images/obsidian-glass-sculpture.jpg" alt="ShadowLine Sculpture" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(270deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 55%, transparent 100%)' }} />
+            <div style={{ position: 'relative', zIndex: 1, padding: '48px clamp(28px,6vw,64px)', maxWidth: '580px', textAlign: 'right' }}>
+              <span style={{ display: 'inline-block', padding: '5px 16px', borderRadius: '100px', background: 'rgba(255,210,8,.18)', border: '1px solid rgba(255,210,8,.4)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Canonical Standard</span>
+              <h3 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.035em', lineHeight: 1.12, margin: '0 0 14px' }}>
+                Mathematical precision.<br />Zero fragmentation.
+              </h3>
+              <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: 1.65, margin: 0 }}>
+                Built on top of OpenZeppelin and Zama FHEVM, ShadowLine eliminates liquidity fragmentation with a single, unified wrapper interface.
+              </p>
+            </div>
+          </motion.div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+// ─── VISUAL DECOR BANNER 3 ──────────────────────────────────────────────────
+function VisualTokenBanner() {
+  return (
+    <section style={{ padding: '40px clamp(24px,6vw,80px)', background: '#fff', overflow: 'hidden' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <BlurFade inView>
+          <motion.div whileHover={{ scale: 1.005 }} transition={{ duration: 0.4 }} style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', border: '1px solid #e4e4e7', boxShadow: '0 20px 60px rgba(0,0,0,.06)', minHeight: '320px', display: 'flex', alignItems: 'center' }}>
+            <img src="/images/confidential-token-crystal.jpg" alt="ShadowLine Confidential Tokens" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 55%, transparent 100%)' }} />
+            <div style={{ position: 'relative', zIndex: 1, padding: '48px clamp(28px,6vw,64px)', maxWidth: '580px' }}>
+              <span style={{ display: 'inline-block', padding: '5px 16px', borderRadius: '100px', background: 'rgba(255,210,8,.18)', border: '1px solid rgba(255,210,8,.4)', fontSize: '.75rem', fontWeight: 700, color: '#FFD208', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Confidential Assets</span>
+              <h3 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.035em', lineHeight: 1.12, margin: '0 0 14px' }}>
+                Shielded balances.<br />Verifiable transfers.
+              </h3>
+              <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: 1.65, margin: 0 }}>
+                Experience standard ERC-20 composability with the security of zero-knowledge and FHE encrypted token wrappers.
+              </p>
+            </div>
+          </motion.div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
@@ -1027,14 +1131,17 @@ export default function LandingPage() {
 
       <PinnedStory />
       <HorizontalScroll />
+      <VisualAuroraBanner />
       <StepTimeline />
 
       {/* 1. Enterprise Use Cases */}
       <EnterpriseUseCases />
 
       <PermitFlow />
+      <VisualSculptureBanner />
       <FragmentationSection />
       <DeveloperSection />
+      <VisualTokenBanner />
 
       {/* 2. Security & Compliance */}
       <SecurityCompliance />

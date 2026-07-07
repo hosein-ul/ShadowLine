@@ -19,6 +19,11 @@ export default function TypingAnimation({
   const [currentText, setCurrentText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const longestWord = React.useMemo(() => {
+    if (!words || words.length === 0) return '';
+    return words.reduce((a, b) => (a.length > b.length ? a : b), words[0] || '');
+  }, [words]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     const currentWord = words[currentWordIndex];
@@ -54,17 +59,50 @@ export default function TypingAnimation({
   }, [currentText, isDeleting, currentWordIndex, words, typingSpeed, deletingSpeed, delayBetweenWords]);
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{currentText}</span>
+    <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', whiteSpace: 'nowrap' }}>
+      {/* Ghost text to reserve width dynamically for the longest word */}
       <span
         style={{
-          marginLeft: '2px',
-          width: '2px',
-          height: '1.2em',
-          backgroundColor: 'var(--accent)',
-          animation: 'blink 1s step-end infinite',
+          visibility: 'hidden',
+          whiteSpace: 'nowrap',
+          display: 'inline-flex',
+          alignItems: 'center',
+          pointerEvents: 'none',
         }}
-      />
+      >
+        <span style={{ fontWeight: 800 }}>{longestWord}</span>
+        <span
+          style={{
+            marginLeft: '2px',
+            width: '2px',
+            height: '1.2em',
+          }}
+        />
+      </span>
+
+      {/* Absolutely positioned actual animated text */}
+      <span
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          whiteSpace: 'nowrap',
+          display: 'inline-flex',
+          alignItems: 'center',
+          height: '100%',
+        }}
+      >
+        <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{currentText}</span>
+        <span
+          style={{
+            marginLeft: '2px',
+            width: '2px',
+            height: '1.2em',
+            backgroundColor: 'var(--accent)',
+            animation: 'blink 1s step-end infinite',
+          }}
+        />
+      </span>
       <style jsx global>{`
         @keyframes blink {
           from, to { background-color: transparent }
@@ -74,3 +112,4 @@ export default function TypingAnimation({
     </span>
   );
 }
+

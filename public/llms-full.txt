@@ -35,8 +35,8 @@ curl -s "https://shadow-line.netlify.app/api/registry?chain=sepolia"
 {
   "pairs": [
     {
-      "tokenAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-      "confidentialTokenAddress": "0x7c5B9B79d50A6cdd398d254cc92A0a4cFE64d9D4",
+      "tokenAddress": "0x9b5Cd13b8eFbB58Dc25A05CF411D8056058aDFfF",
+      "confidentialTokenAddress": "0x7c5BF43B851c1dff1a4feE8dB225b87f2C223639",
       "symbol": "USDC",
       "confidentialSymbol": "cUSDC",
       "name": "USD Coin",
@@ -48,7 +48,7 @@ curl -s "https://shadow-line.netlify.app/api/registry?chain=sepolia"
   ],
   "total": 1,
   "chain": "sepolia",
-  "registryAddress": "0x1000000000000000000000000000000000000005",
+  "registryAddress": "0x2f0750Bbb0A246059d80e94c454586a7F27a128e",
   "timestamp": 1751740000000,
   "source": "on-chain"
 }
@@ -67,13 +67,20 @@ When building automated transactions, agents must adhere to strict decimal scali
 ## 4. Smart Contract ABIs for AI Agents
 
 ### WrappersRegistry Contract
-- **Sepolia Address:** `0x1000000000000000000000000000000000000005`
-- **Mainnet Address:** `0x1000000000000000000000000000000000000005`
+- **Sepolia Address:** `0x2f0750Bbb0A246059d80e94c454586a7F27a128e`
+- **Mainnet Address:** `0xeb5015fF021DB115aCe010f23F55C2591059bBA0`
 
 ```json
 [
   {
-    "name": "getPairsSlice",
+    "name": "getTokenConfidentialTokenPairsLength",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "name": "getTokenConfidentialTokenPairsSlice",
     "type": "function",
     "stateMutability": "view",
     "inputs": [
@@ -98,31 +105,33 @@ When building automated transactions, agents must adhere to strict decimal scali
 ```json
 [
   {
-    "name": "depositFor",
+    "name": "wrap",
     "type": "function",
     "stateMutability": "nonpayable",
     "inputs": [
       { "name": "to", "type": "address" },
       { "name": "amount", "type": "uint256" }
     ],
-    "outputs": [{ "name": "", "type": "bool" }]
+    "outputs": [{ "name": "", "type": "bytes32" }]
   },
   {
-    "name": "requestWithdraw",
+    "name": "unwrap",
     "type": "function",
     "stateMutability": "nonpayable",
     "inputs": [
-      { "name": "amount", "type": "uint64" }
+      { "name": "from", "type": "address" },
+      { "name": "to", "type": "address" },
+      { "name": "amount", "type": "bytes32" }
     ],
-    "outputs": [{ "name": "", "type": "uint256" }]
+    "outputs": [{ "name": "unwrapRequestId", "type": "bytes32" }]
   },
   {
-    "name": "confidentialTransfer",
+    "name": "transfer",
     "type": "function",
     "stateMutability": "nonpayable",
     "inputs": [
       { "name": "to", "type": "address" },
-      { "name": "encryptedAmount", "type": "bytes" }
+      { "name": "amount", "type": "uint256" }
     ],
     "outputs": [{ "name": "", "type": "bool" }]
   }
@@ -158,11 +167,11 @@ async function shieldTokens(erc20Address: Address, wrapperAddress: Address, amou
   });
   await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-  // Deposit into Wrapper
+  // Deposit into Wrapper (wrap)
   const shieldHash = await walletClient.writeContract({
     address: wrapperAddress,
-    abi: [{ name: 'depositFor', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }],
-    functionName: 'depositFor',
+    abi: [{ name: 'wrap', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bytes32' }] }],
+    functionName: 'wrap',
     args: [account.address, rawAmount],
   });
   
