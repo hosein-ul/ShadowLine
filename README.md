@@ -15,7 +15,8 @@ Beyond wrapping, ShadowLine includes user decryption of your own balances,
 a browsable token registry with custom-token support, a portfolio view,
 and a testnet faucet — across Sepolia and coming soon on Ethereum mainnet.
 
-With ShadowLine, transaction amounts and token balances remain completely encrypted on the blockchain, computable only in their encrypted state, while sender and receiver identities are preserved for ledger auditing.
+Because balances and transfer amounts are handled as ERC-7984 confidential tokens, they stay encrypted on-chain and are computed in their encrypted state via FHE. Wallet addresses remain public on-chain, as with any standard transaction.
+
 
 ---
 
@@ -37,9 +38,10 @@ With ShadowLine, transaction amounts and token balances remain completely encryp
 
 ---
 
+
 ## 1. About ShadowLine
 
-Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ShadowLine addresses this challenge by utilizing Torus Fully Homomorphic Encryption (TFHE) on-chain via Zama's FHEVM. 
+Traditional blockchain networks expose all transaction values and account balances to public block explorers, posing significant security and privacy risks for both retail users and commercial enterprises. ShadowLine addresses this challenge by using Fully Homomorphic Encryption (FHE) on-chain via Zama's FHEVM.
 
 It wraps public ERC-20 tokens into **ERC-7984 Confidential Wrappers** (cTokens), converting open balance data into cryptographic ciphertext handles (`euint64`). Transactions and balances are processed on-chain in their encrypted state, ensuring confidentiality while maintaining decentralized validation.
 
@@ -57,6 +59,7 @@ ShadowLine supports the following network configurations:
 *Note: Confidential operations (Shield, Unshield, Decrypt, and Faucet claims) are actively supported on the Ethereum Sepolia Testnet.*
 
 ---
+
 
 ## 3. Core Features Deep Dive
 
@@ -108,6 +111,7 @@ An in-app documentation portal explaining technical architecture, decimal scalin
 
 ---
 
+
 ## 4. Technical Architecture & Data Flows
 
 ShadowLine's architecture decouples public blockchain logic, local cryptographic calculations, and decentralized key management:
@@ -144,6 +148,7 @@ ShadowLine's architecture decouples public blockchain logic, local cryptographic
                         └──────────────────────┘
 ```
 
+
 ### 4.1 FHE Shielding Flow (Public to Confidential)
 
 The diagram below illustrates the process of shielding public ERC-20 tokens into encrypted cTokens:
@@ -168,6 +173,7 @@ sequenceDiagram
     Coproc-->>Wrap: Verify results & publish updated euint64 handles
     Wrap-->>User: Tx Confirmed (Shield Completed)
 ```
+
 
 ### 4.2 FHE Decryption Flow (Confidential to Plaintext)
 
@@ -194,7 +200,9 @@ sequenceDiagram
     SDK->>User: Display Plaintext Balance (e.g., 1,000 cUSDT)
 ```
 
+
 ---
+
 
 ## 5. Security & Cryptographic Trust Model
 
@@ -205,7 +213,9 @@ ShadowLine's privacy architecture relies on the following security properties:
 * **EIP-712 Permit Scoping:** Permit signatures are read-only and restricted to balance views. They cannot approve token transfers, withdraw funds, or modify contract states.
 * **Zero-Knowledge KMS Boundaries:** The Key Management System (KMS) re-encrypts FHE ciphertexts from the network key to the user's session key. This cryptographic handshake ensures that neither the KMS gateway nor any relayer can inspect the user's plaintext values.
 
+
 ---
+
 
 ## 6. Hybrid Registry Sourcing Strategy
 
@@ -232,6 +242,7 @@ To guarantee uptime and developer flexibility, ShadowLine merges token informati
 
 ---
 
+
 ## 7. B2B & Enterprise Use Cases
 
 Confidential ERC-7984 wrapper standard implementations enable several corporate use cases:
@@ -242,11 +253,13 @@ Confidential ERC-7984 wrapper standard implementations enable several corporate 
 
 ---
 
+
 ## 8. How to Configure a New Token Pair
 
 Two paths, no on-chain governance required. Both flow the pair through the exact same shield / unshield / decrypt code paths as an Official registry pair — the only difference is which section lists it (**Official — Zama Registry** vs **Custom / Dev-only Tokens**).
 
-The on-chain Wrappers Registry is owned by the Zama Protocol DAO — calling `registerPair` from ShadowLine reverts. So ShadowLine declares custom pairs **locally**: either seeded in the repo (path A, ships with the app) or added at runtime in the browser (path B, per-user).
+The on-chain Wrappers Registry is permissioned and not publicly writable — its `registerConfidentialToken(erc20, wrapper)` entrypoint cannot be called by ShadowLine. So ShadowLine declares custom pairs **locally**: either seeded in the repo (path A, ships with the app) or added at runtime in the browser (path B, per-user).
+
 
 Resolution order at read time: **on-chain registry (primary) → `CUSTOM_PAIRS` config → browser localStorage → hardcoded offline snapshot**. On-chain always wins on any address conflict.
 
@@ -276,6 +289,7 @@ export const CUSTOM_PAIRS: CustomPair[] = [
 **Step 3:** `npm run dev`. The pair appears everywhere immediately.
 
 **Requirement:** `erc7984Address` must implement ERC-165 and return `true` for interface id `0x4958f2a4`. If it doesn't, ShadowLine's Add-Custom-Pair form rejects it — see path B.
+
 
 ### Path B — Add a pair from the UI (persists only in this browser)
 
@@ -312,7 +326,9 @@ Sepolia's on-chain registry contains a second, non-mintable `tGBP` wrapper deplo
 
 To demonstrate the *success* path, deploy any ERC-7984 wrapper of your own on Sepolia, paste that wrapper address, and click **Add Pair** — the row will appear under **Custom / Dev-only Tokens** and route through the same shield/unshield/decrypt code paths as any official pair.
 
+
 ---
+
 
 ## 9. Local Development & Setup (0-to-100 DevOps Suite)
 
@@ -381,6 +397,7 @@ Open `http://localhost:3000` to interact with the application.
 
 ---
 
+
 ## 10. Repository Structure
 
 ```
@@ -410,6 +427,7 @@ src/
 ```
 
 ---
+
 
 ## 11. Zama SDK 3.0.1 — methods used
 
