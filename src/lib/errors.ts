@@ -26,7 +26,71 @@ export interface ClassifiedError {
  * - Non-Error thrown values (strings, nulls, etc.)
  */
 export function classifyError(error: unknown): ClassifiedError {
-  // Try Zama SDK error classification first
+  // Extract properties from Viem / Wagmi / standard errors
+  const errObj = error as {
+    shortMessage?: string;
+    name?: string;
+    message?: string;
+    cause?: unknown;
+  };
+
+  const shortMsg = errObj?.shortMessage;
+  const fullMsg = errObj?.message || (error instanceof Error ? error.message : String(error ?? 'Unknown error'));
+  const errorName = errObj?.name || '';
+  const causeMsg = errObj?.cause instanceof Error ? errObj.cause.message : String(errObj?.cause || '');
+
+  // Combine messages for case-insensitive checking
+  const combinedMsg = `${errorName} ${shortMsg || ''} ${fullMsg} ${causeMsg}`.toLowerCase();
+
+  // 1. User rejection / cancellation across all wallets and providers (MetaMask, Viem, Rainbow, etc.)
+  if (
+    errorName === 'UserRejectedRequestError' ||
+    combinedMsg.includes('user rejected') ||
+    combinedMsg.includes('user denied') ||
+    combinedMsg.includes('rejected by user') ||
+    combinedMsg.includes('user cancelled') ||
+    combinedMsg.includes('user canceled') ||
+    combinedMsg.includes('action_rejected') ||
+    combinedMsg.includes('request rejected') ||
+    combinedMsg.includes('declined by user') ||
+    combinedMsg.includes('user closed modal')
+  ) {
+    return {
+      title: 'Request Cancelled',
+      message: 'You cancelled the request in your wallet.',
+      retryable: true,
+    };
+  }
+
+  // 2. Insufficient balance / gas
+  if (
+    combinedMsg.includes('insufficient funds') ||
+    combinedMsg.includes('exceeds balance') ||
+    combinedMsg.includes('insufficient balance') ||
+    combinedMsg.includes('gas required exceeds')
+  ) {
+    return {
+      title: 'Insufficient Funds',
+      message: 'You do not have enough balance or gas (ETH) to complete this transaction.',
+      retryable: true,
+    };
+  }
+
+  // 3. Network / RPC disconnection
+  if (
+    combinedMsg.includes('network') ||
+    combinedMsg.includes('disconnected') ||
+    combinedMsg.includes('failed to fetch') ||
+    combinedMsg.includes('timeout')
+  ) {
+    return {
+      title: 'Network Error',
+      message: 'Could not connect to the network or RPC node. Please check your internet connection and try again.',
+      retryable: true,
+    };
+  }
+
+  // 4. Try Zama SDK error classification next
   const zamaResult = matchZamaError(error, {
     SIGNING_REJECTED: () => ({
       title: 'Signature Declined',
@@ -108,35 +172,19 @@ export function classifyError(error: unknown): ClassifiedError {
       message: `Token approval failed: ${e.message}. Check your balance and try again.`,
       retryable: true,
     }),
-    _: (e) => ({
-      title: 'Unexpected Error',
-      message: `An unexpected error occurred: ${e instanceof Error ? e.message : String(e)}`,
-      retryable: true,
-    }),
   });
 
   if (zamaResult) return zamaResult;
 
-  // Fallback for non-Zama errors (wallet rejections, network errors, etc.)
-  const msg = error instanceof Error ? error.message : String(error ?? 'Unknown error');
-
-  // Common wallet rejection patterns (MetaMask, WalletConnect, etc.)
-  if (
-    msg.includes('user rejected') ||
-    msg.includes('User denied') ||
-    msg.includes('ACTION_REJECTED') ||
-    msg.includes('user cancelled')
-  ) {
-    return {
-      title: 'Request Cancelled',
-      message: 'You cancelled the request in your wallet.',
-      retryable: true,
-    };
+  // 5. Default fallback: prefer shortMessage, or take the first clean line of fullMessage
+  let cleanMsg = shortMsg || fullMsg.split('\n')[0] || 'The operation failed. Please try again.';
+  if (cleanMsg.length > 150) {
+    cleanMsg = cleanMsg.slice(0, 147) + '...';
   }
 
   return {
     title: 'Transaction Failed',
-    message: msg || 'The operation failed. Please try again.',
+    message: cleanMsg,
     retryable: true,
   };
 }

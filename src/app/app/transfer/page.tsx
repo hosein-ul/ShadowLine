@@ -20,6 +20,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import TokenIcon from '@/components/ui/TokenIcon';
+import TokenSelect, { type TokenSelectGroup } from '@/components/ui/TokenSelect';
 import { useToast } from '@/components/ui/Toast';
 import TransactionSuccessModal from '@/components/ui/TransactionSuccessModal';
 import { useActiveNetwork } from '@/app/ClientLayout';
@@ -417,11 +418,64 @@ export default function TransferPage() {
     }
   }, [canSubmit, selectedPair, writeContractAsync, recipientTrimmed, parsedAmount, amount, addToast]);
 
+  const rawModalSym = selectedPair?.symbol ?? selectedExtra?.symbol ?? '';
   const tokenSymbolForModal = mode === 'confidential'
-    ? `c${selectedPair?.symbol ?? selectedExtra?.symbol ?? ''}`
-    : (selectedPair?.symbol ?? '');
+    ? (selectedPair?.isWrapper === false || rawModalSym.startsWith('c') ? rawModalSym : `c${rawModalSym}`)
+    : rawModalSym;
 
   const isConfMode = mode === 'confidential';
+
+  const tokenGroups = useMemo(() => {
+    const official = transferablePairs.filter((p) => p.source !== 'custom' && (isConfMode || p.isWrapper !== false));
+    const custom = transferablePairs.filter((p) => p.source === 'custom' && (isConfMode || p.isWrapper !== false));
+
+    const groups: TokenSelectGroup[] = [];
+    if (official.length > 0) {
+      groups.push({
+        label: 'Official Registry',
+        options: official.map((p) => {
+          const sym = isConfMode ? (p.isWrapper === false || p.symbol.startsWith('c') ? p.symbol : `c${p.symbol}`) : p.symbol;
+          return {
+            value: p.symbol,
+            symbol: sym,
+            name: p.name,
+            iconSymbol: p.symbol,
+            address: p.erc7984Address,
+          };
+        }),
+      });
+    }
+    if (custom.length > 0) {
+      groups.push({
+        label: 'Custom / Dev-only',
+        options: custom.map((p) => {
+          const sym = isConfMode ? (p.isWrapper === false || p.symbol.startsWith('c') ? p.symbol : `c${p.symbol}`) : p.symbol;
+          return {
+            value: p.symbol,
+            symbol: sym,
+            name: p.name,
+            iconSymbol: p.symbol,
+            badge: { text: 'Custom', variant: 'accent' },
+            address: p.erc7984Address,
+          };
+        }),
+      });
+    }
+    if (extraTokens.length > 0 && isConfMode) {
+      groups.push({
+        label: 'Detected (unverified)',
+        options: extraTokens.map((t) => ({
+          value: t.address,
+          symbol: t.symbol,
+          name: t.name,
+          iconSymbol: t.symbol,
+          badge: { text: 'Unverified', variant: 'warning' },
+          address: t.address,
+        })),
+      });
+    }
+    return groups;
+  }, [transferablePairs, extraTokens, isConfMode]);
 
   const noTokensAvailable =
     !isRegistryLoading &&
@@ -570,69 +624,25 @@ export default function TransferPage() {
           {/* Token select */}
           <label style={{ display: 'block', marginBottom: 'var(--sp-4)' }}>
             <div className="text-xs text-muted" style={{ marginBottom: 4 }}>Token</div>
-            <select
+            <TokenSelect
               value={selectedSymbol}
-              onChange={(e) => handleTokenChange(e.target.value)}
-              disabled={isRegistryLoading || isPending}
-              style={{
-                width: '100%',
-                padding: 'var(--sp-2) var(--sp-3)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg-elevated)',
-                color: 'var(--text-primary)',
-                fontSize: 'var(--text-base)',
-              }}
-            >
-              <option value="">
-                {isRegistryLoading
+              onChange={(val) => handleTokenChange(val)}
+              groups={tokenGroups}
+              placeholder={
+                isRegistryLoading
                   ? 'Loading tokens…'
                   : isConfMode
                     ? '— Select a confidential token —'
-                    : '— Select a token —'}
-              </option>
-              {(() => {
-                const official = transferablePairs.filter((p) => p.source !== 'custom');
-                const custom = transferablePairs.filter((p) => p.source === 'custom');
-                return (
-                  <>
-                    {official.length > 0 && (
-                      <optgroup label="Official Registry">
-                        {official.map((p) => (
-                          <option key={p.erc7984Address} value={p.symbol}>
-                            {isConfMode ? `c${p.symbol}` : p.symbol} · {p.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {custom.length > 0 && (
-                      <optgroup label="Custom / Dev-only">
-                        {custom.map((p) => (
-                          <option key={p.erc7984Address} value={p.symbol}>
-                            {isConfMode ? `c${p.symbol}` : p.symbol} · {p.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </>
-                );
-              })()}
-              {extraTokens.length > 0 && isConfMode && (
-                <optgroup label="Detected (unverified)">
-                  {extraTokens.map((t) => (
-                    <option key={t.address} value={t.address}>
-                      {t.symbol} — {t.name}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
+                    : '— Select a token —'
+              }
+              disabled={isRegistryLoading || isPending}
+            />
             {(selectedPair || selectedExtra) && (
               <div className="text-xs text-muted" style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <TokenIcon symbol={selectedPair?.symbol ?? selectedExtra?.symbol ?? '?'} size={12} />
                 {isConfMode ? (
                   <>
-                    Wrapper: {formatAddress(erc7984Addr, 6)}
+                    {selectedPair?.isWrapper === false ? 'Token:' : 'Wrapper:'} {formatAddress(erc7984Addr, 6)}
                     <a href={`${explorerBase}/address/${erc7984Addr}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex' }}>
                       <ExternalLink size={10} />
                     </a>

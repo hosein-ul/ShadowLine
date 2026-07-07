@@ -73,6 +73,11 @@ export interface WrapperPair {
    * user-added custom pairs; registry pairs are always wrappers.
    */
   isWrapper?: boolean;
+  /**
+   * True if this token has a public mint() function (e.g. cTokenMock on Sepolia testnet)
+   * allowing the Faucet to drip test tokens.
+   */
+  isMintable?: boolean;
 }
 
 /**

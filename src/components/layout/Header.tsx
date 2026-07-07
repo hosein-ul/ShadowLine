@@ -97,13 +97,9 @@ export default function Header() {
     <header className="header">
       <div className="header-inner">
         {/* Logo — links to the marketing landing page, not the dApp */}
-        <Link href="/" className="header-logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
-            <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
-          </svg>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
-          <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
+        <Link href="/" className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <img src="/logo-text-transparent.png" alt="ShadowLine Logo" style={{ height: '38px', width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
         </Link>
 
         {/* Navigation — desktop only; mobile uses the hamburger drawer below */}
@@ -322,14 +318,10 @@ export default function Header() {
               <Link
                 href="/"
                 className="header-logo"
+                style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="28" height="28" rx="var(--radius-sm)" fill="var(--accent)" />
-                  <path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="var(--bg-base)" />
-                </svg>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Shadow</span>
-                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Line</span>
+                <img src="/logo-text-transparent.png" alt="ShadowLine Logo" style={{ height: '48px', width: 'auto', objectFit: 'contain' }} />
               </Link>
               <button
                 className="btn btn-secondary btn-icon"

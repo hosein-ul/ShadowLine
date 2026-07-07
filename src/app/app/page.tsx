@@ -140,6 +140,7 @@ function RegistryTokenRow({
 
   // Fire-once: on decrypt error (incl. signature rejection), disable the query
   // so it can't re-fire on remount/focus. The Decrypt button re-arms itself.
+  const { addToast } = useToast();
   useEffect(() => {
     if (!singleError) {
       decryptErrorRef.current = null;
@@ -149,7 +150,9 @@ function RegistryTokenRow({
     if (decryptErrorRef.current === msg) return;
     decryptErrorRef.current = msg;
     setDecryptRequested(false);
-  }, [singleError]);
+    const classified = classifyError(singleError);
+    addToast({ variant: 'warning', title: classified.title, message: classified.message });
+  }, [singleError, addToast]);
 
   const handleDecrypt = () => {
     setPreferSingle(true);
@@ -434,7 +437,7 @@ function DetectedTokenRow({
   const decryptError = preferSingle ? singleError : (batchedError ?? singleError);
 
   const cleanName = shortName(token.name.replace(/\s*\(Mock\)\s*/gi, '').trim());
-  const confidentialSymbol = `c${token.symbol}`;
+  const confidentialSymbol = isWrapper ? (token.symbol.startsWith('c') ? token.symbol : `c${token.symbol}`) : token.symbol;
 
   // App-wide reset — re-arm the button.
   useEffect(() => {
@@ -445,6 +448,7 @@ function DetectedTokenRow({
   }, [resetToken]);
 
   // Fire-once: on decrypt error, disable the query so it can't re-fire.
+  const { addToast } = useToast();
   const decryptErrorRef = useRef<string | null>(null);
   useEffect(() => {
     if (!singleError) {
@@ -455,7 +459,9 @@ function DetectedTokenRow({
     if (decryptErrorRef.current === msg) return;
     decryptErrorRef.current = msg;
     setDecryptRequested(false);
-  }, [singleError]);
+    const classified = classifyError(singleError);
+    addToast({ variant: 'warning', title: classified.title, message: classified.message });
+  }, [singleError, addToast]);
 
   const handleDecrypt = () => {
     setPreferSingle(true);
@@ -466,8 +472,9 @@ function DetectedTokenRow({
 
   return (
     <div className="registry-pair-card">
-      {/* ── Public token row ──────────────────────────────────────────────── */}
-      <div className="registry-pair-row registry-pair-columns">
+      {/* ── Public token row (only shown if token wraps an underlying ERC-20) ── */}
+      {isWrapper && (
+        <div className="registry-pair-row registry-pair-columns">
         {isWrapper ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <TokenIcon symbol={token.symbol} size={28} />
@@ -547,14 +554,22 @@ function DetectedTokenRow({
           )}
         </div>
       </div>
+      )}
 
       {/* ── Confidential wrapper row ──────────────────────────────────────── */}
       <div className="registry-pair-row registry-pair-columns">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <TokenIcon symbol={token.symbol} size={28} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{confidentialSymbol}</div>
-            <div className="text-muted text-xs">Confidential {cleanName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {confidentialSymbol}
+              {!isWrapper && (
+                <Badge variant={token.isAutoDetected ? 'warning' : 'accent'} size="sm" style={{ fontSize: 9 }}>
+                  {token.isAutoDetected ? 'Detected' : 'Custom'}
+                </Badge>
+              )}
+            </div>
+            <div className="text-muted text-xs">{isWrapper ? `Confidential ${cleanName}` : `${cleanName} (Standalone ERC-7984)`}</div>
           </div>
         </div>
         <div className="table-address">
