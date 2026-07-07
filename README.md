@@ -34,7 +34,9 @@ Because balances and transfer amounts are handled as ERC-7984 confidential token
 - [8. How to Configure a New Token Pair](#8-how-to-configure-a-new-token-pair)
 - [9. Local Development & Setup](#9-local-development--setup)
 - [10. Repository Structure](#10-repository-structure)
-- [11. License](#11-license)
+- [11. Zama SDK 3.0.1 — methods used](#11-zama-sdk-301--methods-used)
+- [12. FAQ: Why doesn't Decrypt ask for signature on some tokens?](#12-faq-why-doesnt-decrypt-ask-for-signature-on-some-tokens)
+- [13. License](#13-license)
 
 ---
 
@@ -449,6 +451,17 @@ ShadowLine is pinned to `@zama-fhe/sdk` + `@zama-fhe/react-sdk` **3.0.1** (verif
 
 ---
 
-## 12. License
+## 12. FAQ: Why doesn't Decrypt ask for signature on some tokens?
+
+There are two legitimate reasons why the Decrypt action might not prompt you for a wallet signature:
+
+1. **No balance yet** — If you've never received or wrapped this token, its confidential balance handle on-chain is `bytes32(0)`. The SDK recognizes this and returns `0` instantly without needing to sign or contact the relayer. There's no ciphertext to decrypt.
+2. **Cached credentials** — After you sign once (via `useAllow`), an EIP-712 permit is stored in IndexedDB for up to 30 days. Any subsequent decrypt for a contract covered by that permit reuses the cached credential and skips the signature prompt.
+
+Both behaviors follow Zama's official SDK guidance.
+
+---
+
+## 13. License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
