@@ -395,7 +395,7 @@ npm run start
 ```
 Open `http://localhost:3000` to interact with the application.
 
-**Live URL:** https://shadow-line.netlify.app/
+**Live URL:** https://shadow-line.vercel.app/
 
 ---
 

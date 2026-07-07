@@ -27,7 +27,7 @@ Queries the on-chain `WrappersRegistry` contract and returns all registered toke
 
 #### Example Request:
 ```bash
-curl -s "https://shadow-line.netlify.app/api/registry?chain=sepolia"
+curl -s "https://shadow-line.vercel.app/api/registry?chain=sepolia"
 ```
 
 #### Response JSON Schema:
@@ -102,6 +102,8 @@ When building automated transactions, agents must adhere to strict decimal scali
 ```
 
 ### ERC-7984 Confidential Wrapper Contract (`cToken`)
+> **WARNING FOR AI AGENTS:** Do NOT call `transfer` or `unwrap` using raw plaintext numbers or padded hex strings in Viem/Ethers! In FHEVM, confidential transfers and unshielding require client-side WASM encryption (`euint64`) and FHE input proof generation. Always use `ShadowlineAgentHarness` or `@zama-fhe/sdk` to execute these methods.
+
 ```json
 [
   {
@@ -115,66 +117,54 @@ When building automated transactions, agents must adhere to strict decimal scali
     "outputs": [{ "name": "", "type": "bytes32" }]
   },
   {
-    "name": "unwrap",
+    "name": "confidentialBalanceOf",
     "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      { "name": "from", "type": "address" },
-      { "name": "to", "type": "address" },
-      { "name": "amount", "type": "bytes32" }
-    ],
-    "outputs": [{ "name": "unwrapRequestId", "type": "bytes32" }]
-  },
-  {
-    "name": "transfer",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      { "name": "to", "type": "address" },
-      { "name": "amount", "type": "uint256" }
-    ],
-    "outputs": [{ "name": "", "type": "bool" }]
+    "stateMutability": "view",
+    "inputs": [{ "name": "account", "type": "address" }],
+    "outputs": [{ "name": "", "type": "bytes32" }]
   }
 ]
 ```
 
 ---
 
-## 5. Autonomous Agent Integration Code (Viem / Node.js)
+## 5. Autonomous Agent Integration Code (Headless Node.js Harness)
+
+To enable true autonomous execution without a browser, ShadowLine provides a headless execution harness (`ShadowlineAgentHarness`) in `@shadowline/agent-tools` (`src/lib/agent-harness.ts`). It wraps `@zama-fhe/sdk` in Node worker pool mode (`node()`) and handles EIP-712 permit signing, KMS decryption, and FHE client-side encryption automatically.
 
 ```typescript
-import { createPublicClient, createWalletClient, http, parseUnits, type Address } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { sepolia } from 'viem/chains';
+import { ShadowlineAgentHarness } from '@/lib/agent-harness';
 
-// 1. Initialize Agent Wallet
-const account = privateKeyToAccount('0xYOUR_AGENT_PRIVATE_KEY');
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const walletClient = createWalletClient({ account, chain: sepolia, transport: http() });
+// 1. Initialize Headless Agent Harness
+const agent = new ShadowlineAgentHarness({
+  privateKey: process.env.AGENT_PRIVATE_KEY as `0x${string}`,
+  relayerApiKey: process.env.ZAMA_RELAYER_API_KEY || 'YOUR_API_KEY',
+});
 
-/**
- * Shield public ERC-20 tokens into ERC-7984 confidential tokens
- */
-async function shieldTokens(erc20Address: Address, wrapperAddress: Address, amountInUnderlyingDecimals: string, decimals: number) {
-  const rawAmount = parseUnits(amountInUnderlyingDecimals, decimals);
+await agent.init();
 
-  // Approve Wrapper Spender
-  const approveHash = await walletClient.writeContract({
-    address: erc20Address,
-    abi: [{ name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }],
-    functionName: 'approve',
-    args: [wrapperAddress, rawAmount],
-  });
-  await publicClient.waitForTransactionReceipt({ hash: approveHash });
+// 2. Discover Verified Pairs
+const pairs = await agent.getPairs();
+const usdcPair = pairs.find(p => p.symbol === 'USDC') || pairs[0];
 
-  // Deposit into Wrapper (wrap)
-  const shieldHash = await walletClient.writeContract({
-    address: wrapperAddress,
-    abi: [{ name: 'wrap', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bytes32' }] }],
-    functionName: 'wrap',
-    args: [account.address, rawAmount],
-  });
-  
-  return shieldHash;
-}
+// 3. Shield (Wrap) ERC-20 -> ERC-7984
+// NOTE: Shielding amount MUST use underlying ERC-20 decimals (e.g. 6 for USDC)
+const shieldHash = await agent.shield(usdcPair.confidentialTokenAddress, '10.5');
+console.log('Shielded in tx:', shieldHash);
+
+// 4. Check Confidential Balance
+// Automatically generates EIP-712 permit, queries Zama KMS, and decrypts in WASM
+const balance = await agent.getConfidentialBalance(usdcPair.confidentialTokenAddress);
+console.log('Decrypted Confidential Balance:', balance);
+
+// 5. Confidential Transfer
+// Automatically encrypts amount into an FHE euint64 handle and generates FHE input proof
+// NOTE: Transfer amount MUST use fixed 6 decimals scale!
+const transferHash = await agent.transfer(usdcPair.confidentialTokenAddress, '0xRecipientAddress', '5.0');
+console.log('Confidential transfer tx:', transferHash);
+
+// 6. Unshield (Unwrap) ERC-7984 -> ERC-20
+// NOTE: Unshield amount MUST use fixed 6 decimals scale!
+const unshieldHash = await agent.unshield(usdcPair.confidentialTokenAddress, '5.0');
+console.log('Unshield requested in tx:', unshieldHash);
 ```

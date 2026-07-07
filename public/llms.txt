@@ -11,9 +11,9 @@ ShadowLine enables users, DAOs, and autonomous AI agents to wrap standard public
 - **REST API:** Query verified wrapper pairs without a wallet or web3 provider via `GET /api/registry`.
 
 ## Key Resources
-- [Live Web App & Registry](https://shadow-line.netlify.app/app)
-- [Developer Documentation](https://shadow-line.netlify.app/app/docs)
-- [REST API Reference](https://shadow-line.netlify.app/app/docs/rest-api)
+- [Live Web App & Registry](https://shadow-line.vercel.app/app)
+- [Developer Documentation](https://shadow-line.vercel.app/app/docs)
+- [REST API Reference](https://shadow-line.vercel.app/app/docs/rest-api)
 - [GitHub Repository](https://github.com/hosein-ul/ShadowLine)
 - [Zama FHEVM Documentation](https://docs.zama.org/protocol)
 
@@ -25,7 +25,7 @@ ShadowLine enables users, DAOs, and autonomous AI agents to wrap standard public
 ## AI Agent Integration (Drop-in Hook & API)
 AI agents can fetch live verified token pairs via HTTP:
 ```http
-GET https://shadow-line.netlify.app/api/registry?chain=sepolia
+GET https://shadow-line.vercel.app/api/registry?chain=sepolia
 ```
 
-For direct smart contract interaction, agents should reference `src/lib/use-shadowline.ts` or view the full documentation in `/llms-full.txt`.
+For headless Node.js or Python agent execution (without a browser), import `ShadowlineAgentHarness` from `src/lib/agent-harness.ts` (also exported in `@shadowline/agent-tools`). For React dApps, reference `src/lib/use-shadowline.ts` or view the full technical specification in `/llms-full.txt`.

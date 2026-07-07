@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://shadow-line.netlify.app/openapi.json"
+    "url": "https://shadow-line.vercel.app/openapi.json"
   },
-  "logo_url": "https://shadow-line.netlify.app/file.svg",
+  "logo_url": "https://shadow-line.vercel.app/file.svg",
   "contact_email": "dev@shadowline.protocol",
-  "legal_info_url": "https://shadow-line.netlify.app/app/docs"
+  "legal_info_url": "https://shadow-line.vercel.app/app/docs"
 }

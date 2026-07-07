@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import Link from 'next/link';
 import './globals.css';
 import {
@@ -21,8 +21,17 @@ import {
   CheckCircle2, AlertTriangle, Globe, ChevronDown,
   ExternalLink, Cpu, Database, Network, Layers, ArrowRight,
   Activity, Droplets, GraduationCap, Wallet, BarChart3,
-  FileText, Wrench, Zap,
+  FileText, Wrench, Zap, Sun, Moon,
 } from 'lucide-react';
+
+const LandingThemeContext = createContext<{ theme: 'light' | 'dark'; toggleTheme: () => void }>({
+  theme: 'light',
+  toggleTheme: () => {},
+});
+
+function useLandingTheme() {
+  return useContext(LandingThemeContext);
+}
 
 // ─── Scroll progress bar ─────────────────────────────────────────────────────
 function ScrollProgress() {
@@ -39,6 +48,8 @@ function ScrollProgress() {
 
 // ─── HERO — sticky parallax fade ─────────────────────────────────────────────
 function Hero() {
+  const { theme, toggleTheme } = useLandingTheme();
+  const isDark = theme === 'dark';
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const y       = useTransform(scrollYProgress, [0, 1], ['0%', '26%']);
@@ -56,26 +67,43 @@ function Hero() {
       position: 'relative', minHeight: '100vh',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '100px clamp(24px,6vw,80px) 40px',
-      textAlign: 'center', overflow: 'hidden', background: '#fafafa',
+      textAlign: 'center', overflow: 'hidden', background: isDark ? '#09090b' : '#fafafa',
     }}>
       {/* Sticky header */}
       <motion.header
-        animate={{ background: scrolled ? 'rgba(250,250,250,0.94)' : 'transparent', backdropFilter: scrolled ? 'blur(20px)' : 'none', borderBottomColor: scrolled ? '#e4e4e7' : 'transparent' }}
+        animate={{ background: scrolled ? (isDark ? 'rgba(18,18,23,0.94)' : 'rgba(250,250,250,0.94)') : 'transparent', backdropFilter: scrolled ? 'blur(20px)' : 'none', borderBottomColor: scrolled ? (isDark ? 'rgba(255,255,255,0.08)' : '#e4e4e7') : 'transparent' }}
         style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '0 clamp(24px,4vw,60px)', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid transparent' }}
         transition={{ duration: 0.3 }}
       >
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <motion.div whileHover={{ rotate: 12, scale: 1.1 }} style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 14px rgba(255,210,8,.5)' }}>
-            <svg width="18" height="18" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
-          </motion.div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#000' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
+          <img src="/logo-text-transparent.png" alt="ShadowLine Logo" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: isDark ? '#fff' : '#000' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(14px,2.5vw,32px)' }}>
           {[['How It Works', '#how'], ['App Pages', '#app'], ['Technology', '#tech']].map(([l, h]) => (
-            <motion.a key={l} href={h} whileHover={{ y: -1 }} style={{ fontSize: '.875rem', fontWeight: 600, color: '#52525b', textDecoration: 'none' }}>{l}</motion.a>
+            <motion.a key={l} href={h} whileHover={{ y: -1 }} style={{ fontSize: '.875rem', fontWeight: 600, color: isDark ? '#e4e4e7' : '#52525b', textDecoration: 'none' }}>{l}</motion.a>
           ))}
+          <button
+            onClick={toggleTheme}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e4e4e7',
+              background: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+              color: isDark ? '#FFD208' : '#27272a',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: '#000', color: '#FFD208', fontWeight: 700, fontSize: '.875rem', borderRadius: '8px', textDecoration: 'none' }}>
+            <Link href="/app" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: '#000', color: '#FFD208', fontWeight: 700, fontSize: '.875rem', borderRadius: '8px', textDecoration: 'none', border: isDark ? '1px solid rgba(255,210,8,0.4)' : 'none' }}>
               Launch App <ArrowRight size={14} />
             </Link>
           </motion.div>
@@ -194,7 +222,7 @@ function Hero() {
 }
 
 // ─── MARQUEE ─────────────────────────────────────────────────────────────────
-const TRUST = ['FHE Encryption','ERC-7984 Standard','EIP-712 Permits','OpenZeppelin Audited','Zama Coprocessor','Non-Custodial','Sepolia Testnet','WASM ZK Prover','Zero-Gas Decrypt'];
+const TRUST = ['FHE Encryption','ERC-7984 Standard','EIP-712 Permits','OpenZeppelin Audited','Zama Coprocessor','Non-Custodial','Sepolia Testnet','WASM FHE Client','Zero-Gas Decrypt'];
 
 // ─── PINNED STORYTELLING ─────────────────────────────────────────────────────
 function PinnedStory() {
@@ -473,11 +501,11 @@ function Architecture() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 40px 1fr 40px 1fr', gap: '0', alignItems: 'center' }}>
           {[
-            { label:'Your Browser',   sub:'Client-side',  icon:Globe,    items:['FHE-encrypt amount','Generate ZK proof','Sign EIP-712 permit'],   color:'#3b82f6' },
+            { label:'Your Browser',   sub:'Client-side',  icon:Globe,    items:['FHE-encrypt amount','Generate input proof','Sign EIP-712 permit'],   color:'#3b82f6' },
             null,
             { label:'Ethereum FHEVM', sub:'On-chain',     icon:Database, items:['Store euint64 handles','Emit FHE events','Manage ACL'],            color:'#8b5cf6' },
             null,
-            { label:'Zama Coprocessor',sub:'Off-chain FHE',icon:Cpu,    items:['Execute FHE arithmetic','Validate ZK proofs','Publish results'],    color:'#FFD208' },
+            { label:'Zama Coprocessor',sub:'Off-chain FHE',icon:Cpu,    items:['Execute FHE arithmetic','Verify ACL permissions','Publish results'],    color:'#FFD208' },
           ].map((item, i) => {
             if (!item) return <div key={i} style={{ display: 'flex', justifyContent: 'center' }}><motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1.8, repeat: Infinity }}><ArrowRight size={18} style={{ color: '#3f3f46' }} /></motion.div></div>;
             return (
@@ -724,67 +752,139 @@ export const CUSTOM_PAIRS: CustomPair[] = [
 }
 
 function PoweredBy() {
+  const { theme } = useLandingTheme();
+  const isDark = theme === 'dark';
+
   const partners = [
     {
       name: 'Zama',
       logo: '/brands/zama-logo.svg',
       desc: 'FHE confidential computing protocol',
-      cardBg: '#FFD208',
+      badge: 'CORE FHE COPROCESSOR',
+      cardBg: isDark ? '#18181f' : '#fff',
+      textColor: isDark ? '#fff' : '#000',
+      descColor: isDark ? '#a1a1aa' : '#71717a',
+      shadow: isDark ? '0 14px 40px rgba(255,210,8,.2)' : '0 14px 40px rgba(255,210,8,.35)',
       href: 'https://www.zama.org',
     },
     {
       name: 'Blockscout',
       logo: '/brands/blockscout-logo.svg',
-      desc: 'Open-source block explorer',
-      cardBg: '#fff',
-      href: 'https://www.blockscout.com',
+      desc: 'Open-source block explorer & indexer',
+      badge: 'VERIFIED EXPLORER',
+      cardBg: isDark ? '#18181f' : '#fff',
+      textColor: isDark ? '#fff' : '#000',
+      descColor: isDark ? '#a1a1aa' : '#71717a',
+      shadow: isDark ? '0 10px 35px rgba(0,0,0,.4)' : '0 10px 35px rgba(0,0,0,.05)',
+      border: isDark ? '1px solid rgba(255,255,255,.1)' : '1px solid #e4e4e7',
     },
     {
       name: 'OpenZeppelin',
       logo: '/brands/openzeppelin-logo.svg',
       desc: 'Audited smart contract standards',
-      cardBg: '#fff',
-      href: 'https://www.openzeppelin.com',
+      badge: 'SECURITY STANDARD',
+      cardBg: isDark ? '#18181f' : '#fff',
+      textColor: isDark ? '#fff' : '#000',
+      descColor: isDark ? '#a1a1aa' : '#71717a',
+      shadow: isDark ? '0 10px 35px rgba(0,0,0,.4)' : '0 10px 35px rgba(0,0,0,.05)',
+      border: isDark ? '1px solid rgba(255,255,255,.1)' : '1px solid #e4e4e7',
     },
   ];
 
   return (
-    <section style={{ padding: 'clamp(60px,8vw,100px) clamp(24px,6vw,80px)', background: '#fafafa', borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7' }}>
-      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+    <section style={{ padding: 'clamp(50px,7vw,80px) clamp(24px,6vw,80px)', background: isDark ? '#121217' : '#fafafa', borderBottom: isDark ? '1px solid rgba(255,255,255,.08)' : '1px solid #e4e4e7', position: 'relative', overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         <BlurFade inView delay={0}>
-          <p style={{ textAlign: 'center', fontSize: '.78rem', fontWeight: 700, color: '#71717a', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '32px' }}>
-            Built on Trusted Infrastructure
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '36px' }}>
+            <span style={{ display: 'inline-block', padding: '4px 16px', borderRadius: '100px', border: isDark ? '1px solid rgba(255,255,255,.15)' : '1px solid rgba(0,0,0,.1)', background: isDark ? '#1f1f28' : '#fff', fontSize: '.75rem', fontWeight: 800, color: isDark ? '#e4e4e7' : '#52525b', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '12px', boxShadow: '0 2px 10px rgba(0,0,0,.03)' }}>
+              Canonical Infrastructure
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.6rem,3.2vw,2.4rem)', fontWeight: 900, color: isDark ? '#fff' : '#000', letterSpacing: '-0.03em', textAlign: 'center', margin: 0 }}>
+              Powered by Verified Web3 Standards
+            </h2>
+          </div>
         </BlurFade>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-          {partners.map((p, i) => (
-            <BlurFade key={p.name} inView delay={i * 0.1}>
-              <a
-                href={p.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  padding: '36px 24px',
-                  borderRadius: '20px',
-                  border: '1px solid #e4e4e7',
-                  background: p.cardBg,
-                  textDecoration: 'none',
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,.02)',
-                }}
-              >
-                <img src={p.logo} alt={`${p.name} logo`} style={{ height: '32px', width: 'auto', maxWidth: '160px' }} />
-                <span style={{ fontSize: '.8rem', color: p.cardBg === '#FFD208' ? 'rgba(0,0,0,.7)' : '#71717a', textAlign: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          {partners.map((p, i) => {
+            const isZama = p.name === 'Zama';
+
+            const cardContent = (
+              <>
+                <span style={{ fontSize: '.7rem', fontWeight: 800, letterSpacing: '.08em', color: isDark ? '#e4e4e7' : (isZama ? '#000' : '#71717a'), background: isDark ? '#27272a' : (isZama ? 'rgba(0,0,0,.1)' : '#f4f4f5'), padding: '5px 12px', borderRadius: '100px', textTransform: 'uppercase' }}>
+                  {p.badge}
+                </span>
+                <img src={p.logo} alt={`${p.name} official logo`} style={{ height: isZama ? '42px' : '36px', width: 'auto', maxWidth: '180px', objectFit: 'contain', filter: isDark && (p.name === 'Zama' || p.name === 'OpenZeppelin') ? 'invert(1) brightness(2)' : 'none' }} />
+                <span style={{ fontSize: '.88rem', fontWeight: 600, color: p.descColor, textAlign: 'center', lineHeight: 1.5 }}>
                   {p.desc}
                 </span>
-              </a>
-            </BlurFade>
-          ))}
+              </>
+            );
+
+            if (isZama) {
+              return (
+                <BlurFade key={p.name} inView delay={i * 0.1}>
+                  <motion.div
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    style={{
+                      position: 'relative',
+                      borderRadius: '26px',
+                      padding: '3px',
+                      background: isDark ? 'linear-gradient(90deg, #FFD208 0%, #3f3f46 50%, #FFD208 100%)' : 'linear-gradient(90deg, #FFD208 0%, #ffffff 50%, #FFD208 100%)',
+                      backgroundSize: '200% 200%',
+                      boxShadow: p.shadow,
+                      height: '100%',
+                    }}
+                    animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                    transition={{ repeat: Infinity, duration: 3.5, ease: 'linear' }}
+                  >
+                    <a
+                      href={p.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '18px',
+                        padding: '40px 28px',
+                        borderRadius: '23px',
+                        background: p.cardBg,
+                        textDecoration: 'none',
+                        height: '100%',
+                      }}
+                    >
+                      {cardContent}
+                    </a>
+                  </motion.div>
+                </BlurFade>
+              );
+            }
+
+            return (
+              <BlurFade key={p.name} inView delay={i * 0.1}>
+                <motion.div
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '18px',
+                    padding: '40px 28px',
+                    borderRadius: '24px',
+                    border: p.border,
+                    background: p.cardBg,
+                    height: '100%',
+                    boxShadow: p.shadow,
+                  }}
+                >
+                  {cardContent}
+                </motion.div>
+              </BlurFade>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -961,7 +1061,7 @@ function FaqAccordions() {
     },
     {
       q: 'Are there gas fee differences when using cTokens?',
-      a: 'Yes, because FHE arithmetic and zero-knowledge proof verifications are computationally heavy. However, ShadowLine routes computationally intense operations off-chain to a Zama Coprocessor. The coprocessor processes the FHE logic and returns a verified state update, keeping gas fees comparable to standard public token transactions.'
+      a: 'Yes, because FHE arithmetic and ciphertext processing are computationally heavy. However, ShadowLine routes computationally intense operations off-chain to a Zama Coprocessor. The coprocessor processes the FHE logic and returns a verified state update, keeping gas fees comparable to standard public token transactions.'
     }
   ];
 
@@ -1105,7 +1205,7 @@ function VisualTokenBanner() {
                 Shielded balances.<br />Verifiable transfers.
               </h3>
               <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: 1.65, margin: 0 }}>
-                Experience standard ERC-20 composability with the security of zero-knowledge and FHE encrypted token wrappers.
+                Experience standard ERC-20 composability with the security of Fully Homomorphic Encryption (FHE) token wrappers.
               </p>
             </div>
           </motion.div>
@@ -1117,135 +1217,155 @@ function VisualTokenBanner() {
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
+      if (saved) {
+        setTheme(saved);
+        document.documentElement.setAttribute('data-theme', saved);
+      }
+    } catch (e) {}
+  }, []);
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try {
+      localStorage.setItem('theme', next);
+      document.documentElement.setAttribute('data-theme', next);
+    } catch (e) {}
+  };
+
+  const isDark = theme === 'dark';
+
   return (
-    <div data-theme="light" style={{ background: '#fafafa', color: '#000', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif", minHeight: '100vh' }}>
-      <style>{`.pill{flex-shrink:0;padding:8px 22px;border:1px solid #e4e4e7;border-radius:100px;font-size:.78rem;font-weight:700;color:#52525b;background:#fff;white-space:nowrap;letter-spacing:.04em;}`}</style>
-      <ScrollProgress />
-      <Hero />
-      <section style={{ borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7', background: '#fff', overflow: 'hidden', padding: '4px 0' }}>
-        <Marquee pauseOnHover className="[--duration:28s] [--gap:12px]" repeat={3}>
-          {TRUST.map(item => <div key={item} className="pill">{item}</div>)}
-        </Marquee>
-      </section>
-      <Stats />
+    <LandingThemeContext.Provider value={{ theme, toggleTheme }}>
+      <div data-theme={theme} className="landing-page-container" style={{ background: isDark ? '#09090b' : '#fafafa', color: isDark ? '#fff' : '#000', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif", minHeight: '100vh', transition: 'background-color 0.3s ease, color 0.3s ease' }}>
+        <style>{`.pill{flex-shrink:0;padding:8px 22px;border:1px solid #e4e4e7;border-radius:100px;font-size:.78rem;font-weight:700;color:#52525b;background:#fff;white-space:nowrap;letter-spacing:.04em;}`}</style>
+        <ScrollProgress />
+        <Hero />
+        <section style={{ borderTop: '1px solid #e4e4e7', borderBottom: '1px solid #e4e4e7', background: '#fff', overflow: 'hidden', padding: '4px 0' }}>
+          <Marquee pauseOnHover className="[--duration:28s] [--gap:12px]" repeat={3}>
+            {TRUST.map(item => <div key={item} className="pill">{item}</div>)}
+          </Marquee>
+        </section>
+        <PoweredBy />
+        <Stats />
 
-      <PinnedStory />
-      <HorizontalScroll />
-      <VisualAuroraBanner />
-      <StepTimeline />
+        <PinnedStory />
+        <HorizontalScroll />
+        <VisualAuroraBanner />
+        <StepTimeline />
 
-      {/* 1. Enterprise Use Cases */}
-      <EnterpriseUseCases />
+        {/* 1. Enterprise Use Cases */}
+        <EnterpriseUseCases />
 
-      <PermitFlow />
-      <VisualSculptureBanner />
-      <FragmentationSection />
-      <DeveloperSection />
-      <VisualTokenBanner />
+        <PermitFlow />
+        <VisualSculptureBanner />
+        <FragmentationSection />
+        <DeveloperSection />
+        <VisualTokenBanner />
 
-      {/* 2. Security & Compliance */}
-      <SecurityCompliance />
+        {/* 2. Security & Compliance */}
+        <SecurityCompliance />
 
-      {/* 3. FAQs */}
-      <FaqAccordions />
+        {/* 3. FAQs */}
+        <FaqAccordions />
 
-      <PoweredBy />
+        <CTA />
 
-      <CTA />
-
-      <footer style={{ background: '#000', color: '#fff', borderTop: '1px solid rgba(255,255,255,.06)', padding: '80px clamp(24px,6vw,80px) 40px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', marginBottom: '60px' }}>
-          {/* Column 1: About ShadowLine */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: '#FFD208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="14" height="14" viewBox="0 0 28 28" fill="none"><path d="M7 14L12 9V12H16V9L21 14L16 19V16H12V19L7 14Z" fill="#000" /></svg>
+        <footer style={{ background: '#000', color: '#fff', borderTop: '1px solid rgba(255,255,255,.06)', padding: '80px clamp(24px,6vw,80px) 40px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', marginBottom: '60px' }}>
+            {/* Column 1: About ShadowLine */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <img src="/logo-text-transparent.png" alt="ShadowLine Logo" style={{ height: '48px', width: 'auto', objectFit: 'contain' }} />
+                <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.25rem' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
               </div>
-              <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem' }}>Shadow<span style={{ color: '#FFD208' }}>Line</span></span>
+              <p style={{ color: '#71717a', fontSize: '.84rem', lineHeight: 1.6, margin: 0 }}>
+                ShadowLine is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
+              </p>
             </div>
-            <p style={{ color: '#71717a', fontSize: '.84rem', lineHeight: 1.6, margin: 0 }}>
-              ShadowLine is a privacy-first asset shielding protocol built on Zama's FHEVM. We empower users and enterprises to shield, transfer, and interact with ERC-20 tokens confidentially, keeping financial data protected and on-chain.
-            </p>
+
+            {/* Column 2: Product */}
+            <div>
+              <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Product</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { l: 'Dashboard', h: '/app' },
+                  { l: 'Shield & Unshield', h: '/app/wrapper' },
+                  { l: 'Portfolio Manager', h: '/app/portfolio' },
+                  { l: 'Token Faucet', h: '/app/faucet' }
+                ].map(link => (
+                  <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
+                    {link.l}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Column 3: Resources */}
+            <div>
+              <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Resources</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { l: 'Developer Docs', h: '/app/docs' },
+                  { l: 'Zama Protocol', h: 'https://docs.zama.org/protocol' },
+                  { l: 'Security Model', h: 'https://docs.zama.org/protocol/sdk/concepts/security-model' },
+                  { l: 'GitHub Repository', h: 'https://github.com/hosein-ul/ShadowLine' }
+                ].map(link => {
+                  if (link.h.startsWith('http')) {
+                    return (
+                      <a key={link.l} href={link.h} target="_blank" rel="noopener noreferrer" style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
+                        {link.l}
+                      </a>
+                    );
+                  } else {
+                    return (
+                      <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
+                        {link.l}
+                      </Link>
+                    );
+                  }
+                })}
+              </div>
+            </div>
+
+            {/* Column 4: Technology */}
+            <div>
+              <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Technology</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { l: 'Zama FHEVM', h: 'https://docs.zama.org/protocol' },
+                  { l: 'ERC-7984 Standard', h: '/app/docs/fhe' },
+                  { l: 'FHE Coprocessors', h: '/app/docs/architecture' },
+                  { l: 'EIP-712 Permits', h: '/app/docs/permits' }
+                ].map(link => {
+                  if (link.h.startsWith('http')) {
+                    return (
+                      <a key={link.l} href={link.h} target="_blank" rel="noopener noreferrer" style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
+                        {link.l}
+                      </a>
+                    );
+                  } else {
+                    return (
+                      <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
+                        {link.l}
+                      </Link>
+                    );
+                  }
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Column 2: Product */}
-          <div>
-            <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Product</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { l: 'Dashboard', h: '/app' },
-                { l: 'Shield & Unshield', h: '/app/wrapper' },
-                { l: 'Portfolio Manager', h: '/app/portfolio' },
-                { l: 'Token Faucet', h: '/app/faucet' }
-              ].map(link => (
-                <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
-                  {link.l}
-                </Link>
-              ))}
-            </div>
+          {/* Footer bottom bar */}
+          <div style={{ maxWidth: '1100px', margin: '0 auto', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '.78rem', color: '#52525b' }}>
+            <span>© {new Date().getFullYear()} ShadowLine. All rights reserved. Built on Zama FHEVM.</span>
+            <span>Released under the MIT License.</span>
           </div>
-
-          {/* Column 3: Resources */}
-          <div>
-            <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Resources</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { l: 'Developer Docs', h: '/app/docs' },
-                { l: 'Zama Protocol', h: 'https://docs.zama.org/protocol' },
-                { l: 'Security Model', h: 'https://docs.zama.org/protocol/sdk/concepts/security-model' },
-                { l: 'GitHub Repository', h: 'https://github.com/hosein-ul/ShadowLine' }
-              ].map(link => {
-                if (link.h.startsWith('http')) {
-                  return (
-                    <a key={link.l} href={link.h} target="_blank" rel="noopener noreferrer" style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
-                      {link.l}
-                    </a>
-                  );
-                } else {
-                  return (
-                    <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
-                      {link.l}
-                    </Link>
-                  );
-                }
-              })}
-            </div>
-          </div>
-
-          {/* Column 4: Technology */}
-          <div>
-            <h4 style={{ fontSize: '.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#fff', marginBottom: '20px' }}>Technology</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { l: 'Zama FHEVM', h: 'https://docs.zama.org/protocol' },
-                { l: 'ERC-7984 Standard', h: '/app/docs/fhe' },
-                { l: 'FHE Coprocessors', h: '/app/docs/architecture' },
-                { l: 'EIP-712 Permits', h: '/app/docs/permits' }
-              ].map(link => {
-                if (link.h.startsWith('http')) {
-                  return (
-                    <a key={link.l} href={link.h} target="_blank" rel="noopener noreferrer" style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
-                      {link.l}
-                    </a>
-                  );
-                } else {
-                  return (
-                    <Link key={link.l} href={link.h} style={{ fontSize: '.84rem', fontWeight: 600, color: '#71717a', textDecoration: 'none', transition: 'color 0.2s' }}>
-                      {link.l}
-                    </Link>
-                  );
-                }
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer bottom bar */}
-        <div style={{ maxWidth: '1100px', margin: '0 auto', paddingTop: '30px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '.78rem', color: '#52525b' }}>
-          <span>© {new Date().getFullYear()} ShadowLine. All rights reserved. Built on Zama FHEVM.</span>
-          <span>Released under the MIT License.</span>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </LandingThemeContext.Provider>
   );
 }

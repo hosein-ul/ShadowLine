@@ -100,7 +100,7 @@ export const WRAPPER_ABI = [
   },
   {
     // unwrap(from, to, encryptedAmount, inputProof) — overload accepting an
-    // externalEuint64 + zk-proof, used when the amount wasn't pre-ACL'd.
+    // externalEuint64 + FHE input proof, used when the amount wasn't pre-ACL'd.
     name: 'unwrap',
     type: 'function',
     stateMutability: 'nonpayable',

@@ -79,6 +79,35 @@ const response = await generateText({
 });`}
       />
 
+      <H2>4. Headless Execution Harness (`ShadowlineAgentHarness`)</H2>
+      <P>
+        To enable autonomous AI agents to execute real FHE asset shielding, confidential transfers, and balance decryption in a backend or script environment (without a web browser), use the headless execution harness in <code>src/lib/agent-harness.ts</code>:
+      </P>
+      <CodeBlock
+        lang="typescript"
+        code={`import { ShadowlineAgentHarness } from '@/lib/agent-harness';
+
+// 1. Initialize Headless Agent Harness (Node.js worker pool mode)
+const agent = new ShadowlineAgentHarness({
+  privateKey: process.env.AGENT_PRIVATE_KEY as \`0x\${string}\`,
+  relayerApiKey: process.env.ZAMA_RELAYER_API_KEY || 'YOUR_API_KEY',
+});
+await agent.init();
+
+// 2. Discover pairs and execute confidential DeFi actions
+const pairs = await agent.getPairs();
+const usdcWrapper = pairs.find(p => p.symbol === 'USDC')?.confidentialTokenAddress || pairs[0].confidentialTokenAddress;
+
+// Shield (wrap) public USDC into confidential cUSDC
+const shieldHash = await agent.shield(usdcWrapper, '10.0');
+
+// Decrypt balance via EIP-712 permit & WASM decryption
+const balance = await agent.getConfidentialBalance(usdcWrapper);
+
+// Send confidential cUSDC (client-side WASM encryption + FHE input proof)
+const transferHash = await agent.transfer(usdcWrapper, '0xRecipient', '5.0');`}
+      />
+
       <Callout variant="warning">
         <strong>Critical Rule for AI Agents:</strong> When shielding (depositing), input amounts MUST use the underlying token&apos;s decimals (e.g. 6 for USDC, 18 for WETH). When unshielding (withdrawing) or transferring, amounts MUST always use the wrapper&apos;s fixed <code>euint64</code> 6-decimal scale.
       </Callout>

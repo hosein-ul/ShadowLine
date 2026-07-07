@@ -2789,7 +2789,7 @@ a.docs-nav-item { text-decoration: none; }
 
 @media (max-width: 480px) {
   .header-logo span { display: none; } /* hide text, keep logo icon */
-  .header-logo svg { margin: 0; }
+  .header-logo svg, .header-logo img { margin: 0; }
 
   /* Collapse "Connect Wallet" to icon-only so header fits in 375px */
   .btn-connect-label { display: none; }
@@ -2833,3 +2833,46 @@ a.docs-nav-item { text-decoration: none; }
     padding: var(--sp-3);
   }
 }
+
+/* ---------- LANDING PAGE DARK MODE OVERRIDES ---------- */
+.landing-page-container[data-theme='dark'] {
+  background: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+}
+.landing-page-container[data-theme='dark'] section[style*="background: #fff"],
+.landing-page-container[data-theme='dark'] section[style*="background: rgb(255, 255, 255)"],
+.landing-page-container[data-theme='dark'] section[style*="background: #ffffff"] {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+.landing-page-container[data-theme='dark'] section[style*="background: #fafafa"],
+.landing-page-container[data-theme='dark'] section[style*="background: rgb(250, 250, 250)"] {
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+}
+.landing-page-container[data-theme='dark'] [style*="color: #000"],
+.landing-page-container[data-theme='dark'] [style*="color: rgb(0, 0, 0)"],
+.landing-page-container[data-theme='dark'] [style*="color: #000000"] {
+  color: var(--text-primary) !important;
+}
+.landing-page-container[data-theme='dark'] [style*="color: #71717a"],
+.landing-page-container[data-theme='dark'] [style*="color: rgb(113, 113, 122)"],
+.landing-page-container[data-theme='dark'] [style*="color: #52525b"] {
+  color: var(--text-muted) !important;
+}
+.landing-page-container[data-theme='dark'] [style*="border: 1px solid #e4e4e7"],
+.landing-page-container[data-theme='dark'] [style*="border-top: 1px solid #e4e4e7"],
+.landing-page-container[data-theme='dark'] [style*="border-bottom: 1px solid #e4e4e7"],
+.landing-page-container[data-theme='dark'] [style*="border: 1px solid rgb(228, 228, 231)"] {
+  border-color: var(--border) !important;
+}
+.landing-page-container[data-theme='dark'] [style*="background: #f4f4f5"],
+.landing-page-container[data-theme='dark'] .pill {
+  background: var(--bg-elevated) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+.landing-page-container[data-theme='dark'] nav a[style*="color: #52525b"] {
+  color: var(--text-secondary) !important;
+}
+

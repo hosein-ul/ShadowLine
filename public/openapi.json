@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://shadow-line.netlify.app"
+      "url": "https://shadow-line.vercel.app"
     }
   ],
   "paths": {
