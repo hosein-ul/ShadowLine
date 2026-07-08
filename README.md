@@ -1,5 +1,4 @@
 <div align="center">
-<!-- ⬅️ آدرس عکس/بنر خودت رو اینجا بذار -->
 
 # ShadowLine - Confidential Asset Shielding Protocol
 
