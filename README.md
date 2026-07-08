@@ -1,19 +1,27 @@
-# ShadowLine — Confidential Asset Shielding Protocol
+<div align="center">
+<!-- ⬅️ آدرس عکس/بنر خودت رو اینجا بذار -->
+
+# ShadowLine - Confidential Asset Shielding Protocol
+
+<img width="1919" height="1081" alt="image" src="https://github.com/user-attachments/assets/b94aeadb-fd60-48a7-b172-69b5d9ab404c" />
+
+
+**Shield ERC-20 tokens into confidential ERC-7984 cTokens, unshield them back, and send private transfers with encrypted amounts — powered by Zama's FHEVM.**
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/hosein-ul/ShadowLine)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
-[![Zama SDK](https://img.shields.io/badge/Zama%20SDK-3-ffd208)](https://docs.zama.org/protocol)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![Zama SDK](https://img.shields.io/badge/Zama-FHEVM-ffd200)](https://docs.zama.org/protocol)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#11-license)
 
-ShadowLine is a dApp built on top of Zama's Confidential
-Token Wrappers Registry, powered by Zama's FHEVM. It lets you shield
-ERC-20 tokens into ERC-7984 confidential tokens (cTokens), unshield them
-back, and send confidential transfers with encrypted amounts.
+### 🌐 [Live Demo](https://shadow-line.vercel.app/) · [Docs](https://shadow-line.vercel.app/app/docs) · [Report a Bug](https://github.com/hosein-ul/ShadowLine/issues)
+</div>
 
-Beyond wrapping, ShadowLine includes user decryption of your own balances,
-a browsable token registry with custom-token support, a portfolio view,
-and a testnet faucet — across Sepolia and coming soon on Ethereum mainnet.
+---
+
+ShadowLine is a dApp built on top of Zama's Confidential Token Wrappers Registry, powered by Zama's FHEVM. It lets you shield ERC-20 tokens into ERC-7984 confidential tokens (cTokens), unshield them back, and send confidential transfers with encrypted amounts.
+
+Beyond wrapping, ShadowLine includes user decryption of your own balances, a browsable token registry with custom-token support, a portfolio view, and a testnet faucet — across Sepolia and coming soon on Ethereum mainnet.
 
 Because balances and transfer amounts are handled as ERC-7984 confidential tokens, they stay encrypted on-chain and are computed in their encrypted state via FHE. Wallet addresses remain public on-chain, as with any standard transaction.
 
