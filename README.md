@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-ShadowLine is a non-custodial dApp built on top of Zama's Confidential
+ShadowLine is a dApp built on top of Zama's Confidential
 Token Wrappers Registry, powered by Zama's FHEVM. It lets you shield
 ERC-20 tokens into ERC-7984 confidential tokens (cTokens), unshield them
 back, and send confidential transfers with encrypted amounts.
