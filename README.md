@@ -39,7 +39,7 @@ Because balances and transfer amounts are handled as ERC-7984 confidential token
 - [6. Hybrid Registry Sourcing Strategy](#6-hybrid-registry-sourcing-strategy)
 - [7. B2B & Enterprise Use Cases](#7-b2b--enterprise-use-cases)
 - [8. How to Configure a New Token Pair](#8-how-to-configure-a-new-token-pair)
-- [9. Local Development & Setup](#9-local-development--setup)
+- [9. Local Development & Setup](#9-local-development--setup-0-to-100-devops-suite)
 - [10. Repository Structure](#10-repository-structure)
 - [11. Zama SDK 3.0.1 — methods used](#11-zama-sdk-301--methods-used)
 - [12. FAQ: Why doesn't Decrypt ask for signature on some tokens?](#12-faq-why-doesnt-decrypt-ask-for-signature-on-some-tokens)
