@@ -91,7 +91,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
-  const [designTheme, setDesignThemeState] = useState<DesignTheme>('charcoal');
+  const [designTheme, setDesignThemeState] = useState<DesignTheme>('midnight');
 
   // Load theme and design direction from localStorage on mount
   useEffect(() => {
@@ -106,8 +106,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       setDesignThemeState(savedDesign);
       document.documentElement.setAttribute('data-design-theme', savedDesign);
     } else {
-      setDesignThemeState('charcoal');
-      document.documentElement.setAttribute('data-design-theme', 'charcoal');
+      setDesignThemeState('midnight');
+      document.documentElement.setAttribute('data-design-theme', 'midnight');
     }
   }, []);
 

@@ -15,7 +15,7 @@ ul, ol { list-style: none; }
 input, select, textarea { font: inherit; border: none; outline: none; background: none; }
 table { border-collapse: collapse; }
 
-/* ---------- Global Tokens & Defaults (Nordic Charcoal Default) ---------- */
+/* ---------- Global Tokens & Defaults (Nordic Midnight Default) ---------- */
 :root {
   /* Layout & Defaults */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -53,70 +53,7 @@ table { border-collapse: collapse; }
   --sp-16: 64px;
   --sp-20: 80px;
 
-  /* Nordic Charcoal (Default) variables */
-  --bg-base: #0b0b0f;
-  --bg-surface: #121217;
-  --bg-elevated: #1a1a22;
-  --bg-card: rgba(30, 30, 38, 0.95);
-  --bg-card-hover: rgba(40, 40, 50, 0.98);
-  --bg-input: #0b0b0f;
-  
-  --accent: #38bdf8;
-  --accent-hover: #7dd3fc;
-  --accent-muted: rgba(56, 189, 248, 0.18);
-  --accent-subtle: rgba(56, 189, 248, 0.05);
-  --accent-glow: rgba(56, 189, 248, 0.2);
-  --zama-gold: #FFD208;
-  --zama-gold-glow: rgba(255, 210, 8, 0.15);
-
-  --text-primary: #f8f9fa;
-  --text-secondary: #a0a5b5;
-  --text-muted: #64748b;
-  --text-accent: #38bdf8;
-  --text-inverse: #0b0b0f;
-
-  --success: #10b981;
-  --success-muted: rgba(16, 185, 129, 0.1);
-  --warning: #f59e0b;
-  --warning-muted: rgba(245, 158, 11, 0.1);
-  --error: #ef4444;
-  --error-muted: rgba(239, 68, 68, 0.1);
-  --info: #3b82f6;
-  --info-muted: rgba(59, 130, 246, 0.1);
-
-  --border: rgba(255, 255, 255, 0.3);
-  --border-hover: rgba(255, 255, 255, 0.45);
-  --border-accent: rgba(56, 189, 248, 0.6);
-  --border-focus: #38bdf8;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-2xl: 26px;
-  --radius-full: 9999px;
-
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.6);
-  --shadow-lg: 0 16px 36px rgba(0,0,0,0.8);
-  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
-
-  --radial-glow-1: rgba(56, 189, 248, 0.04);
-  --radial-glow-2: rgba(255, 255, 255, 0.02);
-  --grid-line: rgba(255, 255, 255, 0.012);
-}
-
-/* ==========================================================================
-   THEME DIRECTIONS
-   ========================================================================== */
-
-/* ---------- 1. NORDIC CHARCOAL THEME (DARK - DEFAULT) ---------- */
-html[data-design-theme='charcoal'] {
-  /* Inherits directly from :root */
-}
-
-/* ---------- 2. NORDIC MIDNIGHT THEME (DARK) ---------- */
-html[data-design-theme='midnight'] {
+  /* Nordic Midnight (Default - Clean Black & White) */
   --bg-base: #000000;
   --bg-surface: #09090b;
   --bg-elevated: #141418;
@@ -129,12 +66,23 @@ html[data-design-theme='midnight'] {
   --accent-muted: rgba(244, 244, 245, 0.18);
   --accent-subtle: rgba(244, 244, 245, 0.04);
   --accent-glow: rgba(255, 255, 255, 0.1);
+  --zama-gold: #FFD208;
+  --zama-gold-glow: rgba(255, 210, 8, 0.15);
 
   --text-primary: #ffffff;
   --text-secondary: #e4e4e7;
   --text-muted: #71717a;
   --text-accent: #ffffff;
   --text-inverse: #000000;
+
+  --success: #10b981;
+  --success-muted: rgba(16, 185, 129, 0.1);
+  --warning: #f59e0b;
+  --warning-muted: rgba(245, 158, 11, 0.1);
+  --error: #ef4444;
+  --error-muted: rgba(239, 68, 68, 0.1);
+  --info: #3b82f6;
+  --info-muted: rgba(59, 130, 246, 0.1);
 
   --border: rgba(255, 255, 255, 0.35);
   --border-hover: rgba(255, 255, 255, 0.55);
@@ -146,15 +94,67 @@ html[data-design-theme='midnight'] {
   --radius-lg: 12px;
   --radius-xl: 18px;
   --radius-2xl: 24px;
+  --radius-full: 9999px;
 
   --shadow-sm: 0 2px 4px rgba(0,0,0,0.6);
   --shadow-md: 0 6px 18px rgba(0,0,0,0.7);
   --shadow-lg: 0 20px 48px rgba(0,0,0,0.9);
   --shadow-glow: 0 0 25px rgba(255, 255, 255, 0.08);
-  
+
   --radial-glow-1: rgba(255, 255, 255, 0.02);
   --radial-glow-2: rgba(255, 255, 255, 0.01);
   --grid-line: rgba(255, 255, 255, 0.022);
+}
+
+/* ==========================================================================
+   THEME DIRECTIONS
+   ========================================================================== */
+
+/* ---------- 1. NORDIC CHARCOAL THEME (DARK - BLUE ACCENT) ---------- */
+html[data-design-theme='charcoal'] {
+  --bg-base: #0b0b0f;
+  --bg-surface: #121217;
+  --bg-elevated: #1a1a22;
+  --bg-card: rgba(30, 30, 38, 0.95);
+  --bg-card-hover: rgba(40, 40, 50, 0.98);
+  --bg-input: #0b0b0f;
+  
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-muted: rgba(56, 189, 248, 0.18);
+  --accent-subtle: rgba(56, 189, 248, 0.05);
+  --accent-glow: rgba(56, 189, 248, 0.2);
+
+  --text-primary: #f8f9fa;
+  --text-secondary: #a0a5b5;
+  --text-muted: #64748b;
+  --text-accent: #38bdf8;
+  --text-inverse: #0b0b0f;
+
+  --border: rgba(255, 255, 255, 0.3);
+  --border-hover: rgba(255, 255, 255, 0.45);
+  --border-accent: rgba(56, 189, 248, 0.6);
+  --border-focus: #38bdf8;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 26px;
+
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.6);
+  --shadow-lg: 0 16px 36px rgba(0,0,0,0.8);
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.15);
+  
+  --radial-glow-1: rgba(56, 189, 248, 0.04);
+  --radial-glow-2: rgba(255, 255, 255, 0.02);
+  --grid-line: rgba(255, 255, 255, 0.012);
+}
+
+/* ---------- 2. NORDIC MIDNIGHT THEME (DARK - DEFAULT CLEAN) ---------- */
+html[data-design-theme='midnight'] {
+  /* Inherits directly from :root - Clean black & white Nordic design */
 }
 
 /* ---------- 3. NORDIC FROST THEME (DARK) ---------- */
