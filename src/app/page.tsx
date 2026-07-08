@@ -112,10 +112,10 @@ function Hero() {
 
       {/* Grid bg */}
       <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="1" /></pattern></defs>
+        <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'} strokeWidth="1" /></pattern></defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
       </svg>
-      <div style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', width: '760px', height: '440px', background: 'radial-gradient(ellipse,rgba(255,210,8,.16) 0%,transparent 70%)', pointerEvents: 'none', filter: 'blur(40px)' }} />
+      <div style={{ position: 'absolute', top: '6%', left: '50%', transform: 'translateX(-50%)', width: '760px', height: '440px', background: isDark ? 'radial-gradient(ellipse,rgba(255,210,8,.12) 0%,transparent 70%)' : 'radial-gradient(ellipse,rgba(255,210,8,.16) 0%,transparent 70%)', pointerEvents: 'none', filter: 'blur(40px)' }} />
 
       {/* Parallax content block */}
       <motion.div style={{ y, opacity, scale, width: '100%', maxWidth: '1000px' }}>
@@ -124,7 +124,7 @@ function Hero() {
         <BlurFade delay={0} inView>
           <motion.div
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: '1px solid rgba(0,0,0,.1)', background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '20px' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '100px', border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,.1)', background: isDark ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', fontSize: '.78rem', fontWeight: 700, color: isDark ? '#d4d4d8' : '#27272a', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: '20px' }}
           >
             <motion.span animate={{ scale: [1, 1.5, 1], opacity: [1, .5, 1] }} transition={{ repeat: Infinity, duration: 2.2 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD208', display: 'block' }} />
             Live on Ethereum Sepolia · ERC-7984 Standard
@@ -133,7 +133,7 @@ function Hero() {
 
         {/* Headline — about the project, not a tautology */}
         <BlurFade delay={0.12} inView>
-          <h1 style={{ fontSize: 'clamp(2.5rem,5.5vw,4.4rem)', fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.045em', color: '#000', margin: '0 auto 16px', maxWidth: '920px' }}>
+          <h1 style={{ fontSize: 'clamp(2.5rem,5.5vw,4.4rem)', fontWeight: 900, lineHeight: 1.02, letterSpacing: '-0.045em', color: isDark ? '#ffffff' : '#000', margin: '0 auto 16px', maxWidth: '920px' }}>
             Shield ERC-20 tokens.{' '}
             <br />
             <span style={{ background: 'linear-gradient(130deg, #FFD208 0%, #f59e0b 55%, #b45309 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -143,9 +143,9 @@ function Hero() {
         </BlurFade>
 
         <BlurFade delay={0.32} inView>
-          <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.1rem)', lineHeight: 1.7, color: '#52525b', maxWidth: '600px', margin: '0 auto 24px' }}>
+          <p style={{ fontSize: 'clamp(0.95rem,1.8vw,1.1rem)', lineHeight: 1.7, color: isDark ? '#a1a1aa' : '#52525b', maxWidth: '600px', margin: '0 auto 24px' }}>
             ShadowLine converts public ERC-20 tokens into{' '}
-            <strong style={{ color: '#000' }}>ERC-7984 confidential cTokens</strong>{' '}
+            <strong style={{ color: isDark ? '#ffffff' : '#000' }}>ERC-7984 confidential cTokens</strong>{' '}
             via Zama&apos;s Fully Homomorphic Encryption. Balances are stored as on-chain ciphertexts — computable without decrypting.
           </p>
         </BlurFade>
@@ -159,7 +159,7 @@ function Hero() {
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.97 }}>
-              <Link href="/app/docs" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: '2px solid #000' }}>
+              <Link href="/app/docs" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '16px 32px', background: 'transparent', color: isDark ? '#ffffff' : '#000', fontWeight: 700, fontSize: '1rem', borderRadius: '10px', textDecoration: 'none', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid #000' }}>
                 <BookOpen size={18} /> Read the Docs
               </Link>
             </motion.div>
@@ -172,9 +172,9 @@ function Hero() {
             {[
               { icon: Lock, label: 'FHE on-chain ciphertext' },
               { icon: Key, label: 'EIP-712 decrypt permits' },
-              { icon: Zap, label: 'Zama Coprocessor verified' },
+              { icon: Zap, label: 'Zama FHEVM Powered' },
             ].map((p, i) => (
-              <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '7px 16px', borderRadius: '100px', border: '1px solid #e4e4e7', background: '#fff', fontSize: '.78rem', fontWeight: 600, color: '#52525b' }}>
+              <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '7px 16px', borderRadius: '100px', border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e4e4e7', background: isDark ? '#18181f' : '#fff', fontSize: '.78rem', fontWeight: 600, color: isDark ? '#a1a1aa' : '#52525b' }}>
                 <p.icon size={13} style={{ color: '#FFD208' }} />
                 {p.label}
               </div>
@@ -195,9 +195,9 @@ function Hero() {
               maxWidth: '860px',
               borderRadius: '24px',
               overflow: 'hidden',
-              border: '1px solid #e4e4e7',
-              boxShadow: '0 24px 80px rgba(0,0,0,0.08), 0 0 60px rgba(255,210,8,0.18)',
-              background: '#fff',
+              border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e4e4e7',
+              boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.4), 0 0 60px rgba(255,210,8,0.22)' : '0 24px 80px rgba(0,0,0,0.08), 0 0 60px rgba(255,210,8,0.18)',
+              background: isDark ? '#18181f' : '#fff',
               aspectRatio: '16/9',
             }}
           >
@@ -206,7 +206,7 @@ function Hero() {
               alt="ShadowLine Crystal Shield"
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
             />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 70%, rgba(250,250,250,0.95) 100%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, background: isDark ? 'linear-gradient(180deg, transparent 70%, rgba(9,9,11,0.95) 100%)' : 'linear-gradient(180deg, transparent 70%, rgba(250,250,250,0.95) 100%)', pointerEvents: 'none' }} />
             <BorderBeam size={300} duration={14} delay={5} colorFrom="#FFD208" colorTo="#f59e0b" />
           </motion.div>
         </BlurFade>
@@ -214,15 +214,15 @@ function Hero() {
 
       {/* Scroll indicator */}
       <motion.div animate={{ y: [0, 8, 0], opacity: [.4, .9, .4] }} transition={{ duration: 2.2, repeat: Infinity }} style={{ position: 'absolute', bottom: '36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '.68rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#a1a1aa' }}>Scroll</span>
-        <ChevronDown size={16} style={{ color: '#a1a1aa' }} />
+        <span style={{ fontSize: '.68rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: isDark ? '#71717a' : '#a1a1aa' }}>Scroll</span>
+        <ChevronDown size={16} style={{ color: isDark ? '#71717a' : '#a1a1aa' }} />
       </motion.div>
     </motion.section>
   );
 }
 
 // ─── MARQUEE ─────────────────────────────────────────────────────────────────
-const TRUST = ['FHE Encryption','ERC-7984 Standard','EIP-712 Permits','OpenZeppelin Audited','Zama Coprocessor','Non-Custodial','Sepolia Testnet','WASM FHE Client','Zero-Gas Decrypt'];
+const TRUST = ['FHE Encryption','ERC-7984 Standard','EIP-712 Permits','OpenZeppelin Contracts','Zama Coprocessor','Non-Custodial','Sepolia Testnet','WASM FHE Client','Zero-Gas Decrypt'];
 
 // ─── PINNED STORYTELLING ─────────────────────────────────────────────────────
 function PinnedStory() {
@@ -348,12 +348,12 @@ function PinnedStory() {
 
 // ─── HORIZONTAL SCROLL — App Pages ──────────────────────────────────────────
 const APP_PAGES = [
-  { href: '/app',            icon: Database,     label: 'Registry',     desc: 'Browse ERC-7984 wrappers on Sepolia and Mainnet. View live encrypted balances for connected wallets.',           color: '#3b82f6', tag: 'Explorer'   },
+  { href: '/app',            icon: Database,     label: 'Registry',     desc: 'Browse ERC-7984 wrappers on Sepolia (live). Mainnet browsing coming soon. View encrypted balances for connected wallets.',           color: '#3b82f6', tag: 'Explorer'   },
   { href: '/app/wrapper',       icon: Shield,       label: 'Wrap / Unwrap',desc: 'Shield ERC-20 → encrypted cToken. SDK auto-selects 1-tx (ERC-1363) or 2-tx (approve+wrap) path.',              color: '#FFD208', tag: 'Core'       },
   { href: '/app/portfolio',  icon: Wallet,       label: 'Portfolio',    desc: 'Track all your shielded and unshielded balances. Decrypt FHE ciphertexts with EIP-712 permits.',                 color: '#10b981', tag: 'My Assets'  },
   { href: '/app/analytics',  icon: BarChart3,    label: 'Analytics',    desc: 'Total Value Shielded, 24h shield/unshield volume, and per-token activity across the registry.',                  color: '#8b5cf6', tag: 'Insights'   },
-  { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC, WBTC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
-  { href: '/app/learn',      icon: GraduationCap,label: 'Learn',        desc: 'Step-by-step tutorial: connect wallet → get tokens → shield → decrypt balance. Interactive with rewards.',       color: '#f59e0b', tag: 'Tutorial'   },
+  { href: '/app/faucet',     icon: Droplets,     label: 'Faucet',       desc: 'Mint free Sepolia testnet mock tokens (USDC). Start the full FHE flow without real funds.',               color: '#06b6d4', tag: 'Testnet'    },
+  { href: '/app/learn',      icon: GraduationCap,label: 'Learn',        desc: 'Step-by-step tutorial: connect wallet → get tokens → shield → decrypt balance. Fully interactive walkthrough.',       color: '#f59e0b', tag: 'Tutorial'   },
   { href: '/app/docs',       icon: FileText,     label: 'Docs',         desc: 'ERC-7984 architecture, wrapper mechanics, permit model, and full SDK hook API reference.',                      color: '#64748b', tag: 'Reference'  },
 ];
 
@@ -410,22 +410,24 @@ const STEPS = [
 ];
 
 function StepTimeline() {
+  const { theme } = useLandingTheme();
+  const isDark = theme === 'dark';
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.8', 'end 0.3'] });
   const h = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
   const hS = useSpring(h, { stiffness: 55, damping: 20 });
 
   return (
-    <section ref={ref} id="how" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: '#fafafa' }}>
+    <section ref={ref} id="how" style={{ padding: 'clamp(80px,10vw,140px) clamp(24px,6vw,80px)', background: isDark ? '#09090b' : '#fafafa' }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
         <BlurFade inView delay={0} style={{ textAlign: 'center', marginBottom: '72px' }}>
-          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>From public ERC-20 to private cToken.</h2>
-          <p style={{ color: '#52525b', fontSize: '1rem', maxWidth: '400px', margin: '0 auto', lineHeight: 1.65 }}>Four steps. Self-custodial. No third party sees your balance.</p>
+          <h2 style={{ fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 900, color: isDark ? '#ffffff' : '#000', letterSpacing: '-0.03em', marginBottom: '14px' }}>From public ERC-20 to private cToken.</h2>
+          <p style={{ color: isDark ? '#a1a1aa' : '#52525b', fontSize: '1rem', maxWidth: '400px', margin: '0 auto', lineHeight: 1.65 }}>Four steps. Self-custodial. No third party sees your balance.</p>
         </BlurFade>
 
         <div style={{ position: 'relative' }}>
           {/* Animated vertical progress line */}
-          <div style={{ position: 'absolute', left: '27px', top: '28px', bottom: '28px', width: '2px', background: '#e4e4e7', borderRadius: '1px' }}>
+          <div style={{ position: 'absolute', left: '27px', top: '28px', bottom: '28px', width: '2px', background: isDark ? 'rgba(255,255,255,0.1)' : '#e4e4e7', borderRadius: '1px' }}>
             <motion.div style={{ height: hS, background: 'linear-gradient(180deg,#FFD208,#10b981)', borderRadius: '1px', width: '100%' }} />
           </div>
 
@@ -434,13 +436,13 @@ function StepTimeline() {
             const inV = useInView(stepRef, { once: false, margin: '-30% 0px -30% 0px' });
             return (
               <motion.div ref={stepRef} key={i} initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: '-20% 0px -20% 0px' }} transition={{ duration: 0.6, ease: [.22, 1, .36, 1], delay: .04 }} style={{ display: 'flex', gap: '32px', paddingBottom: '56px', position: 'relative' }}>
-                <motion.div animate={{ background: inV ? step.color : '#e4e4e7', boxShadow: inV ? `0 0 0 6px ${step.color}20` : 'none' }} transition={{ duration: 0.4 }} style={{ width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, position: 'relative' }}>
-                  <step.icon size={24} style={{ color: inV ? '#000' : '#a1a1aa', transition: 'color .3s' }} />
+                <motion.div animate={{ background: inV ? step.color : (isDark ? 'rgba(255,255,255,0.1)' : '#e4e4e7'), boxShadow: inV ? `0 0 0 6px ${step.color}20` : 'none' }} transition={{ duration: 0.4 }} style={{ width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, position: 'relative' }}>
+                  <step.icon size={24} style={{ color: inV ? '#000' : (isDark ? '#71717a' : '#a1a1aa'), transition: 'color .3s' }} />
                 </motion.div>
                 <div style={{ paddingTop: '10px', flex: 1 }}>
-                  <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '8px' }}>Step {step.n}</div>
-                  <motion.h3 animate={{ color: inV ? '#000' : '#71717a' }} style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '12px' }}>{step.title}</motion.h3>
-                  <p style={{ color: '#52525b', fontSize: '.9rem', lineHeight: 1.7, maxWidth: '520px', marginBottom: '16px' }}>{step.body}</p>
+                  <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: isDark ? '#71717a' : '#a1a1aa', marginBottom: '8px' }}>Step {step.n}</div>
+                  <motion.h3 animate={{ color: inV ? (isDark ? '#ffffff' : '#000') : '#71717a' }} style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '12px' }}>{step.title}</motion.h3>
+                  <p style={{ color: isDark ? '#a1a1aa' : '#52525b', fontSize: '.9rem', lineHeight: 1.7, maxWidth: '520px', marginBottom: '16px' }}>{step.body}</p>
                   <Link href={step.link} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '.8rem', fontWeight: 700, color: step.color, textDecoration: 'none' }}>Try it <ArrowRight size={12} /></Link>
                 </div>
               </motion.div>
@@ -618,7 +620,7 @@ function FragmentationSection() {
                 <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#BBF7D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CheckCircle2 size={14} style={{ color: '#166534' }} />
                 </div>
-                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#166534' }}>ShadowLine · Official Registry</span>
+                <span style={{ fontWeight: 800, fontSize: '.85rem', color: '#166534' }}>ShadowLine · Uses Official Registry</span>
               </div>
               {[
                 'Canonical registry — one source of truth for all wallets',
@@ -759,7 +761,7 @@ function PoweredBy() {
     {
       name: 'Zama',
       logo: '/brands/zama-logo.svg',
-      desc: 'FHE confidential computing protocol',
+      desc: 'FHE protocol for confidential blockchain apps',
       cardBg: isDark ? '#18181f' : '#fff',
       textColor: isDark ? '#fff' : '#000',
       descColor: isDark ? '#a1a1aa' : '#71717a',
@@ -779,7 +781,7 @@ function PoweredBy() {
     {
       name: 'OpenZeppelin',
       logo: '/brands/openzeppelin-logo.svg',
-      desc: 'Audited smart contract standards',
+      desc: 'Battle-tested smart contract library',
       cardBg: isDark ? '#18181f' : '#fff',
       textColor: isDark ? '#fff' : '#000',
       descColor: isDark ? '#a1a1aa' : '#71717a',
@@ -797,7 +799,7 @@ function PoweredBy() {
               Trusted Infrastructure
             </span>
             <h2 style={{ fontSize: 'clamp(1.6rem,3.2vw,2.4rem)', fontWeight: 900, color: isDark ? '#fff' : '#000', letterSpacing: '-0.03em', textAlign: 'center', margin: 0 }}>
-              Powered by Verified Web3 Standards
+              Powered by Trusted Web3 Infrastructure
             </h2>
           </div>
         </BlurFade>
@@ -942,7 +944,7 @@ function EnterpriseUseCases() {
             },
             {
               title: 'Institutional Dark Pools',
-              desc: 'Execute block trades and OTC orders privately. Prevent front-running, sandwich attacks, and order-book visibility by keeping trades encrypted during settlement.',
+              desc: 'Execute block trades and OTC orders with encrypted amounts. Reduce information leakage from order-book visibility and limit the surface for value-based front-running.',
               icon: Network,
               badge: 'OTC Trading'
             },
@@ -1002,7 +1004,7 @@ function SecurityCompliance() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
                 { title: 'Lattice-Based FHE', desc: 'Secure against quantum computing algorithms.' },
-                { title: 'Fully Non-Custodial', desc: 'No central server, admin key, or custodian holds your funds.' },
+                { title: 'Fully Non-Custodial', desc: 'No admin key or custodian holds your funds. Decryption requires your EIP-712 signature — no exceptions.' },
                 { title: 'Zama FHEVM Verifiable', desc: 'Computations run on off-chain coprocessors with cryptographically verified state updates.' }
               ].map((point, index) => (
                 <div key={index} style={{ display: 'flex', gap: '12px' }}>
@@ -1027,8 +1029,8 @@ function SecurityCompliance() {
                 <Shield size={36} />
               </motion.div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#000', marginBottom: '8px' }}>Security Audit Status</h3>
-              <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#059669', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 12px', borderRadius: '100px', display: 'inline-block', marginBottom: '16px' }}>Ready for Launch</span>
-              <p style={{ fontSize: '.82rem', color: '#71717a', lineHeight: 1.5, maxWidth: '280px', margin: 0 }}>The wrapper logic and Coprocessor interface conform to OpenZeppelin ERC-20 secure standards.</p>
+              <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#059669', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 12px', borderRadius: '100px', display: 'inline-block', marginBottom: '16px' }}>Sepolia Testnet Deployed · Community Reviewable</span>
+              <p style={{ fontSize: '.82rem', color: '#71717a', lineHeight: 1.5, maxWidth: '280px', margin: 0 }}>Built on top of the audited Zama ERC-7984 wrapper contracts and OpenZeppelin's battle-tested library.</p>
             </div>
           </BlurFade>
         </div>
@@ -1175,7 +1177,7 @@ function VisualSculptureBanner() {
                 Mathematical precision.<br />Zero fragmentation.
               </h3>
               <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: 1.65, margin: 0 }}>
-                Built on top of OpenZeppelin and Zama FHEVM, ShadowLine eliminates liquidity fragmentation with a single, unified wrapper interface.
+                Built on top of OpenZeppelin and Zama FHEVM, ShadowLine uses Zama's canonical Wrappers Registry as the single source of truth — reducing fragmentation across the ecosystem.
               </p>
             </div>
           </motion.div>
