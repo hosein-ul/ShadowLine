@@ -760,7 +760,7 @@ function PoweredBy() {
       name: 'Zama',
       logo: '/brands/zama-logo.svg',
       desc: 'FHE confidential computing protocol',
-      badge: 'CORE FHE COPROCESSOR',
+      badge: '',
       cardBg: isDark ? '#18181f' : '#fff',
       textColor: isDark ? '#fff' : '#000',
       descColor: isDark ? '#a1a1aa' : '#71717a',
@@ -771,7 +771,7 @@ function PoweredBy() {
       name: 'Blockscout',
       logo: '/brands/blockscout-logo.svg',
       desc: 'Open-source block explorer & indexer',
-      badge: 'VERIFIED EXPLORER',
+      badge: '',
       cardBg: isDark ? '#18181f' : '#fff',
       textColor: isDark ? '#fff' : '#000',
       descColor: isDark ? '#a1a1aa' : '#71717a',
@@ -782,7 +782,7 @@ function PoweredBy() {
       name: 'OpenZeppelin',
       logo: '/brands/openzeppelin-logo.svg',
       desc: 'Audited smart contract standards',
-      badge: 'SECURITY STANDARD',
+      badge: '',
       cardBg: isDark ? '#18181f' : '#fff',
       textColor: isDark ? '#fff' : '#000',
       descColor: isDark ? '#a1a1aa' : '#71717a',
@@ -797,7 +797,7 @@ function PoweredBy() {
         <BlurFade inView delay={0}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '36px' }}>
             <span style={{ display: 'inline-block', padding: '4px 16px', borderRadius: '100px', border: isDark ? '1px solid rgba(255,255,255,.15)' : '1px solid rgba(0,0,0,.1)', background: isDark ? '#1f1f28' : '#fff', fontSize: '.75rem', fontWeight: 800, color: isDark ? '#e4e4e7' : '#52525b', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: '12px', boxShadow: '0 2px 10px rgba(0,0,0,.03)' }}>
-              Canonical Infrastructure
+              Trusted Infrastructure
             </span>
             <h2 style={{ fontSize: 'clamp(1.6rem,3.2vw,2.4rem)', fontWeight: 900, color: isDark ? '#fff' : '#000', letterSpacing: '-0.03em', textAlign: 'center', margin: 0 }}>
               Powered by Verified Web3 Standards
