@@ -807,9 +807,7 @@ function PoweredBy() {
 
             const cardContent = (
               <>
-                <span style={{ fontSize: '.7rem', fontWeight: 800, letterSpacing: '.08em', color: isDark ? '#e4e4e7' : (isZama ? '#000' : '#71717a'), background: isDark ? '#27272a' : (isZama ? 'rgba(0,0,0,.1)' : '#f4f4f5'), padding: '5px 12px', borderRadius: '100px', textTransform: 'uppercase' }}>
-                  {p.badge}
-                </span>
+
                 <img src={p.logo} alt={`${p.name} official logo`} style={{ height: isZama ? '42px' : '36px', width: 'auto', maxWidth: '180px', objectFit: 'contain', filter: isDark && (p.name === 'Zama' || p.name === 'OpenZeppelin') ? 'invert(1) brightness(2)' : 'none' }} />
                 <span style={{ fontSize: '.88rem', fontWeight: 600, color: p.descColor, textAlign: 'center', lineHeight: 1.5 }}>
                   {p.desc}
